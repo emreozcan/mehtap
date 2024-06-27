@@ -32,9 +32,9 @@ label: "::" name "::"
 funcname: name ("." name)* [":" name]
 
 varlist: var ("," var)*
-?var: name
-    | prefixexp "[" exp "]" -> var_index
-    | prefixexp "." name -> var_field
+var: name -> var_name
+   | prefixexp "[" exp "]" -> var_index
+   | prefixexp "." name -> var_field
 
 namelist: name ("," name)*
 
@@ -60,9 +60,9 @@ explist: exp ("," exp)*
          | exp productop exp -> exp_product
          | unop exp -> exp_unop
          | exp "^" exp -> exp_pow
-?prefixexp: var
-          | functioncall
-          | "(" exp ")"
+prefixexp: var
+         | functioncall
+         | "(" exp ")"
 
 functioncall: prefixexp args -> functioncall_regular
             | prefixexp ":" name args -> functioncall_method
