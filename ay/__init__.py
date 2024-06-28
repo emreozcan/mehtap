@@ -3,8 +3,11 @@ from pathlib import Path
 
 import lark
 
-from .operations import rel_lt, rel_le, rel_gt, rel_ge, rel_eq, rel_ne
-from .values import LuaNil, LuaNumber, LuaBool, LuaNumberType, LuaValue
+from .operations import rel_lt, rel_le, rel_gt, rel_ge, rel_eq, rel_ne, \
+    int_overflow_wrap_around, arith_mul, arith_float_div, arith_floor_div, \
+    arith_mod, arith_add, arith_sub, arith_exp, arith_unary_minus
+from .values import LuaNil, LuaNumber, LuaBool, LuaNumberType, LuaValue, \
+    MAX_INT64
 
 with open(Path(__file__).parent / "lua.lark", "r", encoding="utf-8") as f:
     lua_grammar = f.read()
@@ -17,8 +20,6 @@ lua_parser = lark.Lark(
 )
 
 Env = namedtuple("Env", ["glob", "loc"])
-
-MAX_INT64 = 2**63 - 1
 
 
 class BlockInterpreter(lark.visitors.Interpreter):
@@ -96,13 +97,7 @@ class BlockInterpreter(lark.visitors.Interpreter):
             exp_val = 2**int(exp_part)
             return LuaNumber(frac_val * exp_val, LuaNumberType.FLOAT)
         # if the value overflows, it wraps around to fit into a valid integer.
-        whole_val = int(whole_part, 16)
-        if whole_val < MAX_INT64:
-            return LuaNumber(whole_val, LuaNumberType.INTEGER)
-        whole_val, sign = divmod(whole_val, MAX_INT64)
-        if sign & 1:
-            return LuaNumber(-whole_val, LuaNumberType.INTEGER)
-        return LuaNumber(whole_val, LuaNumberType.INTEGER)
+        return int_overflow_wrap_around(int(whole_part, 16))
 
     def prefixexp(self, tree):
         return self.visit(tree.children[0])
@@ -120,27 +115,48 @@ class BlockInterpreter(lark.visitors.Interpreter):
         left = self.visit(tree.children[0])
         op = tree.children[1].children[0]
         right = self.visit(tree.children[2])
-        if op == "+":
-            return left + right
-        elif op == "-":
-            return left - right
-        else:
-            raise ValueError(f"Unknown sum operator: {op}")
+        match op:
+            case "+":
+                return arith_add(left, right)
+            case "-":
+                return arith_sub(left, right)
+            case _:
+                raise ValueError(f"Unknown sum operator: {op}")
 
     def exp_product(self, tree):
         left = self.visit(tree.children[0])
         op = tree.children[1].children[0]
         right = self.visit(tree.children[2])
-        if op == "*":
-            return left * right
-        elif op == "/":
-            return left / right
-        elif op == "//":
-            return left // right
-        elif op == "%":
-            return left % right
+        match op:
+            case "*":
+                return arith_mul(left, right)
+            case "/":
+                return arith_float_div(left, right)
+            case "//":
+                return arith_floor_div(left, right)
+            case "%":
+                return arith_mod(left, right)
+            case _:
+                raise ValueError(f"Unknown product operator: {op}")
+
+    def exp_pow(self, tree):
+        left = self.visit(tree.children[0])
+        right = self.visit(tree.children[1])
+        return arith_exp(left, right)
+
+    def exp_unary(self, tree):
+        op = tree.children[0].children[0]
+        right = self.visit(tree.children[1])
+        if op == "-":
+            return arith_unary_minus(right)
+        elif op == "#":
+            raise NotImplementedError()
+        elif op == "~":
+            raise NotImplementedError()
+        elif op == "not":
+            raise NotImplementedError()
         else:
-            raise ValueError(f"Unknown product operator: {op}")
+            raise ValueError(f"Unknown unary operator: {op}")
 
     def exp_cmp(self, tree) -> LuaBool:
         left: LuaValue = self.visit(tree.children[0])

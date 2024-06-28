@@ -80,7 +80,7 @@ fieldsep: "," | ";"
 !shift_op: ">>" | "<<"
 !sumop: "+" | "-"
 !productop: "*" | "/" | "//" | "%"
-!unop: "-" | NOT | "#" | "~"
+!unop: "-" | "not" | "#" | "~"
 
 name: /(?!and$|break$|do$|else$|elseif$|end$|false$|for$|function$|goto$|if$|in$|local$|nil$|not$|or$|repeat$|return$|then$|true$|until$|while$)[a-zA-Z_][a-zA-Z_0-9]*/
 literalstring: /"([^"\\]|\\.)*"|'([^'\\]|\\.)*'|(\[(=*)\[(.|\n)*?\]\4\])/

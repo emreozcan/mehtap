@@ -40,6 +40,10 @@ class LuaNumberType(Enum):
     FLOAT = 2
 
 
+MAX_INT64 = 2**63 - 1
+MIN_INT64 = -2**63
+
+
 class LuaNumber(LuaValue):
     __slots__ = ["value", "type"]
 
