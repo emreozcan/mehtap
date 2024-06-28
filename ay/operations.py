@@ -6,7 +6,7 @@ def rel_eq(a: LuaValue, b: LuaValue) -> LuaBool:
     # Equality (==) first compares the type of its operands.
     # If the types are different, then the result is false.
     type_a = type(a)
-    if type_a is type(b):
+    if type_a is not type(b):
         return LuaBool(False)
     # Otherwise, the values of the operands are compared.
     # Strings are equal if they have the same byte content.
