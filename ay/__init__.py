@@ -7,7 +7,7 @@ from .operations import rel_lt, rel_le, rel_gt, rel_ge, rel_eq, rel_ne, \
     int_overflow_wrap_around, arith_mul, arith_float_div, arith_floor_div, \
     arith_mod, arith_add, arith_sub, arith_exp, arith_unary_minus, bitwise_or, \
     bitwise_and, bitwise_xor, bitwise_unary_not, bitwise_shift_right, \
-    bitwise_shift_left
+    bitwise_shift_left, is_false_or_nil, logical_unary_not
 from .values import LuaNil, LuaNumber, LuaBool, LuaNumberType, LuaValue, \
     MAX_INT64
 
@@ -156,7 +156,7 @@ class BlockInterpreter(lark.visitors.Interpreter):
         elif op == "~":
             return bitwise_unary_not(right)
         elif op == "not":
-            raise NotImplementedError()
+            return logical_unary_not(right)
         else:
             raise ValueError(f"Unknown unary operator: {op}")
 
@@ -209,6 +209,24 @@ class BlockInterpreter(lark.visitors.Interpreter):
                 return bitwise_shift_right(left, right)
             case _:
                 raise ValueError(f"Unknown shift operator: {op}")
+
+    def exp_logical_or(self, tree):
+        left: LuaValue = self.visit(tree.children[0])
+        # The disjunction operator or returns its first argument
+        # if this value is different from nil and false;
+        # otherwise, or returns its second argument.
+        if not is_false_or_nil(left):
+            return left
+        return self.visit(tree.children[1])
+
+    def exp_logical_and(self, tree):
+        left: LuaValue = self.visit(tree.children[0])
+        # The conjunction operator and returns its first argument
+        # if this value is false or nil;
+        # otherwise, and returns its second argument.
+        if is_false_or_nil(left):
+            return left
+        return self.visit(tree.children[1])
 
 
 class LuaInterpreter(lark.visitors.Interpreter):

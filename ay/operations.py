@@ -1,5 +1,5 @@
 from .values import LuaBool, LuaValue, LuaString, LuaNumber, MAX_INT64, \
-    LuaNumberType, MIN_INT64, SIGN_BIT, ALL_SET
+    LuaNumberType, MIN_INT64, SIGN_BIT, ALL_SET, LuaNil
 
 
 def rel_eq(a: LuaValue, b: LuaValue) -> LuaBool:
@@ -250,3 +250,25 @@ def bitwise_shift_right(a, b) -> LuaNumber:
 def bitwise_unary_not(a) -> LuaNumber:
     a = coerce_float_to_int(a)
     return _python_int_to_int64_luanumber(~a.value)
+
+
+def coerce_to_bool(a) -> LuaBool:
+    # Like the control structures (see §3.3.4),
+    # all logical operators consider both false and nil as false
+    # and anything else as true.
+    if isinstance(a, LuaNil):
+        return LuaBool(False)
+    return LuaBool(True)
+
+
+def logical_unary_not(a: LuaValue) -> LuaBool:
+    # The negation operator not always returns false or true.
+    return LuaBool(not coerce_to_bool(a).true)
+
+
+def is_false_or_nil(a: LuaValue) -> bool:
+    if isinstance(a, LuaNil):
+        return True
+    if isinstance(a, LuaBool):
+        return not a.true
+    return False

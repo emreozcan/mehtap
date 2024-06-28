@@ -48,8 +48,8 @@ explist: exp ("," exp)*
     | "function" funcbody -> exp_functiondef
     | prefixexp
     | tableconstructor
-         | exp "or" exp -> exp_or
-         | exp "and" exp -> exp_and
+         | exp "or" exp -> exp_logical_or
+         | exp "and" exp -> exp_logical_and
          | exp cmp_op exp -> exp_cmp
          | exp "|" exp -> exp_bit_or
          | exp "~" exp -> exp_bit_xor

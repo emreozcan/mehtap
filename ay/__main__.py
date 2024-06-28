@@ -3,12 +3,7 @@ from . import lua_parser, LuaInterpreter
 
 def main():
     text = """
-x = 0x1F
-y = 69
-if x + y == 100 then
-    y = 420
-end
-return y
+return 3 << 7
 """
 
     print("\n".join([f"> {line}" for line in text[1:].splitlines()]))
