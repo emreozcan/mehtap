@@ -14,7 +14,9 @@ lua_parser = lark.Lark(
 )
 
 text = """
-x, y = 3, x + 1
+x = 0x1F
+y = 69
+z = x + y
 """
 
 print("\n".join([f"> {l}" for l in text[1:].splitlines()]))
@@ -65,6 +67,10 @@ class LuaDouble(LuaValue):
     def __repr__(self) -> str:
         return f"LuaDouble({self.value})"
 
+
+MAX_INT64 = 2**63 - 1
+
+
 class BlockInterpreter(lark.visitors.Interpreter):
     def __init__(self, env) -> None:
         super().__init__()
@@ -84,9 +90,48 @@ class BlockInterpreter(lark.visitors.Interpreter):
     def name(self, tree):
         return str(tree.children[0])
 
-    def numeral(self, tree):
-        literal = tree.children[0]
-        return int(literal)  # TODO.
+    def numeral_dec(self, tree):
+        whole_part: str = tree.children[0]
+        frac_part: str = tree.children[1]
+        exp_sign: str = tree.children[2]
+        exp_part: str = tree.children[3]
+
+        if frac_part or exp_part:
+            if not exp_sign:
+                exp_sign = "+"
+            if not exp_part:
+                exp_part = "0"
+            return LuaDouble(
+                float(f"{whole_part}.{frac_part}e{exp_sign}{exp_part}")
+            )
+        whole_val = int(whole_part)
+        if whole_val > MAX_INT64:
+            return LuaDouble(float(whole_part))
+        return LuaInt64(whole_val)
+
+    def numeral_hex(self, tree):
+        whole_part: str = tree.children[0]
+        frac_part: str = tree.children[1]
+        exp_sign: str = tree.children[2]
+        exp_part: str = tree.children[3]
+
+        if frac_part or exp_part:
+            if not exp_sign:
+                exp_sign = "+"
+            if not exp_part:
+                exp_part = "0"
+            whole_val = int(whole_part + frac_part, 16)
+            frac_val = whole_val / 16**len(frac_part)
+            exp_val = 2**int(exp_part)
+            return LuaDouble(frac_val * exp_val)
+        # if the value overflows, it wraps around to fit into a valid integer.
+        whole_val = int(whole_part, 16)
+        if whole_val < MAX_INT64:
+            return LuaInt64(whole_val)
+        whole_val, sign = divmod(whole_val, MAX_INT64)
+        if sign & 1:
+            return LuaInt64(-whole_val)
+        return LuaInt64(whole_val)
 
     def prefixexp(self, tree):
         return self.visit(tree.children[0])
