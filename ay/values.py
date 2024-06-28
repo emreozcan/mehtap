@@ -42,6 +42,8 @@ class LuaNumberType(Enum):
 
 MAX_INT64 = 2**63 - 1
 MIN_INT64 = -2**63
+SIGN_BIT = 1 << 63
+ALL_SET = 2**64 - 1
 
 
 class LuaNumber(LuaValue):

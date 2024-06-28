@@ -51,10 +51,10 @@ explist: exp ("," exp)*
          | exp "or" exp -> exp_or
          | exp "and" exp -> exp_and
          | exp cmp_op exp -> exp_cmp
-         | exp "|" exp -> exp_pipe
-         | exp "~" exp -> exp_tilde
-         | exp "&" exp -> exp_ampersand
-         | exp shift_op exp -> exp_shift
+         | exp "|" exp -> exp_bit_or
+         | exp "~" exp -> exp_bit_xor
+         | exp "&" exp -> exp_bit_and
+         | exp shift_op exp -> exp_bit_shift
          | exp ".." exp -> exp_concat
          | exp sumop exp -> exp_sum
          | exp productop exp -> exp_product

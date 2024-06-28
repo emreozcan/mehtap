@@ -5,7 +5,9 @@ import lark
 
 from .operations import rel_lt, rel_le, rel_gt, rel_ge, rel_eq, rel_ne, \
     int_overflow_wrap_around, arith_mul, arith_float_div, arith_floor_div, \
-    arith_mod, arith_add, arith_sub, arith_exp, arith_unary_minus
+    arith_mod, arith_add, arith_sub, arith_exp, arith_unary_minus, bitwise_or, \
+    bitwise_and, bitwise_xor, bitwise_unary_not, bitwise_shift_right, \
+    bitwise_shift_left
 from .values import LuaNil, LuaNumber, LuaBool, LuaNumberType, LuaValue, \
     MAX_INT64
 
@@ -152,7 +154,7 @@ class BlockInterpreter(lark.visitors.Interpreter):
         elif op == "#":
             raise NotImplementedError()
         elif op == "~":
-            raise NotImplementedError()
+            return bitwise_unary_not(right)
         elif op == "not":
             raise NotImplementedError()
         else:
@@ -178,6 +180,35 @@ class BlockInterpreter(lark.visitors.Interpreter):
             case _:
                 raise ValueError(f"Unknown comparison operator: {op}")
 
+    def exp_bit_or(self, tree) -> LuaNumber:
+        return bitwise_or(
+            self.visit(tree.children[0]),
+            self.visit(tree.children[1])
+        )
+
+    def exp_bit_xor(self, tree) -> LuaNumber:
+        return bitwise_xor(
+            self.visit(tree.children[0]),
+            self.visit(tree.children[1])
+        )
+
+    def exp_bit_and(self, tree) -> LuaNumber:
+        return bitwise_and(
+            self.visit(tree.children[0]),
+            self.visit(tree.children[1])
+        )
+
+    def exp_bit_shift(self, tree) -> LuaNumber:
+        left: LuaValue = self.visit(tree.children[0])
+        op = tree.children[1].children[0]
+        right: LuaValue = self.visit(tree.children[2])
+        match op:
+            case "<<":
+                return bitwise_shift_left(left, right)
+            case ">>":
+                return bitwise_shift_right(left, right)
+            case _:
+                raise ValueError(f"Unknown shift operator: {op}")
 
 
 class LuaInterpreter(lark.visitors.Interpreter):

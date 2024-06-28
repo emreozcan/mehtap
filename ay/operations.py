@@ -1,5 +1,5 @@
 from .values import LuaBool, LuaValue, LuaString, LuaNumber, MAX_INT64, \
-    LuaNumberType, MIN_INT64
+    LuaNumberType, MIN_INT64, SIGN_BIT, ALL_SET
 
 
 def rel_eq(a: LuaValue, b: LuaValue) -> LuaBool:
@@ -193,3 +193,60 @@ def arith_unary_minus(a):
     if not isinstance(a, LuaNumber):
         raise NotImplementedError()  # TODO.
     return LuaNumber(-a.value, a.type)
+
+
+def _python_int_to_int64_luanumber(x: int) -> LuaNumber:
+    x = x & ALL_SET
+    if x & SIGN_BIT:
+        return LuaNumber(-x + MAX_INT64, LuaNumberType.INTEGER)
+    return LuaNumber(x, LuaNumberType.INTEGER)
+
+
+def bitwise_or(a, b) -> LuaNumber:
+    #  All bitwise operations convert its operands to integers (see §3.4.3),
+    #  operate on all bits of those integers,
+    #  and result in an integer.
+    a = coerce_float_to_int(a)
+    b = coerce_float_to_int(b)
+    return _python_int_to_int64_luanumber(a.value | b.value)
+
+
+def bitwise_xor(a, b) -> LuaNumber:
+    a = coerce_float_to_int(a)
+    b = coerce_float_to_int(b)
+    return _python_int_to_int64_luanumber(a.value ^ b.value)
+
+
+def bitwise_and(a, b) -> LuaNumber:
+    a = coerce_float_to_int(a)
+    b = coerce_float_to_int(b)
+    return _python_int_to_int64_luanumber(a.value & b.value)
+
+
+def bitwise_shift_left(a, b) -> LuaNumber:
+    a = coerce_float_to_int(a)
+    b = coerce_float_to_int(b)
+    # Both right and left shifts fill the vacant bits with zeros.
+    # Negative displacements shift to the other direction;
+    if b.value < 0:
+        return bitwise_shift_right(a, arith_unary_minus(b))
+    # displacements with absolute values equal to or higher than the number of
+    # bits in an integer result in zero (as all bits are shifted out).
+    if b.value >= 64:
+        return LuaNumber(0, LuaNumberType.INTEGER)
+    return _python_int_to_int64_luanumber(a.value << b.value)
+
+
+def bitwise_shift_right(a, b) -> LuaNumber:
+    a = coerce_float_to_int(a)
+    b = coerce_float_to_int(b)
+    if b.value < 0:
+        return bitwise_shift_left(a, arith_unary_minus(b))
+    if b.value >= 64:
+        return LuaNumber(0, LuaNumberType.INTEGER)
+    return _python_int_to_int64_luanumber(a.value >> b.value)
+
+
+def bitwise_unary_not(a) -> LuaNumber:
+    a = coerce_float_to_int(a)
+    return _python_int_to_int64_luanumber(~a.value)
