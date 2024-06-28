@@ -3,10 +3,13 @@ from . import lua_parser, LuaInterpreter
 
 def main():
     text = """
-        x = 0x1F
-        y = 69
-        z = x + y
-        """
+x = 0x1F
+y = 69
+if x > 10 then
+    y = 420
+end
+return y
+"""
 
     print("\n".join([f"> {line}" for line in text[1:].splitlines()]))
     print()
@@ -15,7 +18,8 @@ def main():
     # print(f"Parse tree:\n{parsed_lua.pretty()}")
 
     lua_interpreter = LuaInterpreter()
-    print(f"Ultimate return value: {lua_interpreter.visit(parsed_lua)}")
+    ret_val = lua_interpreter.visit(parsed_lua)
+    print("[" + ", ".join(str(x) for x in ret_val) + "]")
 
 
 if __name__ == "__main__":

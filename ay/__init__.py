@@ -3,7 +3,8 @@ from pathlib import Path
 
 import lark
 
-from .values import LuaNil, LuaInt64, LuaDouble
+from .operations import rel_lt, rel_le, rel_gt, rel_ge, rel_eq, rel_ne
+from .values import LuaNil, LuaNumber, LuaBool, LuaNumberType, LuaValue
 
 with open(Path(__file__).parent / "lua.lark", "r", encoding="utf-8") as f:
     lua_grammar = f.read()
@@ -36,6 +37,26 @@ class BlockInterpreter(lark.visitors.Interpreter):
             else:
                 self.env.glob[var_name] = exp_val
 
+    def stat_if(self, tree):
+        condition = tree.children[0]
+        true_block = tree.children[1]
+        else_ifs = tree.children[2:-1]
+        else_block = tree.children[-1]
+
+        if self.visit(condition):
+            return self.visit(true_block)
+        for else_if in else_ifs:
+            condition = else_if.children[1]
+            block = else_if.children[2]
+            if self.visit(condition):
+                return self.visit(block)
+        if else_block:
+            return self.visit(else_block)
+
+    def retstat(self, tree):
+        exp_list = tree.children[1]
+        return self.visit(exp_list)
+
     def name(self, tree):
         return str(tree.children[0])
 
@@ -50,13 +71,14 @@ class BlockInterpreter(lark.visitors.Interpreter):
                 exp_sign = "+"
             if not exp_part:
                 exp_part = "0"
-            return LuaDouble(
-                float(f"{whole_part}.{frac_part}e{exp_sign}{exp_part}")
+            return LuaNumber(
+                float(f"{whole_part}.{frac_part}e{exp_sign}{exp_part}"),
+                LuaNumberType.FLOAT
             )
         whole_val = int(whole_part)
         if whole_val > MAX_INT64:
-            return LuaDouble(float(whole_part))
-        return LuaInt64(whole_val)
+            return LuaNumber(float(whole_part), LuaNumberType.FLOAT)
+        return LuaNumber(whole_val, LuaNumberType.INTEGER)
 
     def numeral_hex(self, tree):
         whole_part: str = tree.children[0]
@@ -72,15 +94,15 @@ class BlockInterpreter(lark.visitors.Interpreter):
             whole_val = int(whole_part + frac_part, 16)
             frac_val = whole_val / 16**len(frac_part)
             exp_val = 2**int(exp_part)
-            return LuaDouble(frac_val * exp_val)
+            return LuaNumber(frac_val * exp_val, LuaNumberType.FLOAT)
         # if the value overflows, it wraps around to fit into a valid integer.
         whole_val = int(whole_part, 16)
         if whole_val < MAX_INT64:
-            return LuaInt64(whole_val)
+            return LuaNumber(whole_val, LuaNumberType.INTEGER)
         whole_val, sign = divmod(whole_val, MAX_INT64)
         if sign & 1:
-            return LuaInt64(-whole_val)
-        return LuaInt64(whole_val)
+            return LuaNumber(-whole_val, LuaNumberType.INTEGER)
+        return LuaNumber(whole_val, LuaNumberType.INTEGER)
 
     def prefixexp(self, tree):
         return self.visit(tree.children[0])
@@ -120,6 +142,27 @@ class BlockInterpreter(lark.visitors.Interpreter):
         else:
             raise ValueError(f"Unknown product operator: {op}")
 
+    def exp_cmp(self, tree) -> LuaBool:
+        left: LuaValue = self.visit(tree.children[0])
+        op = tree.children[1].children[0]
+        right: LuaValue = self.visit(tree.children[2])
+        match op:
+            case "<":
+                return rel_lt(left, right)
+            case "<=":
+                return rel_le(left, right)
+            case ">":
+                return rel_gt(left, right)
+            case ">=":
+                return rel_ge(left, right)
+            case "==":
+                return rel_eq(left, right)
+            case "~=":
+                return rel_ne(left, right)
+            case _:
+                raise ValueError(f"Unknown comparison operator: {op}")
+
+
 
 class LuaInterpreter(lark.visitors.Interpreter):
     def __init__(self) -> None:
@@ -134,9 +177,6 @@ class LuaInterpreter(lark.visitors.Interpreter):
         block_interpreter = BlockInterpreter(Env({}, {}))
         for statement in tree.children[:-1]:
             block_interpreter.visit(statement)
-        try:
-            if return_stat is not None:
-                return block_interpreter.visit(return_stat)
-            return None
-        finally:
-            print(f"Block env: {block_interpreter.env}")
+        if return_stat is not None:
+            return block_interpreter.visit(return_stat)
+        return None

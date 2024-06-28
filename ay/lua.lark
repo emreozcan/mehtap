@@ -50,7 +50,7 @@ explist: exp ("," exp)*
     | tableconstructor
          | exp "or" exp -> exp_or
          | exp "and" exp -> exp_and
-         | exp cmp_op exp -> exp_lt
+         | exp cmp_op exp -> exp_cmp
          | exp "|" exp -> exp_pipe
          | exp "~" exp -> exp_tilde
          | exp "&" exp -> exp_ampersand
