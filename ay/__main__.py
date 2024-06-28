@@ -5,7 +5,7 @@ def main():
     text = """
 x = 0x1F
 y = 69
-if x > 10 then
+if x + y == 100 then
     y = 420
 end
 return y

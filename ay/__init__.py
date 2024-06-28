@@ -44,7 +44,7 @@ class BlockInterpreter(lark.visitors.Interpreter):
         else_ifs = tree.children[2:-1]
         else_block = tree.children[-1]
 
-        if self.visit(condition):
+        if self.visit(condition).true:
             return self.visit(true_block)
         for else_if in else_ifs:
             condition = else_if.children[1]
