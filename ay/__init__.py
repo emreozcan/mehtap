@@ -177,7 +177,7 @@ class LuaInterpreter(lark.visitors.Interpreter):
 
     def chunk(self, tree):
         block = tree.children[0]
-        self.visit(block)
+        return self.visit(block)
 
     def block(self, tree):
         try:
