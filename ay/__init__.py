@@ -443,6 +443,29 @@ class BlockInterpreter(lark.visitors.Interpreter):
     def exp_false(self, tree):
         return LuaBool(False)
 
+    def tableconstructor(self, tree) -> LuaTable:
+        table = LuaTable()
+        field_list = tree.children[0].children
+        counter = 1
+        field_iter = iter(field_list)
+        for field in field_iter:
+            if field.data == "field_with_key":
+                key = self.visit(field.children[0])
+                value = self.visit(field.children[1])
+                table.put(key, value)
+            elif field.data == "field_counter_key":
+                key = LuaNumber(counter, LuaNumberType.INTEGER)
+                counter += 1
+                value = self.visit(field.children[0])
+                table.put(key, value)
+            else:
+                RuntimeError(f"unknown field type {field.data}")
+            try:
+                next(field_iter)
+            except StopIteration:
+                break
+        return table
+
 
 class LuaInterpreter(lark.visitors.Interpreter):
     def __init__(self) -> None:
