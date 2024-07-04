@@ -26,7 +26,7 @@ lua_parser = lark.Lark(
 
 
 class Env(NamedTuple):
-    glob: dict[LuaString, LuaValue]
+    glob: LuaTable
     loc: dict[LuaString, LuaValue]
 
 
@@ -62,11 +62,18 @@ class BlockInterpreter(lark.visitors.Interpreter):
         exp_list = tree.children[1].children
         exp_vals = [self.visit(exp) for exp in exp_list]
         for var, exp_val in zip(var_list, exp_vals):
-            var_name = str_to_lua_string(var.children[0].children[0])
-            if var_name in self.env.loc:
-                self.env.loc[var_name] = exp_val
+            if var.data == "var_name":
+                var_name = str_to_lua_string(var.children[0].children[0])
+                if var_name in self.env.loc:
+                    self.env.loc[var_name] = exp_val
+                else:
+                    self.env.glob.put(var_name, exp_val)
+            elif var.data == "var_index":
+                prefixexp = self.visit(var.children[0])
+                index = self.visit(var.children[1])
+                prefixexp.put(index, exp_val)
             else:
-                self.env.glob[var_name] = exp_val
+                raise ValueError(f"unknown var type {var.data}")
 
     def stat_while(self, tree) -> FlowControl:
         condition = tree.children[1]
@@ -319,8 +326,8 @@ class BlockInterpreter(lark.visitors.Interpreter):
         name: LuaString = self.visit(tree.children[0])
         if name in self.env.loc:
             return self.env.loc[name]
-        elif name in self.env.glob:
-            return self.env.glob[name]
+        elif self.env.glob.has(name):
+            return self.env.glob.get(name)
         else:
             return LuaNil()
 
@@ -506,7 +513,7 @@ class LuaInterpreter(lark.visitors.Interpreter):
 
     def block(self, tree):
         return_stat = tree.children[-1]
-        block_interpreter = BlockInterpreter(Env({}, {}))
+        block_interpreter = BlockInterpreter(Env(LuaTable(), {}))
         for statement in tree.children[:-1]:
             block_interpreter.visit(statement)
         if return_stat is not None:

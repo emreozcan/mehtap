@@ -4,7 +4,9 @@ from . import lua_parser, LuaInterpreter
 def main():
     text = """
 b = {9, "3", 7, a = 1}
-return b[2] .. b["a"]
+b[2] = 1000
+b.a = -1000
+return b[2] + b["a"]
 """
 
     print("\n".join([f"> {line}" for line in text[1:].splitlines()]))
