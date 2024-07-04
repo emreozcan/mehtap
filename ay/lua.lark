@@ -34,7 +34,7 @@ funcname: name ("." name)* [":" name]
 varlist: var ("," var)*
 var: name -> var_name
    | prefixexp "[" exp "]" -> var_index
-   | prefixexp "." name -> var_field
+   | prefixexp "." name -> var_index
 
 namelist: name ("," name)*
 

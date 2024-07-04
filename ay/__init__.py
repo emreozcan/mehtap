@@ -324,12 +324,17 @@ class BlockInterpreter(lark.visitors.Interpreter):
         else:
             return LuaNil()
 
+    def var_index(self, tree) -> LuaValue:
+        prefixexp: LuaTable = self.visit(tree.children[0])
+        index: LuaValue = self.visit(tree.children[2])
+        return prefixexp.get(index)
+
     def name(self, tree) -> LuaString:
         return str_to_lua_string(tree.children[0])
 
     def var_index(self, tree) -> LuaValue:
         prefixexp: LuaTable = self.visit(tree.children[0])
-        index: LuaValue = self.visit(tree.children[2])
+        index: LuaValue = self.visit(tree.children[1])
         return prefixexp.get(index)
 
     def var_field(self, tree) -> LuaValue:
