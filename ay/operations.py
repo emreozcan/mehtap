@@ -1,5 +1,5 @@
 from .values import LuaBool, LuaValue, LuaString, LuaNumber, MAX_INT64, \
-    LuaNumberType, MIN_INT64, SIGN_BIT, ALL_SET, LuaNil
+    LuaNumberType, MIN_INT64, SIGN_BIT, ALL_SET, LuaNil, LuaTable
 
 
 def rel_eq(a: LuaValue, b: LuaValue) -> LuaBool:
@@ -306,3 +306,26 @@ def concat(a: LuaValue, b: LuaValue) -> LuaString:
         return LuaString(a.content + b.content)
     # Otherwise, the __concat metamethod is called (see §2.4).
     raise NotImplementedError()  # TODO.
+
+
+def length(a: LuaValue) -> LuaNumber:
+    # The length of a string is its number of bytes.
+    if isinstance(a, LuaString):
+        return LuaNumber(len(a.content), LuaNumberType.INTEGER)
+
+    # A program can modify the behavior of the length operator for any value but
+    # strings through the __len metamethod (see §2.4).
+    # TODO.
+
+    if isinstance(a, LuaTable):
+        if not a.map:
+            return LuaNumber(0, LuaNumberType.INTEGER)
+        border = 0
+        while a.has(LuaNumber(border + 1, LuaNumberType.INTEGER)):
+            border += 1
+            if border == MAX_INT64:
+                break
+        return LuaNumber(border, LuaNumberType.INTEGER)
+
+    raise NotImplementedError()  # TODO.
+

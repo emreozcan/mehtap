@@ -10,7 +10,7 @@ from .operations import rel_lt, rel_le, rel_gt, rel_ge, rel_eq, rel_ne, \
     arith_mod, arith_add, arith_sub, arith_exp, arith_unary_minus, bitwise_or, \
     bitwise_and, bitwise_xor, bitwise_unary_not, bitwise_shift_right, \
     bitwise_shift_left, is_false_or_nil, logical_unary_not, coerce_to_bool, \
-    coerce_int_to_float, overflow_arith_add, str_to_lua_string, concat
+    coerce_int_to_float, overflow_arith_add, str_to_lua_string, concat, length
 from .values import LuaNil, LuaNumber, LuaBool, LuaNumberType, LuaValue, \
     MAX_INT64, LuaString, LuaTable
 
@@ -376,13 +376,13 @@ class BlockInterpreter(lark.visitors.Interpreter):
         right = self.visit(tree.children[1])
         return arith_exp(left, right)
 
-    def exp_unary(self, tree):
+    def exp_unop(self, tree):
         op = tree.children[0].children[0]
         right = self.visit(tree.children[1])
         if op == "-":
             return arith_unary_minus(right)
         elif op == "#":
-            raise NotImplementedError()
+            return length(right)
         elif op == "~":
             return bitwise_unary_not(right)
         elif op == "not":

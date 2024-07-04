@@ -3,10 +3,10 @@ from . import lua_parser, LuaInterpreter
 
 def main():
     text = """
-a = "gurbet"
-b = "icimde"
-x = a .. b
-return x
+a = "biudbay"
+b = {9, 8, 7}
+x, y =  #a, #b
+return x * y
 """
 
     print("\n".join([f"> {line}" for line in text[1:].splitlines()]))
