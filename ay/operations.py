@@ -292,3 +292,17 @@ def is_false_or_nil(a: LuaValue) -> bool:
 def str_to_lua_string(s: str) -> LuaString:
     return LuaString(s.encode("ascii"))
 
+
+def concat(a: LuaValue, b: LuaValue) -> LuaString:
+    # If both operands are strings or numbers,
+    types = (LuaString, LuaNumber)
+    if isinstance(a, types) and isinstance(b, types):
+        # then the numbers are converted to strings in a non-specified format
+        # (see §3.4.3).
+        if isinstance(a, LuaNumber):
+            a = str_to_lua_string(str(a))
+        if isinstance(b, LuaNumber):
+            b = str_to_lua_string(str(b))
+        return LuaString(a.content + b.content)
+    # Otherwise, the __concat metamethod is called (see §2.4).
+    raise NotImplementedError()  # TODO.

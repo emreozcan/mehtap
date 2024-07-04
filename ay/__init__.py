@@ -10,7 +10,7 @@ from .operations import rel_lt, rel_le, rel_gt, rel_ge, rel_eq, rel_ne, \
     arith_mod, arith_add, arith_sub, arith_exp, arith_unary_minus, bitwise_or, \
     bitwise_and, bitwise_xor, bitwise_unary_not, bitwise_shift_right, \
     bitwise_shift_left, is_false_or_nil, logical_unary_not, coerce_to_bool, \
-    coerce_int_to_float, overflow_arith_add, str_to_lua_string
+    coerce_int_to_float, overflow_arith_add, str_to_lua_string, concat
 from .values import LuaNil, LuaNumber, LuaBool, LuaNumberType, LuaValue, \
     MAX_INT64, LuaString, LuaTable
 
@@ -336,6 +336,12 @@ class BlockInterpreter(lark.visitors.Interpreter):
         prefixexp: LuaTable = self.visit(tree.children[0])
         field: LuaString = self.visit(tree.children[2])
         return prefixexp.get(field)
+
+    def exp_concat(self, tree):
+        return concat(
+            self.visit(tree.children[0]),
+            self.visit(tree.children[1])
+        )
 
     def exp_sum(self, tree):
         left = self.visit(tree.children[0])
