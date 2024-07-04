@@ -76,6 +76,19 @@ class BlockInterpreter(lark.visitors.Interpreter):
                 return result
         return FlowControl()
 
+    def stat_repeat(self, tree) -> FlowControl:
+        block = tree.children[1]
+        condition = tree.children[3]
+        while True:
+            result: FlowControl = self.visit(block)
+            if result.break_flag:
+                break
+            if result.return_flag:
+                return result
+            if coerce_to_bool(self.visit(condition)).true:
+                break
+        return FlowControl()
+
     def stat_if(self, tree) -> FlowControl:
         condition = tree.children[0]
         true_block = tree.children[1]

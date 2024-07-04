@@ -8,7 +8,11 @@ while true do
     if x > 10 then break end
     x, y = x + 1, y + x
 end
-return y
+x = 0
+repeat
+    x, y = x + 1, y - 1
+until y == 0
+return x
 """
 
     print("\n".join([f"> {line}" for line in text[1:].splitlines()]))
