@@ -3,10 +3,14 @@ from . import lua_parser, LuaInterpreter
 
 def main():
     text = """
-y = 0
-for x = 1, 10, 2 do
-    y = y + x
-end
+y = {
+    ["a"] = "z",
+    ["b"] = "x",
+    c = "y",
+    9,
+    8,
+    7,
+}
 return y
 """
 

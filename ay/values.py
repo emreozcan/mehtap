@@ -2,10 +2,14 @@ from enum import Enum
 
 
 class LuaValue:
-    __slots__ = []
+    __slots__ = ["metatable"]
 
     def __init__(self) -> None:
-        pass
+        self.metatable = None
+
+    def __eq__(self, other) -> bool:
+        from .operations import rel_eq
+        return rel_eq(self, other).true
 
 
 class LuaNil(LuaValue):
@@ -20,6 +24,9 @@ class LuaNil(LuaValue):
     def __repr__(self) -> str:
         return "LuaNil()"
 
+    def __hash__(self):
+        return hash(None)
+
 
 class LuaBool(LuaValue):
     __slots__ = ["true"]
@@ -33,6 +40,9 @@ class LuaBool(LuaValue):
 
     def __repr__(self):
         return f"LuaBool({self.true})"
+
+    def __hash__(self):
+        return hash(self.true)
 
 
 class LuaNumberType(Enum):
@@ -72,21 +82,27 @@ class LuaNumber(LuaValue):
         return str(self.value)
 
     def __repr__(self) -> str:
-        return f"LuaNumber({self.value}, {self.type})"
+        return f"LuaNumber({self.value})"
+
+    def __hash__(self):
+        return hash(self.value)
 
 
 class LuaString(LuaValue):
     __slots__ = ["content"]
 
-    def __init__(self, value):
+    def __init__(self, value: bytes):
         super().__init__()
         self.content = value
 
     def __str__(self) -> str:
-        return self.content
+        return repr(self.content)
 
     def __repr__(self):
-        return f"<LuaString {hex(id(self))} {hex(id(self.content))}>"
+        return f"LuaString({self.content!r})"
+
+    def __hash__(self):
+        return hash(self.content)
 
 
 class LuaObject(LuaValue):
@@ -100,6 +116,9 @@ class LuaObject(LuaValue):
 
     def __repr__(self):
         return f"<{self.__class__.__name__} {hex(id(self))}>"
+
+    def __hash__(self):
+        return hash(id(self))
 
 
 class LuaFunction(LuaObject):
@@ -124,14 +143,41 @@ class LuaThread(LuaObject):
 
 
 class LuaTable(LuaObject):
-    __slots__ = ["map"]
+    __slots__ = ["map", "metatable"]
 
     def __init__(self):
         super().__init__()
         self.map: dict[LuaValue, LuaValue] = {}
 
     def __str__(self):
-        return str(self.map)
+        return (
+            "{"
+            + ", ".join(f"{k!s}: {v!s}" for k, v in self.map.items())
+            + "}"
+        )
 
     def __repr__(self):
         return f"LuaTable({self.map})"
+
+    def put(self, key: LuaValue, value: LuaValue):
+        if isinstance(key, LuaNil):
+            raise NotImplementedError()
+        if isinstance(key, LuaNumber):
+            if key.type == LuaNumberType.FLOAT:
+                if key.value == float("nan"):
+                    raise NotImplementedError()
+                if key.value.is_integer():
+                    key = LuaNumber(int(key.value), LuaNumberType.INTEGER)
+
+        if isinstance(value, LuaNil):
+            del self.map[key]
+        else:
+            self.map[key] = value
+
+    def get(self, key: LuaValue) -> LuaValue:
+        if key in self.map:
+            return self.map[key]
+        return LuaNil()
+
+    def has(self, key: LuaValue) -> bool:
+        return key in self.map

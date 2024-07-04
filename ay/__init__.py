@@ -1,3 +1,5 @@
+import io
+import string
 from pathlib import Path
 from typing import NamedTuple
 
@@ -8,9 +10,9 @@ from .operations import rel_lt, rel_le, rel_gt, rel_ge, rel_eq, rel_ne, \
     arith_mod, arith_add, arith_sub, arith_exp, arith_unary_minus, bitwise_or, \
     bitwise_and, bitwise_xor, bitwise_unary_not, bitwise_shift_right, \
     bitwise_shift_left, is_false_or_nil, logical_unary_not, coerce_to_bool, \
-    coerce_int_to_float, overflow_arith_add
+    coerce_int_to_float, overflow_arith_add, str_to_lua_string
 from .values import LuaNil, LuaNumber, LuaBool, LuaNumberType, LuaValue, \
-    MAX_INT64
+    MAX_INT64, LuaString, LuaTable
 
 with open(Path(__file__).parent / "lua.lark", "r", encoding="utf-8") as f:
     lua_grammar = f.read()
@@ -35,9 +37,9 @@ class FlowControl(NamedTuple):
 
 
 class BlockInterpreter(lark.visitors.Interpreter):
-    def __init__(self, env) -> None:
+    def __init__(self, env: Env) -> None:
         super().__init__()
-        self.env = env
+        self.env: Env = env
 
     def block(self, tree) -> FlowControl:
         return_stat = tree.children[-1]
@@ -202,6 +204,90 @@ class BlockInterpreter(lark.visitors.Interpreter):
         if whole_val > MAX_INT64:
             return LuaNumber(float(whole_part), LuaNumberType.FLOAT)
         return LuaNumber(whole_val, LuaNumberType.INTEGER)
+
+    def literalstring(self, tree) -> LuaString:
+        literal = tree.children[0]
+        bytes_io = io.BytesIO()
+        currently_skipping_whitespace = False
+        currently_reading_decimal = False
+        currently_read_decimal: str = ""
+        str_iter = iter(literal[1:-1])
+        for character in str_iter:
+            if currently_skipping_whitespace:
+                if character in string.whitespace:
+                    continue
+                currently_skipping_whitespace = False
+            if currently_reading_decimal:
+                if (
+                        character in string.digits
+                        and len(currently_read_decimal) < 3
+                ):
+                    currently_read_decimal += character
+                    continue
+                bytes_io.write(bytes([int(currently_read_decimal)]))
+                currently_reading_decimal = False
+                currently_read_decimal = ""
+            if character == "\\":
+                try:
+                    escape_char = next(str_iter)
+                except StopIteration:
+                    bytes_io.write(b"\\")
+                    break
+                if escape_char == "a":
+                    bytes_io.write(b"\a")
+                elif escape_char == "b":
+                    bytes_io.write(b"\b")
+                elif escape_char == "f":
+                    bytes_io.write(b"\f")
+                elif escape_char == "n":
+                    bytes_io.write(b"\n")
+                elif escape_char == "r":
+                    bytes_io.write(b"\r")
+                elif escape_char == "t":
+                    bytes_io.write(b"\t")
+                elif escape_char == "v":
+                    bytes_io.write(b"\v")
+                elif escape_char == "\\":
+                    bytes_io.write(b"\\")
+                elif escape_char == "\"":
+                    bytes_io.write(b"\"")
+                elif escape_char == "'":
+                    bytes_io.write(b"'")
+                elif escape_char == "\n":
+                    bytes_io.write(b"\n")
+                elif escape_char == "z":
+                    currently_skipping_whitespace = True
+                    continue
+                elif escape_char == "x":
+                    try:
+                        hex_digit_1 = next(str_iter)
+                        hex_digit_2 = next(str_iter)
+                    except StopIteration:
+                        raise NotImplementedError()
+                    bytes_io.write(bytes.fromhex(hex_digit_1 + hex_digit_2))
+                elif escape_char in string.digits:
+                    currently_reading_decimal = True
+                    currently_read_decimal = escape_char
+                    continue
+                elif escape_char == "u":
+                    left_brace = next(str_iter)
+                    if left_brace != "{":
+                        raise NotImplementedError()
+                    hex_digits = []
+                    while True:
+                        hex_digit = next(str_iter)
+                        if hex_digit == "}":
+                            break
+                        hex_digits.append(hex_digit)
+                    hex_str = "".join(hex_digit)
+                    bytes_io.write(chr(int(hex_str, 16)).encode("utf-8"))
+                else:
+                    raise NotImplementedError()
+                continue
+            bytes_io.write(character.encode("utf-8"))
+        bytes_io.seek(0)
+        return LuaString(bytes_io.read())
+
 
     def numeral_hex(self, tree):
         whole_part: str = tree.children[0]

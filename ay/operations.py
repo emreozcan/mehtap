@@ -287,3 +287,8 @@ def is_false_or_nil(a: LuaValue) -> bool:
     if isinstance(a, LuaBool):
         return not a.true
     return False
+
+
+def str_to_lua_string(s: str) -> LuaString:
+    return LuaString(s.encode("ascii"))
+

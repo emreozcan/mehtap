@@ -73,7 +73,9 @@ parlist: namelist ["," "..."] | "..."
 
 tableconstructor: "{" [fieldlist] "}"
 fieldlist: field (fieldsep field)* [fieldsep]
-field: "[" exp "]" "=" exp | name "=" exp | exp
+field: "[" exp "]" "=" exp -> field_with_key
+     | name "=" exp -> field_with_key
+     | exp -> field_counter_key
 fieldsep: "," | ";"
 
 !cmp_op: "<" | "<=" | ">" | ">=" | "==" | "~="
