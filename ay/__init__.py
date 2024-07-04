@@ -228,6 +228,15 @@ class BlockInterpreter(lark.visitors.Interpreter):
             return left
         return self.visit(tree.children[1])
 
+    def exp_nil(self, tree):
+        return LuaNil()
+
+    def exp_true(self, tree):
+        return LuaBool(True)
+
+    def exp_false(self, tree):
+        return LuaBool(False)
+
 
 class LuaInterpreter(lark.visitors.Interpreter):
     def __init__(self) -> None:
