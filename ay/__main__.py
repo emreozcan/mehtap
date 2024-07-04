@@ -3,10 +3,18 @@ from . import lua_parser, LuaInterpreter
 
 def main():
     text = """
-b = {9, "3", 7, a = 1}
-b[2] = 1000
-b.a = -1000
-return b[2] + b["a"]
+     x = 10                -- global variable
+     do                    -- new block
+       local x = x         -- new 'x', with value 10
+       print(x)            --> 10
+       x = x+1
+       do                  -- another block
+         local x = x+1     -- another 'x'
+         print(x)          --> 12
+       end
+       print(x)            --> 11
+     end
+     print(x)              --> 10  (the global one)
 """
 
     print("\n".join([f"> {line}" for line in text[1:].splitlines()]))
@@ -17,7 +25,8 @@ return b[2] + b["a"]
 
     lua_interpreter = LuaInterpreter()
     ret_val = lua_interpreter.visit(parsed_lua)
-    print("[" + ", ".join(str(x) for x in ret_val) + "]")
+    if ret_val:
+        print("[" + ", ".join(str(x) for x in ret_val) + "]")
 
 
 if __name__ == "__main__":

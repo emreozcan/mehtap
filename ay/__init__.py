@@ -1,7 +1,8 @@
+import dataclasses
 import io
 import string
 from pathlib import Path
-from typing import NamedTuple
+from typing import NamedTuple, Self
 
 import lark
 
@@ -25,9 +26,43 @@ lua_parser = lark.Lark(
 )
 
 
-class Env(NamedTuple):
-    glob: LuaTable
-    loc: dict[LuaString, LuaValue]
+class Variable(NamedTuple):
+    value: LuaValue
+    constant: bool = False
+    to_be_closed: bool = False
+
+
+@dataclasses.dataclass(slots=True)
+class Scope:
+    parent: Self | None
+    locals: dict[LuaString, Variable]
+
+    def has(self, key: LuaString) -> bool:
+        if key in self.locals:
+            return True
+        if self.parent is not None:
+            return self.parent.has(key)
+        return False
+
+    def get(self, key: LuaString) -> LuaValue:
+        if key in self.locals:
+            return self.locals[key].value
+        if self.parent is not None:
+            return self.parent.get(key)
+        return LuaNil()
+
+    def put_local(self, key: LuaString, variable: Variable):
+        if key in self.locals and self.locals[key].constant:
+            raise NotImplementedError()
+        self.locals[key] = variable
+
+    def put_nonlocal(self, key: LuaString, value: Variable):
+        if key in self.locals:
+            self.put_local(key, value)
+            return
+        if self.parent is None:
+            raise NotImplementedError()  # TODO.
+        self.parent.put_nonlocal(key, value)
 
 
 class FlowControl(NamedTuple):
@@ -37,25 +72,40 @@ class FlowControl(NamedTuple):
 
 
 class BlockInterpreter(lark.visitors.Interpreter):
-    def __init__(self, env: Env) -> None:
+    def __init__(self, globals_: LuaTable = None, scope: Scope = None) -> None:
         super().__init__()
-        self.env: Env = env
+        if globals_ is None:
+            globals_ = LuaTable()
+        self.globals = globals_
+        if scope is None:
+            scope = Scope(None, {})
+        self.scope = scope
+
+    def get_stacked_interpreter(self):
+        return BlockInterpreter(self.globals, Scope(self.scope, {}))
 
     def block(self, tree) -> FlowControl:
         return_stat = tree.children[-1]
-        block_interpreter = BlockInterpreter(self.env)
         for statement in tree.children[:-1]:
             if statement.data == "stat_break":
                 return FlowControl(break_flag=True)
-            result = block_interpreter.visit(statement)
-            if isinstance(result, FlowControl):
+            result = self.visit(statement)
+            if isinstance(result, FlowControl) and result.return_flag:
                 return result
         if return_stat is not None:
             return FlowControl(
                 return_flag=True,
-                return_value=block_interpreter.visit(return_stat)
+                return_value=self.visit(return_stat)
             )
         return FlowControl()
+
+    def functioncall_regular(self, tree):
+        function = self.visit(tree.children[0])
+        args = self.visit(tree.children[1].children[0])
+        print(function, args)
+        if rel_eq(args[0], LuaString(b"i")).true:
+            pass
+        return LuaNil()  # TODO.
 
     def stat_assignment(self, tree):
         var_list = tree.children[0].children
@@ -64,10 +114,10 @@ class BlockInterpreter(lark.visitors.Interpreter):
         for var, exp_val in zip(var_list, exp_vals):
             if var.data == "var_name":
                 var_name = str_to_lua_string(var.children[0].children[0])
-                if var_name in self.env.loc:
-                    self.env.loc[var_name] = exp_val
+                if self.scope.has(var_name):
+                    self.scope.put_nonlocal(var_name, Variable(exp_val))
                 else:
-                    self.env.glob.put(var_name, exp_val)
+                    self.globals.put(var_name, exp_val)
             elif var.data == "var_index":
                 prefixexp = self.visit(var.children[0])
                 index = self.visit(var.children[1])
@@ -75,11 +125,45 @@ class BlockInterpreter(lark.visitors.Interpreter):
             else:
                 raise ValueError(f"unknown var type {var.data}")
 
+    def stat_localassignment(self, tree):
+        attname_list = tree.children[1]
+        exp_list = tree.children[2]
+        if exp_list:
+            exp_vals = [self.visit(exp) for exp in exp_list.children]
+        else:
+            exp_vals = [LuaNil()] * len(attname_list.children)
+        used_closed = False
+        for attname, exp_val in zip(attname_list.children, exp_vals):
+            var_name = self.visit(attname.children[0])
+            attrib_rule = attname.children[1].children[0]
+            if not attrib_rule:
+                self.scope.put_local(var_name, Variable(exp_val))
+            else:
+                attrib: LuaString = self.visit(attrib_rule)
+                if attrib.content == b"close":
+                    if used_closed:
+                        raise NotImplementedError()
+                    used_closed = True
+                    self.scope.put_local(
+                        var_name,
+                        Variable(exp_val, to_be_closed=True)
+                    )
+                elif attrib.content == b"const":
+                    self.scope.put_local(
+                        var_name,
+                        Variable(exp_val, constant=True)
+                    )
+                else:
+                    # TODO: Create an error
+                    raise NotImplementedError()
+
+
     def stat_while(self, tree) -> FlowControl:
         condition = tree.children[1]
         block = tree.children[3]
+        block_interpreter = self.get_stacked_interpreter()
         while coerce_to_bool(self.visit(condition)).true:
-            result: FlowControl = self.visit(block)
+            result: FlowControl = block_interpreter.visit(block)
             if result.break_flag:
                 break
             if result.return_flag:
@@ -89,13 +173,14 @@ class BlockInterpreter(lark.visitors.Interpreter):
     def stat_repeat(self, tree) -> FlowControl:
         block = tree.children[1]
         condition = tree.children[3]
+        block_interpreter = self.get_stacked_interpreter()
         while True:
-            result: FlowControl = self.visit(block)
+            result: FlowControl = block_interpreter.visit(block)
             if result.break_flag:
                 break
             if result.return_flag:
                 return result
-            if coerce_to_bool(self.visit(condition)).true:
+            if coerce_to_bool(block_interpreter.visit(condition)).true:
                 break
         return FlowControl()
 
@@ -106,17 +191,17 @@ class BlockInterpreter(lark.visitors.Interpreter):
         else_block = tree.children[-1]
 
         if coerce_to_bool(self.visit(condition)).true:
-            return self.visit(true_block)
+            return self.get_stacked_interpreter().visit(true_block)
         for else_if in else_ifs:
             condition = else_if.children[1]
             block = else_if.children[2]
             if self.visit(condition):
-                return self.visit(block)
+                return self.get_stacked_interpreter().visit(block)
         if else_block:
-            return self.visit(else_block)
+            return self.get_stacked_interpreter().visit(else_block)
 
     def stat_do(self, tree) -> FlowControl:
-        return self.visit(tree.children[1])
+        return self.get_stacked_interpreter().visit(tree.children[1])
 
     def stat_for(self, tree) -> FlowControl:
         # This for loop is the "numerical" for loop explained in 3.3.5.
@@ -173,9 +258,13 @@ class BlockInterpreter(lark.visitors.Interpreter):
         # before exiting the loop.
         block = tree.children[6]
         control_val = initial_value
+        block_interpreter = self.get_stacked_interpreter()
         while condition_func(control_val, limit).true:
-            self.env.loc[control_varname] = control_val
-            result: FlowControl = self.visit(block)
+            block_interpreter.scope.put_local(
+                control_varname,
+                Variable(control_val)
+            )
+            result: FlowControl = block_interpreter.visit(block)
             if result.break_flag:
                 break
             if result.return_flag:
@@ -324,12 +413,10 @@ class BlockInterpreter(lark.visitors.Interpreter):
 
     def var_name(self, tree) -> LuaValue:
         name: LuaString = self.visit(tree.children[0])
-        if name in self.env.loc:
-            return self.env.loc[name]
-        elif self.env.glob.has(name):
-            return self.env.glob.get(name)
-        else:
-            return LuaNil()
+        local = self.scope.get(name)
+        if isinstance(local, LuaNil) and self.globals.has(name):
+            return self.globals.get(name)
+        return local
 
     def var_index(self, tree) -> LuaValue:
         prefixexp: LuaTable = self.visit(tree.children[0])
@@ -513,7 +600,7 @@ class LuaInterpreter(lark.visitors.Interpreter):
 
     def block(self, tree):
         return_stat = tree.children[-1]
-        block_interpreter = BlockInterpreter(Env(LuaTable(), {}))
+        block_interpreter = BlockInterpreter()
         for statement in tree.children[:-1]:
             block_interpreter.visit(statement)
         if return_stat is not None:
