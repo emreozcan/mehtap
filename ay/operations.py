@@ -252,12 +252,14 @@ def bitwise_unary_not(a) -> LuaNumber:
     return _python_int_to_int64_luanumber(~a.value)
 
 
-def coerce_to_bool(a) -> LuaBool:
+def coerce_to_bool(a: LuaValue) -> LuaBool:
     # Like the control structures (see §3.3.4),
     # all logical operators consider both false and nil as false
     # and anything else as true.
     if isinstance(a, LuaNil):
         return LuaBool(False)
+    if isinstance(a, LuaBool):
+        return a
     return LuaBool(True)
 
 
