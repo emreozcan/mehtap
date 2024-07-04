@@ -3,7 +3,12 @@ from . import lua_parser, LuaInterpreter
 
 def main():
     text = """
-return 3 << 7
+x, y = 0, 0
+while true do
+    if x > 10 then break end
+    x, y = x + 1, y + x
+end
+return y
 """
 
     print("\n".join([f"> {line}" for line in text[1:].splitlines()]))

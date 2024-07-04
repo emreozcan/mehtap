@@ -1,5 +1,5 @@
-from collections import namedtuple
 from pathlib import Path
+from typing import NamedTuple
 
 import lark
 
@@ -7,7 +7,7 @@ from .operations import rel_lt, rel_le, rel_gt, rel_ge, rel_eq, rel_ne, \
     int_overflow_wrap_around, arith_mul, arith_float_div, arith_floor_div, \
     arith_mod, arith_add, arith_sub, arith_exp, arith_unary_minus, bitwise_or, \
     bitwise_and, bitwise_xor, bitwise_unary_not, bitwise_shift_right, \
-    bitwise_shift_left, is_false_or_nil, logical_unary_not
+    bitwise_shift_left, is_false_or_nil, logical_unary_not, coerce_to_bool
 from .values import LuaNil, LuaNumber, LuaBool, LuaNumberType, LuaValue, \
     MAX_INT64
 
@@ -21,13 +21,38 @@ lua_parser = lark.Lark(
     propagate_positions=True,
 )
 
-Env = namedtuple("Env", ["glob", "loc"])
+
+class Env(NamedTuple):
+    glob: dict[str, LuaValue]
+    loc: dict[str, LuaValue]
+
+
+class FlowControl(NamedTuple):
+    break_flag: bool = False
+    return_flag: bool = False
+    return_value: LuaValue | None = None
 
 
 class BlockInterpreter(lark.visitors.Interpreter):
     def __init__(self, env) -> None:
         super().__init__()
         self.env = env
+
+    def block(self, tree) -> FlowControl:
+        return_stat = tree.children[-1]
+        block_interpreter = BlockInterpreter(self.env)
+        for statement in tree.children[:-1]:
+            if statement.data == "stat_break":
+                return FlowControl(break_flag=True)
+            result = block_interpreter.visit(statement)
+            if isinstance(result, FlowControl):
+                return result
+        if return_stat is not None:
+            return FlowControl(
+                return_flag=True,
+                return_value=block_interpreter.visit(return_stat)
+            )
+        return FlowControl()
 
     def stat_assignment(self, tree):
         var_list = tree.children[0].children
@@ -40,13 +65,24 @@ class BlockInterpreter(lark.visitors.Interpreter):
             else:
                 self.env.glob[var_name] = exp_val
 
-    def stat_if(self, tree):
+    def stat_while(self, tree) -> FlowControl:
+        condition = tree.children[1]
+        block = tree.children[3]
+        while coerce_to_bool(self.visit(condition)).true:
+            result: FlowControl = self.visit(block)
+            if result.break_flag:
+                break
+            if result.return_flag:
+                return result
+        return FlowControl()
+
+    def stat_if(self, tree) -> FlowControl:
         condition = tree.children[0]
         true_block = tree.children[1]
         else_ifs = tree.children[2:-1]
         else_block = tree.children[-1]
 
-        if self.visit(condition).true:
+        if coerce_to_bool(self.visit(condition)).true:
             return self.visit(true_block)
         for else_if in else_ifs:
             condition = else_if.children[1]
@@ -56,7 +92,7 @@ class BlockInterpreter(lark.visitors.Interpreter):
         if else_block:
             return self.visit(else_block)
 
-    def retstat(self, tree):
+    def retstat(self, tree) -> list[LuaValue]:
         exp_list = tree.children[1]
         return self.visit(exp_list)
 
