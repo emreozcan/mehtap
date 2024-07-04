@@ -7,7 +7,8 @@ from .operations import rel_lt, rel_le, rel_gt, rel_ge, rel_eq, rel_ne, \
     int_overflow_wrap_around, arith_mul, arith_float_div, arith_floor_div, \
     arith_mod, arith_add, arith_sub, arith_exp, arith_unary_minus, bitwise_or, \
     bitwise_and, bitwise_xor, bitwise_unary_not, bitwise_shift_right, \
-    bitwise_shift_left, is_false_or_nil, logical_unary_not, coerce_to_bool
+    bitwise_shift_left, is_false_or_nil, logical_unary_not, coerce_to_bool, \
+    coerce_int_to_float, overflow_arith_add
 from .values import LuaNil, LuaNumber, LuaBool, LuaNumberType, LuaValue, \
     MAX_INT64
 
@@ -104,6 +105,76 @@ class BlockInterpreter(lark.visitors.Interpreter):
                 return self.visit(block)
         if else_block:
             return self.visit(else_block)
+
+    def stat_do(self, tree) -> FlowControl:
+        return self.visit(tree.children[1])
+
+    def stat_for(self, tree) -> FlowControl:
+        # This for loop is the "numerical" for loop explained in 3.3.5.
+        # The given identifier (Name) defines the control variable,
+        # which is a new variable local to the loop body (block).
+        control_varname = self.visit(tree.children[1])
+        # The loop starts by evaluating once the three control expressions.
+        control_expr_1 = tree.children[2]
+        control_expr_2 = tree.children[3]
+        control_expr_3 = tree.children[4]
+        # Their values are called respectively
+        # the initial value,
+        initial_value: LuaNumber = self.visit(control_expr_1)
+        # the limit,
+        limit: LuaNumber = self.visit(control_expr_2)
+        # and the step. If the step is absent, it defaults to 1.
+        if control_expr_3:
+            step: LuaNumber = self.visit(control_expr_3)
+        else:
+            step: LuaNumber = LuaNumber(1, LuaNumberType.INTEGER)
+        # If both the initial value and the step are integers,
+        # the loop is done with integers;
+        # note that the limit may not be an integer.
+        integer_loop = (
+                initial_value.type == LuaNumberType.INTEGER and
+                step.type == LuaNumberType.INTEGER
+        )
+        if not integer_loop:
+            # Otherwise, the three values are converted to floats
+            # and the loop is done with floats.
+            initial_value = coerce_int_to_float(initial_value)
+            limit = coerce_int_to_float(limit)
+            step = coerce_int_to_float(step)
+        # After that initialization, the loop body is repeated with the value of
+        # the control variable going through an arithmetic progression,
+        # starting at the initial value,
+        # with a common difference given by the step.
+        # A negative step makes a decreasing sequence;
+        # a step equal to zero raises an error.
+        if step.value == 0:
+            raise NotImplementedError()
+        # The loop continues while the value is less than or equal to the limit
+        # (greater than or equal to for a negative step).
+        # If the initial value is already greater than the limit
+        # (or less than, if the step is negative),
+        # the body is not executed.
+        step_negative = step.value < 0
+        condition_func = rel_ge if step_negative else rel_le
+        # For integer loops, the control variable never wraps around; instead,
+        # the loop ends in case of an overflow.
+        # You should not change the value of the control variable during the
+        # loop.
+        # If you need its value after the loop, assign it to another variable
+        # before exiting the loop.
+        block = tree.children[6]
+        control_val = initial_value
+        while condition_func(control_val, limit).true:
+            self.env.loc[control_varname] = control_val
+            result: FlowControl = self.visit(block)
+            if result.break_flag:
+                break
+            if result.return_flag:
+                return result
+            overflow, control_val = overflow_arith_add(control_val, step)
+            if overflow and integer_loop:
+                break
+        return FlowControl()
 
     def retstat(self, tree) -> list[LuaValue]:
         exp_list = tree.children[1]

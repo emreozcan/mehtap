@@ -3,16 +3,11 @@ from . import lua_parser, LuaInterpreter
 
 def main():
     text = """
-x, y = 0, 0
-while true do
-    if x > 10 then break end
-    x, y = x + 1, y + x
+y = 0
+for x = 1, 10, 2 do
+    y = y + x
 end
-x = 0
-repeat
-    x, y = x + 1, y - 1
-until y == 0
-return x
+return y
 """
 
     print("\n".join([f"> {line}" for line in text[1:].splitlines()]))

@@ -66,7 +66,7 @@ def rel_ge(a: LuaValue, b: LuaValue) -> LuaBool:
 
 
 def int_overflow_wrap_around(value: int) -> LuaNumber:
-    if value < MAX_INT64:
+    if MIN_INT64 < value < MAX_INT64:
         return LuaNumber(value, LuaNumberType.INTEGER)
     whole_val, sign = divmod(value, MAX_INT64)
     if sign & 1:
@@ -114,6 +114,19 @@ def arith_add(a, b):
     # floating-point arithmetic (usually the IEEE 754 standard),
     # and the result is a float.
     return LuaNumber(
+        coerce_int_to_float(a).value + coerce_int_to_float(b).value,
+        LuaNumberType.FLOAT
+    )
+
+
+def overflow_arith_add(a, b) -> tuple[bool, LuaNumber]:
+    if not isinstance(a, LuaNumber) or not isinstance(b, LuaNumber):
+        raise NotImplementedError()  # TODO.
+    if a.type == LuaNumberType.INTEGER and b.type == LuaNumberType.INTEGER:
+        summed = a.value + b.value
+        wrapped = int_overflow_wrap_around(summed)
+        return wrapped.value != summed, wrapped
+    return False, LuaNumber(
         coerce_int_to_float(a).value + coerce_int_to_float(b).value,
         LuaNumberType.FLOAT
     )
