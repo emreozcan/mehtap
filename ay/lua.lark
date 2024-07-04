@@ -22,7 +22,8 @@ stat_if: "if" exp "then" block elseif* [else] "end"
 elseif: "elseif" "then" block
 else: "else" block
 
-attnamelist: name attrib ("," name attrib)*
+attnamelist: attname ("," attname)*
+attname: name attrib
 attrib: ["<" name ">"]
 
 retstat: RETURN [explist] [";"]
@@ -66,7 +67,9 @@ prefixexp: var
 
 functioncall: prefixexp args -> functioncall_regular
             | prefixexp ":" name args -> functioncall_method
-args: "(" [explist] ")" | tableconstructor | literalstring
+args: "(" [explist] ")"
+    | tableconstructor
+    | literalstring
 
 funcbody: "(" [parlist] ")" block END
 parlist: namelist ["," "..."] | "..."
@@ -119,3 +122,4 @@ WHILE: "while"
 
 %import common.WS
 %ignore WS
+%ignore /--[^\n]*/
