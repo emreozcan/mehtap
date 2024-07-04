@@ -26,8 +26,8 @@ lua_parser = lark.Lark(
 
 
 class Env(NamedTuple):
-    glob: dict[str, LuaValue]
-    loc: dict[str, LuaValue]
+    glob: dict[LuaString, LuaValue]
+    loc: dict[LuaString, LuaValue]
 
 
 class FlowControl(NamedTuple):
@@ -62,7 +62,7 @@ class BlockInterpreter(lark.visitors.Interpreter):
         exp_list = tree.children[1].children
         exp_vals = [self.visit(exp) for exp in exp_list]
         for var, exp_val in zip(var_list, exp_vals):
-            var_name = str(var.children[0].children[0])
+            var_name = str_to_lua_string(var.children[0].children[0])
             if var_name in self.env.loc:
                 self.env.loc[var_name] = exp_val
             else:
@@ -115,7 +115,7 @@ class BlockInterpreter(lark.visitors.Interpreter):
         # This for loop is the "numerical" for loop explained in 3.3.5.
         # The given identifier (Name) defines the control variable,
         # which is a new variable local to the loop body (block).
-        control_varname = self.visit(tree.children[1])
+        control_varname: LuaString = self.visit(tree.children[1])
         # The loop starts by evaluating once the three control expressions.
         control_expr_1 = tree.children[2]
         control_expr_2 = tree.children[3]
@@ -181,9 +181,6 @@ class BlockInterpreter(lark.visitors.Interpreter):
     def retstat(self, tree) -> list[LuaValue]:
         exp_list = tree.children[1]
         return self.visit(exp_list)
-
-    def name(self, tree):
-        return str(tree.children[0])
 
     def numeral_dec(self, tree):
         whole_part: str = tree.children[0]
@@ -307,17 +304,38 @@ class BlockInterpreter(lark.visitors.Interpreter):
         # if the value overflows, it wraps around to fit into a valid integer.
         return int_overflow_wrap_around(int(whole_part, 16))
 
-    def prefixexp(self, tree):
+    # varlist: var ("," var)*
+    # var: name -> var_name
+    #    | prefixexp "[" exp "]" -> var_index
+    #    | prefixexp "." name -> var_field
+
+    def var(self, tree) -> LuaValue:
+        return tree.children[0]
+
+    def prefixexp(self, tree) -> LuaValue:
         return self.visit(tree.children[0])
 
-    def var_name(self, tree):
-        name = self.visit(tree.children[0])
+    def var_name(self, tree) -> LuaValue:
+        name: LuaString = self.visit(tree.children[0])
         if name in self.env.loc:
             return self.env.loc[name]
         elif name in self.env.glob:
             return self.env.glob[name]
         else:
             return LuaNil()
+
+    def name(self, tree) -> LuaString:
+        return str_to_lua_string(tree.children[0])
+
+    def var_index(self, tree) -> LuaValue:
+        prefixexp: LuaTable = self.visit(tree.children[0])
+        index: LuaValue = self.visit(tree.children[2])
+        return prefixexp.get(index)
+
+    def var_field(self, tree) -> LuaValue:
+        prefixexp: LuaTable = self.visit(tree.children[0])
+        field: LuaString = self.visit(tree.children[2])
+        return prefixexp.get(field)
 
     def exp_sum(self, tree):
         left = self.visit(tree.children[0])
