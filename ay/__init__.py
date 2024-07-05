@@ -723,9 +723,11 @@ class BlockInterpreter(lark.visitors.Interpreter):
 
     def tableconstructor(self, tree) -> LuaTable:
         table = LuaTable()
-        field_list = tree.children[0].children
+        field_list = tree.children[0]
+        if not field_list:
+            return table
         counter = 1
-        field_iter = iter(field_list)
+        field_iter = iter(field_list.children)
         for field in field_iter:
             if field.data == "field_with_key":
                 key = self.visit(field.children[0])
