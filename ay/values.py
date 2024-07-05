@@ -165,7 +165,9 @@ class LuaTable(LuaObject):
                     key = LuaNumber(int(key.value), LuaNumberType.INTEGER)
 
         if isinstance(value, LuaNil):
-            del self.map[key]
+            if key in self.map:
+                del self.map[key]
+            return
         else:
             self.map[key] = value
 
