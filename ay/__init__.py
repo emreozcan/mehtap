@@ -469,7 +469,7 @@ class BlockInterpreter(lark.visitors.Interpreter):
         if funcname.method:
             function.param_names.insert(0, LuaString(b"self"))
         if len(funcname.names) == 1:
-            name = funcname[0]
+            name = funcname.names[0]
             if self.scope.has(name):
                 self.scope.put_nonlocal(name, Variable(function))
             else:
