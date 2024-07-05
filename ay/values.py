@@ -187,6 +187,13 @@ class Variable(NamedTuple):
     constant: bool = False
     to_be_closed: bool = False
 
+    def __repr__(self):
+        if self.constant:
+            return f"<const {self.value}>"
+        if self.to_be_closed:
+            return f"<close {self.value}>"
+        return f"<var {self.value}>"
+
 
 @dataclasses.dataclass(slots=True)
 class Scope:
