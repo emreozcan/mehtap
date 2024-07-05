@@ -55,6 +55,41 @@ def create_global_table() -> LuaTable:
         )
     )
 
+    def lua_pairs(t: LuaTable) -> FlowControl:
+        # TODO: Implement this function in a way that uses state.
+        # If t has a metamethod __pairs, calls it with t as argument and
+        # returns the first three results from the call.
+        # Otherwise, returns three values: the next function, the table t, and
+        # nil, so that the construction
+        #      for k,v in pairs(t) do body end
+        # will iterate over all key–value pairs of table t.
+        items = iter(t.map.items())
+        def iterator_function(state, control_variable) -> FlowControl:
+            try:
+                key, value = next(items)
+            except StopIteration:
+                return flow_return()
+            return flow_return([key, value])
+        return flow_return([
+            LuaFunction(
+                param_names=[],
+                variadic=False,
+                parent_scope=None,
+                block=iterator_function
+            ),
+            t,
+            LuaNil(),
+        ])
+    global_table.put(
+        LuaString(b"pairs"),
+        LuaFunction(
+            param_names=[],
+            variadic=False,
+            parent_scope=None,
+            block=lua_pairs
+        )
+    )
+
     return global_table
 
 
@@ -288,7 +323,60 @@ class BlockInterpreter(lark.visitors.Interpreter):
         # The generic for statement works over functions, called iterators.
         # On each iteration, the iterator function is called to produce a new
         # value, stopping when this new value is nil.
-        pass
+
+        #  A for statement like
+        #      for var_1, ···, var_n in explist do body end
+        # works as follows.
+        # The names var_i declare loop variables local to the loop body.
+        body = tree.children[5]
+        body_interpreter = self.get_stacked_interpreter()
+        body_scope = body_interpreter.scope
+        namelist = tree.children[1]
+        name_count = len(namelist.children)
+        names = [self.visit(name) for name in namelist.children]
+        for name in names:
+            body_scope.put_local(name, Variable(LuaNil()))
+        # The first of these variables is the control variable.
+        control_variable_name = names[0]
+        # The loop starts by evaluating explist to produce four values:
+        explist = tree.children[3]
+        exp_vals = adjust([self.visit(exp) for exp in explist.children], 4)
+        # an iterator function,
+        iterator_function = exp_vals[0]
+        # a state,
+        state = exp_vals[1]
+        # an initial value for the control variable,
+        initial_value = exp_vals[2]
+        body_scope.put_local(control_variable_name, Variable(initial_value))
+        # and a closing value.
+        closing_value = exp_vals[3]
+
+        while True:
+            # Then, at each iteration, Lua calls the iterator function with two
+            # arguments: the state and the control variable.
+            results = adjust(
+                self._call_function(
+                    iterator_function,
+                    [state, body_scope.get(control_variable_name)]
+                ),
+                name_count
+            )
+            # The results from this call are then assigned to the loop
+            # variables, following the rules of multiple assignments.
+            for name, value in zip(names, results):
+                body_scope.put_local(name, Variable(value))
+            # If the control variable becomes nil, the loop terminates.
+            if results[0] == LuaNil():
+                break
+            # Otherwise, the body is executed and the loop goes to the next
+            # iteration.
+            body_interpreter.visit(body)
+            continue
+        if closing_value != LuaNil():
+            # The closing value behaves like a to-be-closed variable,
+            # which can be used to release resources when the loop ends.
+            # Otherwise, it does not interfere with the loop.
+            raise NotImplementedError()
 
     def retstat(self, tree) -> list[LuaValue]:
         exp_list = tree.children[1]
