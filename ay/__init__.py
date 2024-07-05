@@ -86,21 +86,17 @@ class BlockInterpreter(lark.visitors.Interpreter):
             )
         return FlowControl()
 
-    def functioncall_regular(self, tree) -> list[LuaValue]:
-        function: LuaFunction = self.visit(tree.children[0])
-        if tree.children[1].data == "args_value":
-            args: list[LuaValue] = [self.visit(tree.children[1].children[0])]
-        else:
-            args: list[LuaValue] = self.visit(tree.children[1].children[0])
-        param_count = len(function.param_names)
-        if len(args) != param_count:
-            if not function.variadic:
-                args = adjust(args, param_count)
-            elif len(args) < len(function.param_names):
-                # must have "at least" len(param_names) arguments
-                args = adjust(args, max(param_count, len(args)))
+    def _call_function(self, function: LuaFunction, args: list[LuaValue]) \
+            -> list[LuaValue]:
         new_scope = Scope(function.parent_scope, {})
         if not callable(function.block):
+            param_count = len(function.param_names)
+            if len(args) != param_count:
+                if not function.variadic:
+                    args = adjust(args, param_count)
+                elif len(args) < len(function.param_names):
+                    # must have "at least" len(param_names) arguments
+                    args = adjust(args, max(param_count, len(args)))
             new_interpreter = BlockInterpreter(self.globals, new_scope)
             for param_name, arg in zip(function.param_names, args):
                 new_scope.put_local(param_name, Variable(arg))
@@ -110,6 +106,14 @@ class BlockInterpreter(lark.visitors.Interpreter):
         if result.return_flag:
             return result.return_value
         return [LuaNil()]
+
+    def functioncall_regular(self, tree) -> list[LuaValue]:
+        function: LuaFunction = self.visit(tree.children[0])
+        if tree.children[1].data == "args_value":
+            args: list[LuaValue] = [self.visit(tree.children[1].children[0])]
+        else:
+            args: list[LuaValue] = self.visit(tree.children[1].children[0])
+        return self._call_function(function, args)
 
 
     def stat_assignment(self, tree):
