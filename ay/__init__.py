@@ -33,6 +33,11 @@ class FlowControl(NamedTuple):
     return_value: list[LuaValue] | None = None
 
 
+class FuncName(NamedTuple):
+    names: list[LuaString]
+    method: bool
+
+
 def flow_return(return_value: list[LuaValue] = None) -> FlowControl:
     if not return_value:
         return FlowControl()
@@ -429,6 +434,60 @@ class BlockInterpreter(lark.visitors.Interpreter):
         exp_list = tree.children[1]
         return self.visit(exp_list)
 
+    def stat_localfunction(self, tree):
+        # The statement
+        #      local function f () body end
+        # translates to
+        #      local f; f = function () body end
+        # not to
+        #      local f = function () body end
+        # (This only makes a difference
+        # when the body of the function contains references to f.)
+        name = self.visit(tree.children[1])
+        self.scope.put_local(name, Variable(LuaNil))
+        function = self._evaluate_funcbody(tree.children[2])
+        self.scope.put_local(name, Variable(function))
+
+    def stat_function(self, tree):
+        funcname: FuncName = self.visit(tree.children[1])
+        function: LuaFunction = self._evaluate_funcbody(tree.children[2])
+        if funcname.method:
+            function.param_names.insert(0, LuaString(b"self"))
+        if len(funcname.names) == 1:
+            name = funcname[0]
+            if self.scope.has(name):
+                self.scope.put_nonlocal(name, Variable(function))
+            else:
+                self.globals.put(name, function)
+        else:
+            first_name = funcname.names[0]
+            if self.scope.has(first_name):
+                table = self.scope.get(first_name)
+            elif self.globals.has(first_name):
+                table = self.globals.get(first_name)
+            else:
+                raise NotImplementedError()
+            for name in funcname.names[1:-1]:
+                table = table.get(name)
+            table.put(funcname.names[-1], function)
+
+    def funcname(self, tree) -> FuncName:
+        root_name = tree.children[0]
+        method_name = tree.children[1]
+        middle_names = tree.children[1:-1]
+        if method_name:
+            return FuncName(
+                [self.visit(root_name)]
+                + [self.visit(name) for name in middle_names]
+                + [self.visit(method_name)],
+                method=True
+            )
+        return FuncName(
+            [self.visit(root_name)]
+            + [self.visit(name) for name in middle_names],
+            method=False
+        )
+
     def numeral_dec(self, tree):
         whole_part: str = tree.children[0]
         frac_part: str = tree.children[1]
@@ -587,8 +646,7 @@ class BlockInterpreter(lark.visitors.Interpreter):
         field: LuaString = self.visit(tree.children[2])
         return prefixexp.get(field)
 
-    def exp_functiondef(self, tree) -> LuaFunction:
-        funcbody = tree.children[0]
+    def _evaluate_funcbody(self, funcbody) -> LuaFunction:
         parlist = funcbody.children[0]
         block = funcbody.children[1]
         parameter_names = [
@@ -601,6 +659,10 @@ class BlockInterpreter(lark.visitors.Interpreter):
             block=block,
             parent_scope=self.scope,
         )
+
+    def exp_functiondef(self, tree) -> LuaFunction:
+        funcbody = tree.children[0]
+        return self._evaluate_funcbody(funcbody)
 
 
     def exp_concat(self, tree):

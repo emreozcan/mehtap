@@ -4,13 +4,15 @@ from . import lua_parser, LuaInterpreter
 def main():
     text = """
 dog = {
-    speak = function(self, params)
-        local what = params.what or "bark"
-        local count = params.count or 1
-        print(self.name .." says " .. what .. " " .. count .. " times!")
-    end,
     name = "dog"
 }
+
+function dog:speak(params)
+    local what = params.what or "bark"
+    local count = params.count or 1
+    print(self.name .." says " .. what .. " " .. count .. " times!")
+end
+
 dog:speak{what = "woof", count = 3}
 """
 
