@@ -23,6 +23,8 @@ def rel_eq(a: LuaValue, b: LuaValue) -> LuaBool:
         return LuaBool(a.value == b.value)
     # Tables, userdata, and threads are compared by reference:
     # two objects are considered equal only if they are the same object.
+    if type_a is LuaNil:
+        return LuaBool(True)
     return LuaBool(a is b)
 
 

@@ -13,6 +13,10 @@ class LuaValue:
         from .operations import rel_eq
         return rel_eq(self, other).true
 
+    def __ne__(self, other) -> bool:
+        from .operations import rel_ne
+        return rel_ne(self, other).true
+
 
 class LuaNil(LuaValue):
     __slots__ = []
