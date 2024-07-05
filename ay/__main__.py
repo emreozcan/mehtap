@@ -3,8 +3,8 @@ from . import lua_parser, LuaInterpreter
 
 def main():
     text = """
-t = {"a", "b", "c", "d", "e", "f"}
-for number, letter in pairs(t) do
+t = {"a", "b", "c", "d", "e", "f", [8] = "g", ["a"] = 1}
+for number, letter in ipairs(t) do
     print(letter, number)
 end
 """
