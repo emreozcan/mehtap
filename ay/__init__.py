@@ -33,11 +33,30 @@ class FlowControl(NamedTuple):
     return_value: list[LuaValue] | None = None
 
 
+def create_global_table() -> LuaTable:
+    global_table = LuaTable()
+
+    def lua_print(*args) -> FlowControl:
+        print(*args)
+        return FlowControl()
+    global_table.put(
+        LuaString(b"print"),
+        LuaFunction(
+            param_names=[],
+            variadic=True,
+            parent_scope=None,
+            block=lua_print
+        )
+    )
+
+    return global_table
+
+
 class BlockInterpreter(lark.visitors.Interpreter):
     def __init__(self, globals_: LuaTable = None, scope: Scope = None) -> None:
         super().__init__()
         if globals_ is None:
-            globals_ = LuaTable()
+            globals_ = create_global_table()
         self.globals = globals_
         if scope is None:
             scope = Scope(None, {})
@@ -75,10 +94,13 @@ class BlockInterpreter(lark.visitors.Interpreter):
                 # must have "at least" len(param_names) arguments
                 args = adjust(args, max(param_count, len(args)))
         new_scope = Scope(function.parent_scope, {})
-        new_interpreter = BlockInterpreter(self.globals, new_scope)
-        for param_name, arg in zip(function.param_names, args):
-            new_scope.put_local(param_name, Variable(arg))
-        result: FlowControl = new_interpreter.visit(function.block)
+        if not callable(function.block):
+            new_interpreter = BlockInterpreter(self.globals, new_scope)
+            for param_name, arg in zip(function.param_names, args):
+                new_scope.put_local(param_name, Variable(arg))
+            result: FlowControl = new_interpreter.visit(function.block)
+        else:
+            result: FlowControl = function.block(*args)
         if result.return_flag:
             return result.return_value
         return [LuaNil()]

@@ -227,7 +227,7 @@ class LuaFunction(LuaObject):
             *,
             param_names: list[LuaString],
             variadic: bool,
-            parent_scope: Scope,
+            parent_scope: Scope | None,
             block,
     ):
         super().__init__()

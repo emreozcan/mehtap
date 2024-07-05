@@ -4,6 +4,7 @@ from . import lua_parser, LuaInterpreter
 def main():
     text = """
 x, y = 1
+print(x)
 return y
 """
 
