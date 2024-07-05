@@ -168,12 +168,10 @@ class LuaTable(LuaObject):
                 if key.value.is_integer():
                     key = LuaNumber(int(key.value), LuaNumberType.INTEGER)
 
-        if isinstance(value, LuaNil):
-            if key in self.map:
-                del self.map[key]
-            return
-        else:
-            self.map[key] = value
+        # Note: Do not optimize by deleting keys that are assigned LuaNil,
+        # as Lua allows you to set existing fields in a table to nil while
+        # traversing it by using next().
+        self.map[key] = value
 
     def get(self, key: LuaValue) -> LuaValue:
         if key in self.map:
