@@ -23,8 +23,6 @@ def rel_eq(a: LuaValue, b: LuaValue) -> LuaBool:
         return LuaBool(a.value == b.value)
     # Tables, userdata, and threads are compared by reference:
     # two objects are considered equal only if they are the same object.
-    if type_a is LuaNil:
-        return LuaBool(True)
     return LuaBool(a is b)
 
 
@@ -286,7 +284,7 @@ def logical_unary_not(a: LuaValue) -> LuaBool:
 
 
 def is_false_or_nil(a: LuaValue) -> bool:
-    if isinstance(a, LuaNil):
+    if a is LuaNil:
         return True
     if isinstance(a, LuaBool):
         return not a.true
@@ -353,7 +351,7 @@ def adjust(multires: Multires, needed: int) -> list[LuaValue]:
     # if there are fewer values than needed,
     if len(multires) < needed:
         # the list is extended with nil's.
-        multires.extend([LuaNil()] * (needed - len(multires)))
+        multires.extend([LuaNil] * (needed - len(multires)))
 
     # When a multires expression is used in a list of expressions without being
     # the last element, ..., Lua adjusts the result list of that expression

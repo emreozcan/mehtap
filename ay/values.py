@@ -18,7 +18,19 @@ class LuaValue:
         return rel_ne(self, other).true
 
 
-class LuaNil(LuaValue):
+class SingletonType(type):
+    _instances: dict[type, object] = {}
+
+    def __call__(cls, *args, **kwargs):
+        if cls not in cls._instances:
+            cls._instances[cls] = (
+                super(SingletonType, cls).__call__(*args, **kwargs)
+            )
+        return cls._instances[cls]
+
+
+
+class LuaNilType(LuaValue, metaclass=SingletonType):
     __slots__ = []
 
     def __init__(self) -> None:
@@ -28,10 +40,16 @@ class LuaNil(LuaValue):
         return "nil"
 
     def __repr__(self) -> str:
-        return "LuaNil()"
+        return "LuaNil"
 
     def __hash__(self):
         return hash(None)
+
+    def __call__(self, *args, **kwargs):
+        return self
+
+
+LuaNil = LuaNilType()
 
 
 class LuaBool(LuaValue):
@@ -159,7 +177,7 @@ class LuaTable(LuaObject):
         return f"LuaTable({self.map})"
 
     def put(self, key: LuaValue, value: LuaValue):
-        if isinstance(key, LuaNil):
+        if key is LuaNil:
             raise NotImplementedError()
         if isinstance(key, LuaNumber):
             if key.type == LuaNumberType.FLOAT:
@@ -176,7 +194,7 @@ class LuaTable(LuaObject):
     def get(self, key: LuaValue) -> LuaValue:
         if key in self.map:
             return self.map[key]
-        return LuaNil()
+        return LuaNil
 
     def has(self, key: LuaValue) -> bool:
         return key in self.map
@@ -212,7 +230,7 @@ class Scope:
             return self.locals[key].value
         if self.parent is not None:
             return self.parent.get(key)
-        return LuaNil()
+        return LuaNil
 
     def put_local(self, key: LuaString, variable: Variable):
         if not isinstance(variable, Variable):

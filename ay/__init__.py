@@ -78,7 +78,7 @@ def create_global_table() -> LuaTable:
                 block=iterator_function
             ),
             t,
-            LuaNil(),
+            LuaNil,
         ])
     global_table.put(
         LuaString(b"pairs"),
@@ -102,7 +102,7 @@ def create_global_table() -> LuaTable:
                 return flow_return()
             index_val = LuaNumber(index, LuaNumberType.INTEGER)
             value = t.get(index_val)
-            if value == LuaNil():
+            if value == LuaNil:
                 return flow_return()
             return flow_return([index_val, value])
         return flow_return([
@@ -175,7 +175,7 @@ class BlockInterpreter(lark.visitors.Interpreter):
             result: FlowControl = function.block(*args)
         if result.return_flag:
             return result.return_value
-        return [LuaNil()]
+        return [LuaNil]
 
     def functioncall_regular(self, tree) -> list[LuaValue]:
         function: LuaFunction = self.visit(tree.children[0])
@@ -212,7 +212,7 @@ class BlockInterpreter(lark.visitors.Interpreter):
             exp_vals = [self.visit(exp) for exp in exp_list.children]
             exp_vals = adjust(exp_vals, len(attname_list.children))
         else:
-            exp_vals = [LuaNil()] * len(attname_list.children)
+            exp_vals = [LuaNil] * len(attname_list.children)
         used_closed = False
         for attname, exp_val in zip(attname_list.children, exp_vals):
             var_name = self.visit(attname.children[0])
@@ -370,7 +370,7 @@ class BlockInterpreter(lark.visitors.Interpreter):
         name_count = len(namelist.children)
         names = [self.visit(name) for name in namelist.children]
         for name in names:
-            body_scope.put_local(name, Variable(LuaNil()))
+            body_scope.put_local(name, Variable(LuaNil))
         # The first of these variables is the control variable.
         control_variable_name = names[0]
         # The loop starts by evaluating explist to produce four values:
@@ -401,13 +401,13 @@ class BlockInterpreter(lark.visitors.Interpreter):
             for name, value in zip(names, results):
                 body_scope.put_local(name, Variable(value))
             # If the control variable becomes nil, the loop terminates.
-            if results[0] == LuaNil():
+            if results[0] == LuaNil:
                 break
             # Otherwise, the body is executed and the loop goes to the next
             # iteration.
             body_interpreter.visit(body)
             continue
-        if closing_value != LuaNil():
+        if closing_value != LuaNil:
             # The closing value behaves like a to-be-closed variable,
             # which can be used to release resources when the loop ends.
             # Otherwise, it does not interfere with the loop.
@@ -553,7 +553,7 @@ class BlockInterpreter(lark.visitors.Interpreter):
     def var_name(self, tree) -> LuaValue:
         name: LuaString = self.visit(tree.children[0])
         local = self.scope.get(name)
-        if isinstance(local, LuaNil) and self.globals.has(name):
+        if local is LuaNil and self.globals.has(name):
             return self.globals.get(name)
         return local
 
@@ -712,8 +712,8 @@ class BlockInterpreter(lark.visitors.Interpreter):
             return left
         return self.visit(tree.children[1])
 
-    def exp_nil(self, tree):
-        return LuaNil()
+    def exp_nil(self, tree) -> LuaValue:
+        return LuaNil
 
     def exp_true(self, tree):
         return LuaBool(True)
