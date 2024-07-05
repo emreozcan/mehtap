@@ -102,7 +102,7 @@ class LuaString(LuaValue):
         self.content = value
 
     def __str__(self) -> str:
-        return repr(self.content)
+        return self.content.decode("utf-8")
 
     def __repr__(self):
         return f"LuaString({self.content!r})"
