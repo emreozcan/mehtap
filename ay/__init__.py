@@ -304,9 +304,9 @@ class BlockInterpreter(lark.visitors.Interpreter):
         if coerce_to_bool(self.visit(condition)).true:
             return self.get_stacked_interpreter().visit(true_block)
         for else_if in else_ifs:
-            condition = else_if.children[1]
-            block = else_if.children[2]
-            if self.visit(condition):
+            condition = else_if.children[0]
+            block = else_if.children[1]
+            if coerce_to_bool(self.visit(condition)).true:
                 return self.get_stacked_interpreter().visit(block)
         if else_block:
             return self.get_stacked_interpreter().visit(else_block)

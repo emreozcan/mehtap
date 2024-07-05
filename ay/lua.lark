@@ -19,8 +19,8 @@ block: stat* [retstat]
      | LOCAL attnamelist ["=" explist] -> stat_localassignment
 
 stat_if: "if" exp "then" block elseif* [else] "end"
-elseif: "elseif" "then" block
-else: "else" block
+elseif: "elseif" exp "then" block
+?else: "else" block
 
 attnamelist: attname ("," attname)*
 attname: name attrib

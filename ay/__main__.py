@@ -3,14 +3,17 @@ from . import lua_parser, LuaInterpreter
 
 def main():
     text = """
-function f(x)
-    return 10 * x, 20 * x
+function test(condition)
+    if not condition then
+        return 1
+    elseif condition == 3 then
+        return 7
+    else
+        return 0
+    end
 end
 
-a, b = f(1)
-c, d = (f(1))
-print(a, b)
-print(c, d)
+return test(1)
 """
 
     print("\n".join([f"> {line}" for line in text[1:].splitlines()]))
