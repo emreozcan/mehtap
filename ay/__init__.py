@@ -534,7 +534,7 @@ class BlockInterpreter(lark.visitors.Interpreter):
                 exp_part = "0"
             whole_val = int(whole_part + frac_part, 16)
             frac_val = whole_val / 16**len(frac_part)
-            exp_val = 2**int(exp_part)
+            exp_val = 2**int(exp_sign + exp_part)
             return LuaNumber(frac_val * exp_val, LuaNumberType.FLOAT)
         # if the value overflows, it wraps around to fit into a valid integer.
         return int_overflow_wrap_around(int(whole_part, 16))
