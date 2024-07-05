@@ -33,12 +33,19 @@ class FlowControl(NamedTuple):
     return_value: list[LuaValue] | None = None
 
 
+def flow_return(return_value: list[LuaValue] = None) -> FlowControl:
+    if not return_value:
+        return FlowControl()
+    return FlowControl(return_flag=True, return_value=return_value)
+
+
 def create_global_table() -> LuaTable:
     global_table = LuaTable()
 
     def lua_print(*args) -> FlowControl:
         print(*args)
         return FlowControl()
+        return flow_return()
     global_table.put(
         LuaString(b"print"),
         LuaFunction(
