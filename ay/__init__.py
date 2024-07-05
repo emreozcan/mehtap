@@ -11,7 +11,8 @@ from .operations import rel_lt, rel_le, rel_gt, rel_ge, rel_eq, rel_ne, \
     arith_mod, arith_add, arith_sub, arith_exp, arith_unary_minus, bitwise_or, \
     bitwise_and, bitwise_xor, bitwise_unary_not, bitwise_shift_right, \
     bitwise_shift_left, is_false_or_nil, logical_unary_not, coerce_to_bool, \
-    coerce_int_to_float, overflow_arith_add, str_to_lua_string, concat, length
+    coerce_int_to_float, overflow_arith_add, str_to_lua_string, concat, length, \
+    adjust
 from .values import LuaNil, LuaNumber, LuaBool, LuaNumberType, LuaValue, \
     MAX_INT64, LuaString, LuaTable, Scope, Variable, LuaFunction
 
@@ -66,8 +67,13 @@ class BlockInterpreter(lark.visitors.Interpreter):
             args: list[LuaValue] = [self.visit(tree.children[1].children[0])]
         else:
             args: list[LuaValue] = self.visit(tree.children[1].children[0])
-        if len(args) != len(function.param_names):
-            raise NotImplementedError()  # TODO: 3.4.12.
+        param_count = len(function.param_names)
+        if len(args) != param_count:
+            if not function.variadic:
+                args = adjust(args, param_count)
+            elif len(args) < len(function.param_names):
+                # must have "at least" len(param_names) arguments
+                args = adjust(args, max(param_count, len(args)))
         new_scope = Scope(function.parent_scope, {})
         new_interpreter = BlockInterpreter(self.globals, new_scope)
         for param_name, arg in zip(function.param_names, args):
@@ -82,6 +88,7 @@ class BlockInterpreter(lark.visitors.Interpreter):
         var_list = tree.children[0].children
         exp_list = tree.children[1].children
         exp_vals = [self.visit(exp) for exp in exp_list]
+        exp_vals = adjust(exp_vals, len(var_list))
         for var, exp_val in zip(var_list, exp_vals):
             if var.data == "var_name":
                 var_name = str_to_lua_string(var.children[0].children[0])
@@ -101,6 +108,7 @@ class BlockInterpreter(lark.visitors.Interpreter):
         exp_list = tree.children[2]
         if exp_list:
             exp_vals = [self.visit(exp) for exp in exp_list.children]
+            exp_vals = adjust(exp_vals, len(attname_list.children))
         else:
             exp_vals = [LuaNil()] * len(attname_list.children)
         used_closed = False
@@ -127,7 +135,6 @@ class BlockInterpreter(lark.visitors.Interpreter):
                 else:
                     # TODO: Create an error
                     raise NotImplementedError()
-
 
     def stat_while(self, tree) -> FlowControl:
         condition = tree.children[1]
@@ -244,6 +251,12 @@ class BlockInterpreter(lark.visitors.Interpreter):
             if overflow and integer_loop:
                 break
         return FlowControl()
+
+    def stat_forin(self, tree) -> FlowControl:
+        # The generic for statement works over functions, called iterators.
+        # On each iteration, the iterator function is called to produce a new
+        # value, stopping when this new value is nil.
+        pass
 
     def retstat(self, tree) -> list[LuaValue]:
         exp_list = tree.children[1]

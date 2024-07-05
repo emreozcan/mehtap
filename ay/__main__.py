@@ -3,8 +3,8 @@ from . import lua_parser, LuaInterpreter
 
 def main():
     text = """
-concat = function(x, y) return x .. y end
-return concat(3, 1)
+x, y = 1
+return y
 """
 
     print("\n".join([f"> {line}" for line in text[1:].splitlines()]))

@@ -1,3 +1,5 @@
+from typing import Self
+
 from .values import LuaBool, LuaValue, LuaString, LuaNumber, MAX_INT64, \
     LuaNumberType, MIN_INT64, SIGN_BIT, ALL_SET, LuaNil, LuaTable
 
@@ -329,3 +331,33 @@ def length(a: LuaValue) -> LuaNumber:
 
     raise NotImplementedError()  # TODO.
 
+
+Multires = list[LuaValue | Self]
+
+
+def adjust(multires: Multires, needed: int) -> list[LuaValue]:
+    # When the list of expressions ends with a multires expression,
+    # all results from that expression
+    # enter the list of values before the adjustment.
+    multires = multires.copy()
+    if multires and isinstance(multires[-1], list):
+        multires.extend(multires.pop())
+
+    # The adjustment follows these rules:
+    # If there are more values than needed,
+    if len(multires) > needed:
+        # the extra values are thrown away;
+        multires = multires[:needed]
+    # if there are fewer values than needed,
+    if len(multires) < needed:
+        # the list is extended with nil's.
+        multires.extend([LuaNil()] * (needed - len(multires)))
+
+    # When a multires expression is used in a list of expressions without being
+    # the last element, ..., Lua adjusts the result list of that expression
+    # to one element.
+    for i, value in enumerate(multires):
+        if isinstance(value, list):
+            multires[i] = adjust(value, 1)[0]
+
+    return multires
