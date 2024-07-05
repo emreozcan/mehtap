@@ -271,7 +271,7 @@ def coerce_to_bool(a: LuaValue) -> LuaBool:
     # Like the control structures (see §3.3.4),
     # all logical operators consider both false and nil as false
     # and anything else as true.
-    if isinstance(a, LuaNil):
+    if a is LuaNil:
         return LuaBool(False)
     if isinstance(a, LuaBool):
         return a
