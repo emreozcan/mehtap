@@ -166,8 +166,6 @@ class BlockInterpreter(lark.visitors.Interpreter):
             result = self.visit(statement)
             if isinstance(result, FlowControl) and result.return_flag:
                 return result
-            if isinstance(result, list):
-                result = self.visit(statement)
         if return_stat is not None:
             return FlowControl(
                 return_flag=True,
