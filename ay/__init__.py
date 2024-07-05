@@ -177,10 +177,9 @@ class BlockInterpreter(lark.visitors.Interpreter):
             -> list[LuaValue]:
         new_scope = Scope(function.parent_scope, {})
         if not callable(function.block):
-            if not function.variadic:
-                args = adjust(args, len(function.param_names))
-            else:
-                raise NotImplementedError()
+            if function.variadic:
+                new_scope.varargs = args[len(function.param_names):]
+            args = adjust(args, len(function.param_names))
             new_interpreter = BlockInterpreter(self.globals, new_scope)
             for param_name, arg in zip(function.param_names, args):
                 new_scope.put_local(param_name, Variable(arg))
@@ -669,7 +668,7 @@ class BlockInterpreter(lark.visitors.Interpreter):
         block = funcbody.children[1]
         parameter_names = [
             self.visit(name) for name in parlist.children[0].children
-        ] if parlist else []
+        ] if parlist and parlist.children else []
         is_variadic = parlist.data == "parlist_vararg" if parlist else False
         return LuaFunction(
             param_names=parameter_names,
@@ -813,13 +812,32 @@ class BlockInterpreter(lark.visitors.Interpreter):
     def exp_false(self, tree):
         return LuaBool(False)
 
+    def exp_vararg(self, tree) -> list[LuaValue]:
+        if self.scope.varargs:
+            return self.scope.varargs
+        return []
+
     def tableconstructor(self, tree) -> LuaTable:
         table = LuaTable()
         field_list = tree.children[0]
-        if not field_list:
+        if len(field_list.children) < 2:
+            # The optional trailing separator gets captured.
+            # If there is a trailing separator, it is the last child.
+            # If there is no trailing separator, the last child is None.
+            # If there are no fields, there is still 1 child, which is reserved
+            # for the optional trailing separator as explained above.
+            # That is the reason why we compare with 2.
             return table
         counter = 1
-        field_iter = iter(field_list.children)
+        # If the last field in the list has the form exp and the expression is a
+        # multires expression,
+        # then all values returned by this expression enter the list
+        # consecutively (see §3.4.12).
+        last_field = field_list.children[-2]
+        if last_field and last_field.data == "field_counter_key":
+            field_iter = iter(field_list.children[:-2])
+        else:
+            field_iter = iter(field_list.children)
         for field in field_iter:
             if field.data == "field_with_key":
                 key = self.visit(field.children[0])
@@ -836,6 +854,24 @@ class BlockInterpreter(lark.visitors.Interpreter):
                 next(field_iter)
             except StopIteration:
                 break
+        if last_field and last_field.data == "field_counter_key":
+            # Unwrap the "field_counter_key" to "exp", then unwrap the "exp" to
+            # avoid adjustment to the actual underlying expression.
+            exp = last_field.children[0]
+            if exp.data == "exp":
+                exp = exp.children[0]
+            last_field_value = self.visit(exp)
+            if isinstance(last_field_value, list):
+                for counter, val in enumerate(last_field_value, start=counter):
+                    table.put(
+                        LuaNumber(counter, LuaNumberType.INTEGER),
+                        val
+                    )
+            else:
+                table.put(
+                    LuaNumber(counter, LuaNumberType.INTEGER),
+                    last_field_value
+                )
         return table
 
 

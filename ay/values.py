@@ -217,6 +217,7 @@ class Variable(NamedTuple):
 class Scope:
     parent: Self | None
     locals: dict[LuaString, Variable]
+    varargs: list[LuaValue] | None = None
 
     def has(self, key: LuaString) -> bool:
         if key in self.locals:
