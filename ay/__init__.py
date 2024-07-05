@@ -210,7 +210,10 @@ class BlockInterpreter(lark.visitors.Interpreter):
 
 
     def args_list(self, tree) -> list[LuaValue]:
-        return self.visit(tree.children[0])
+        explist = tree.children[0]
+        if explist:
+            return self.visit(tree.children[0])
+        return []
 
     def args_value(self, tree) -> list[LuaValue]:
         return [self.visit(tree.children[0])]
