@@ -29,7 +29,7 @@ lua_parser = lark.Lark(
 class FlowControl(NamedTuple):
     break_flag: bool = False
     return_flag: bool = False
-    return_value: LuaValue | None = None
+    return_value: list[LuaValue] | None = None
 
 
 class BlockInterpreter(lark.visitors.Interpreter):
@@ -60,9 +60,12 @@ class BlockInterpreter(lark.visitors.Interpreter):
             )
         return FlowControl()
 
-    def functioncall_regular(self, tree) -> LuaValue:
+    def functioncall_regular(self, tree) -> list[LuaValue]:
         function: LuaFunction = self.visit(tree.children[0])
-        args: list[LuaValue] = self.visit(tree.children[1].children[0])
+        if tree.children[1].data == "args_value":
+            args: list[LuaValue] = [self.visit(tree.children[1].children[0])]
+        else:
+            args: list[LuaValue] = self.visit(tree.children[1].children[0])
         if len(args) != len(function.param_names):
             raise NotImplementedError()  # TODO: 3.4.12.
         new_scope = Scope(function.parent_scope, {})
@@ -72,7 +75,7 @@ class BlockInterpreter(lark.visitors.Interpreter):
         result: FlowControl = new_interpreter.visit(function.block)
         if result.return_flag:
             return result.return_value
-        return LuaNil()
+        return [LuaNil()]
 
 
     def stat_assignment(self, tree):

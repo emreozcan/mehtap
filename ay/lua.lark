@@ -49,27 +49,27 @@ explist: exp ("," exp)*
     | "function" funcbody -> exp_functiondef
     | prefixexp
     | tableconstructor
-         | exp "or" exp -> exp_logical_or
-         | exp "and" exp -> exp_logical_and
-         | exp cmp_op exp -> exp_cmp
-         | exp "|" exp -> exp_bit_or
-         | exp "~" exp -> exp_bit_xor
-         | exp "&" exp -> exp_bit_and
-         | exp shift_op exp -> exp_bit_shift
-         | exp ".." exp -> exp_concat
-         | exp sumop exp -> exp_sum
-         | exp productop exp -> exp_product
-         | unop exp -> exp_unop
-         | exp "^" exp -> exp_pow
+    | exp "or" exp -> exp_logical_or
+    | exp "and" exp -> exp_logical_and
+    | exp cmp_op exp -> exp_cmp
+    | exp "|" exp -> exp_bit_or
+    | exp "~" exp -> exp_bit_xor
+    | exp "&" exp -> exp_bit_and
+    | exp shift_op exp -> exp_bit_shift
+    | exp ".." exp -> exp_concat
+    | exp sumop exp -> exp_sum
+    | exp productop exp -> exp_product
+    | unop exp -> exp_unop
+    | exp "^" exp -> exp_pow
 prefixexp: var
          | functioncall
          | "(" exp ")"
 
 functioncall: prefixexp args -> functioncall_regular
             | prefixexp ":" name args -> functioncall_method
-args: "(" [explist] ")"
-    | tableconstructor
-    | literalstring
+args: "(" [explist] ")" -> args_list
+    | tableconstructor -> args_value
+    | literalstring -> args_value
 
 funcbody: "(" [parlist] ")" block END
 parlist: namelist
