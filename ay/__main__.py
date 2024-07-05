@@ -3,10 +3,15 @@ from . import lua_parser, LuaInterpreter
 
 def main():
     text = """
-t = {"a", "b", "c", "d", "e", "f", [8] = "g", ["a"] = 1}
-for number, letter in ipairs(t) do
-    print(letter, number)
-end
+dog = {
+    speak = function(self, params)
+        local what = params.what or "bark"
+        local count = params.count or 1
+        print(self.name .." says " .. what .. " " .. count .. " times!")
+    end,
+    name = "dog"
+}
+dog:speak{what = "woof", count = 3}
 """
 
     print("\n".join([f"> {line}" for line in text[1:].splitlines()]))

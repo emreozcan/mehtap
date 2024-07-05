@@ -179,12 +179,24 @@ class BlockInterpreter(lark.visitors.Interpreter):
 
     def functioncall_regular(self, tree) -> list[LuaValue]:
         function: LuaFunction = self.visit(tree.children[0])
-        if tree.children[1].data == "args_value":
-            args: list[LuaValue] = [self.visit(tree.children[1].children[0])]
-        else:
-            args: list[LuaValue] = self.visit(tree.children[1].children[0])
+        args: list[LuaValue] = self.visit(tree.children[1])
         return self._call_function(function, args)
 
+
+    def functioncall_method(self, tree) -> list[LuaValue]:
+        # A call v:name(args) is syntactic sugar for v.name(v,args),
+        # except that v is evaluated only once.
+        v = self.visit(tree.children[0])
+        name = self.visit(tree.children[1])
+        args = self.visit(tree.children[2])
+        return self._call_function(v.get(name), [v] + args)
+
+
+    def args_list(self, tree) -> list[LuaValue]:
+        return self.visit(tree.children[0])
+
+    def args_value(self, tree) -> list[LuaValue]:
+        return [self.visit(tree.children[0])]
 
     def stat_assignment(self, tree):
         var_list = tree.children[0].children
