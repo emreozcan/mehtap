@@ -12,7 +12,7 @@ from .operations import rel_lt, rel_le, rel_gt, rel_ge, rel_eq, rel_ne, \
     bitwise_and, bitwise_xor, bitwise_unary_not, bitwise_shift_right, \
     bitwise_shift_left, is_false_or_nil, logical_unary_not, coerce_to_bool, \
     coerce_int_to_float, overflow_arith_add, str_to_lua_string, concat, length, \
-    adjust
+    adjust, adjust_without_requirement
 from .values import LuaNil, LuaNumber, LuaBool, LuaNumberType, LuaValue, \
     MAX_INT64, LuaString, LuaTable, Scope, Variable, LuaFunction
 
@@ -166,6 +166,8 @@ class BlockInterpreter(lark.visitors.Interpreter):
             result = self.visit(statement)
             if isinstance(result, FlowControl) and result.return_flag:
                 return result
+            if isinstance(result, list):
+                result = self.visit(statement)
         if return_stat is not None:
             return FlowControl(
                 return_flag=True,
@@ -177,20 +179,17 @@ class BlockInterpreter(lark.visitors.Interpreter):
             -> list[LuaValue]:
         new_scope = Scope(function.parent_scope, {})
         if not callable(function.block):
-            param_count = len(function.param_names)
-            if len(args) != param_count:
-                if not function.variadic:
-                    args = adjust(args, param_count)
-                elif len(args) < len(function.param_names):
-                    # must have "at least" len(param_names) arguments
-                    args = adjust(args, max(param_count, len(args)))
+            if not function.variadic:
+                args = adjust(args, len(function.param_names))
+            else:
+                raise NotImplementedError()
             new_interpreter = BlockInterpreter(self.globals, new_scope)
             for param_name, arg in zip(function.param_names, args):
                 new_scope.put_local(param_name, Variable(arg))
             result: FlowControl = new_interpreter.visit(function.block)
         else:
             result: FlowControl = function.block(*args)
-        if result.return_flag:
+        if result.return_flag and result.return_value:
             return result.return_value
         return [LuaNil]
 
@@ -311,6 +310,7 @@ class BlockInterpreter(lark.visitors.Interpreter):
                 return self.get_stacked_interpreter().visit(block)
         if else_block:
             return self.get_stacked_interpreter().visit(else_block)
+        return FlowControl()
 
     def stat_do(self, tree) -> FlowControl:
         return self.get_stacked_interpreter().visit(tree.children[1])
@@ -446,8 +446,7 @@ class BlockInterpreter(lark.visitors.Interpreter):
             raise NotImplementedError()
 
     def retstat(self, tree) -> list[LuaValue]:
-        exp_list = tree.children[1]
-        return [self.visit(exp) for exp in exp_list.children]
+        return self.visit(tree.children[1])
 
     def stat_localfunction(self, tree):
         # The statement
@@ -634,7 +633,7 @@ class BlockInterpreter(lark.visitors.Interpreter):
 
     def explist(self, tree) -> list[LuaValue]:
         values = [self.visit(entry) for entry in tree.children]
-        return values
+        return adjust_without_requirement(values)
 
     def exp(self, tree) -> LuaValue:
         val = self.visit(tree.children[0])

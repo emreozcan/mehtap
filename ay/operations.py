@@ -361,3 +361,13 @@ def adjust(multires: Multires, needed: int) -> list[LuaValue]:
             multires[i] = adjust(value, 1)[0]
 
     return multires
+
+
+def adjust_without_requirement(multires: Multires) -> list[LuaValue]:
+    multires = multires.copy()
+    if multires and isinstance(multires[-1], list):
+        multires.extend(multires.pop())
+    for i, value in enumerate(multires):
+        if isinstance(value, list):
+            multires[i] = adjust(value, 1)[0]
+    return multires
