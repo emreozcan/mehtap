@@ -220,8 +220,8 @@ class BlockInterpreter(lark.visitors.Interpreter):
 
     def stat_assignment(self, tree):
         var_list = tree.children[0].children
-        exp_list = tree.children[1].children
-        exp_vals = [self.visit(exp) for exp in exp_list]
+        exp_list = tree.children[1]
+        exp_vals: list[LuaValue] = self.visit(exp_list)
         exp_vals = adjust(exp_vals, len(var_list))
         for var, exp_val in zip(var_list, exp_vals):
             if var.data == "var_name":
@@ -447,7 +447,7 @@ class BlockInterpreter(lark.visitors.Interpreter):
 
     def retstat(self, tree) -> list[LuaValue]:
         exp_list = tree.children[1]
-        return self.visit(exp_list)
+        return [self.visit(exp) for exp in exp_list.children]
 
     def stat_localfunction(self, tree):
         # The statement
@@ -629,16 +629,18 @@ class BlockInterpreter(lark.visitors.Interpreter):
         # if the value overflows, it wraps around to fit into a valid integer.
         return int_overflow_wrap_around(int(whole_part, 16))
 
-    # varlist: var ("," var)*
-    # var: name -> var_name
-    #    | prefixexp "[" exp "]" -> var_index
-    #    | prefixexp "." name -> var_field
-
     def var(self, tree) -> LuaValue:
         return tree.children[0]
 
-    def prefixexp(self, tree) -> LuaValue:
-        return self.visit(tree.children[0])
+    def explist(self, tree) -> list[LuaValue]:
+        values = [self.visit(entry) for entry in tree.children]
+        return values
+
+    def exp(self, tree) -> LuaValue:
+        val = self.visit(tree.children[0])
+        if isinstance(val, list):
+            return adjust(val, 1)[0]
+        return val
 
     def var_name(self, tree) -> LuaValue:
         name: LuaString = self.visit(tree.children[0])

@@ -3,17 +3,14 @@ from . import lua_parser, LuaInterpreter
 
 def main():
     text = """
-dog = {
-    name = "dog"
-}
-
-function dog:speak(params)
-    local what = params.what or "bark"
-    local count = params.count or 1
-    print(self.name .." says " .. what .. " " .. count .. " times!")
+function f(x)
+    return 10 * x, 20 * x
 end
 
-dog:speak{what = "woof", count = 3}
+a, b = f(1)
+c, d = (f(1))
+print(a, b)
+print(c, d)
 """
 
     print("\n".join([f"> {line}" for line in text[1:].splitlines()]))

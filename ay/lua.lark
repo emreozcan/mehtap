@@ -39,15 +39,16 @@ var: name -> var_name
 
 namelist: name ("," name)*
 
-explist: exp ("," exp)*
-?exp: NIL -> exp_nil
+explist: explist_entry ("," explist_entry)*
+?explist_entry: var | functioncall | exp
+
+exp: NIL -> exp_nil
     | FALSE -> exp_false
     | TRUE -> exp_true
     | numeral
     | literalstring
     | "..." -> exp_vararg
     | "function" funcbody -> exp_functiondef
-    | prefixexp
     | tableconstructor
     | exp "or" exp -> exp_logical_or
     | exp "and" exp -> exp_logical_and
@@ -61,9 +62,10 @@ explist: exp ("," exp)*
     | exp productop exp -> exp_product
     | unop exp -> exp_unop
     | exp "^" exp -> exp_pow
-prefixexp: var
-         | functioncall
-         | "(" exp ")"
+    | prefixexp
+?prefixexp: var
+          | functioncall
+          | "(" exp ")"
 
 functioncall: prefixexp args -> functioncall_regular
             | prefixexp ":" name args -> functioncall_method
