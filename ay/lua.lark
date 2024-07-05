@@ -45,7 +45,7 @@ explist: exp ("," exp)*
     | TRUE -> exp_true
     | numeral
     | literalstring
-    | "..." -> exp_ellipsis
+    | "..." -> exp_vararg
     | "function" funcbody -> exp_functiondef
     | prefixexp
     | tableconstructor
@@ -72,7 +72,9 @@ args: "(" [explist] ")"
     | literalstring
 
 funcbody: "(" [parlist] ")" block END
-parlist: namelist ["," "..."] | "..."
+parlist: namelist
+       | namelist "," "..." -> parlist_vararg
+       | "..." -> parlist_vararg
 
 tableconstructor: "{" [fieldlist] "}"
 fieldlist: field (fieldsep field)* [fieldsep]

@@ -13,7 +13,7 @@ from .operations import rel_lt, rel_le, rel_gt, rel_ge, rel_eq, rel_ne, \
     bitwise_shift_left, is_false_or_nil, logical_unary_not, coerce_to_bool, \
     coerce_int_to_float, overflow_arith_add, str_to_lua_string, concat, length
 from .values import LuaNil, LuaNumber, LuaBool, LuaNumberType, LuaValue, \
-    MAX_INT64, LuaString, LuaTable
+    MAX_INT64, LuaString, LuaTable, Scope, Variable, LuaFunction
 
 with open(Path(__file__).parent / "lua.lark", "r", encoding="utf-8") as f:
     lua_grammar = f.read()
@@ -24,45 +24,6 @@ lua_parser = lark.Lark(
     parser="earley",
     propagate_positions=True,
 )
-
-
-class Variable(NamedTuple):
-    value: LuaValue
-    constant: bool = False
-    to_be_closed: bool = False
-
-
-@dataclasses.dataclass(slots=True)
-class Scope:
-    parent: Self | None
-    locals: dict[LuaString, Variable]
-
-    def has(self, key: LuaString) -> bool:
-        if key in self.locals:
-            return True
-        if self.parent is not None:
-            return self.parent.has(key)
-        return False
-
-    def get(self, key: LuaString) -> LuaValue:
-        if key in self.locals:
-            return self.locals[key].value
-        if self.parent is not None:
-            return self.parent.get(key)
-        return LuaNil()
-
-    def put_local(self, key: LuaString, variable: Variable):
-        if key in self.locals and self.locals[key].constant:
-            raise NotImplementedError()
-        self.locals[key] = variable
-
-    def put_nonlocal(self, key: LuaString, value: Variable):
-        if key in self.locals:
-            self.put_local(key, value)
-            return
-        if self.parent is None:
-            raise NotImplementedError()  # TODO.
-        self.parent.put_nonlocal(key, value)
 
 
 class FlowControl(NamedTuple):
@@ -99,13 +60,20 @@ class BlockInterpreter(lark.visitors.Interpreter):
             )
         return FlowControl()
 
-    def functioncall_regular(self, tree):
-        function = self.visit(tree.children[0])
-        args = self.visit(tree.children[1].children[0])
-        print(function, args)
-        if rel_eq(args[0], LuaString(b"i")).true:
-            pass
-        return LuaNil()  # TODO.
+    def functioncall_regular(self, tree) -> LuaValue:
+        function: LuaFunction = self.visit(tree.children[0])
+        args: list[LuaValue] = self.visit(tree.children[1].children[0])
+        if len(args) != len(function.param_names):
+            raise NotImplementedError()  # TODO: 3.4.12.
+        new_scope = Scope(function.parent_scope, {})
+        new_interpreter = BlockInterpreter(self.globals, new_scope)
+        for param_name, arg in zip(function.param_names, args):
+            new_scope.put_local(param_name, Variable(arg))
+        result: FlowControl = new_interpreter.visit(function.block)
+        if result.return_flag:
+            return result.return_value
+        return LuaNil()
+
 
     def stat_assignment(self, tree):
         var_list = tree.children[0].children
@@ -435,6 +403,22 @@ class BlockInterpreter(lark.visitors.Interpreter):
         prefixexp: LuaTable = self.visit(tree.children[0])
         field: LuaString = self.visit(tree.children[2])
         return prefixexp.get(field)
+
+    def exp_functiondef(self, tree) -> LuaFunction:
+        funcbody = tree.children[0]
+        parlist = funcbody.children[0]
+        block = funcbody.children[1]
+        parameter_names = [
+            self.visit(name) for name in parlist.children[0].children
+        ]
+        is_variadic = parlist.data == "parlist_vararg"
+        return LuaFunction(
+            param_names=parameter_names,
+            variadic=is_variadic,
+            block=block,
+            parent_scope=self.scope,
+        )
+
 
     def exp_concat(self, tree):
         return concat(
