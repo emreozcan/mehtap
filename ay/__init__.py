@@ -130,6 +130,18 @@ def create_global_table() -> LuaTable:
         )
     )
 
+    def debugger() -> FlowControl:
+        return flow_return()
+    global_table.put(
+        LuaString(b"debugger"),
+        LuaFunction(
+            param_names=[],
+            variadic=False,
+            parent_scope=None,
+            block=debugger
+        )
+    )
+
     return global_table
 
 
