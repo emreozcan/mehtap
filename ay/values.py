@@ -210,17 +210,23 @@ class Scope:
         return LuaNil()
 
     def put_local(self, key: LuaString, variable: Variable):
+        if not isinstance(variable, Variable):
+            raise TypeError(f"Expected Variable, got {type(variable)}")
+
         if key in self.locals and self.locals[key].constant:
             raise NotImplementedError()
         self.locals[key] = variable
 
-    def put_nonlocal(self, key: LuaString, value: Variable):
+    def put_nonlocal(self, key: LuaString, variable: Variable):
+        if not isinstance(variable, Variable):
+            raise TypeError(f"Expected Variable, got {type(variable)}")
+
         if key in self.locals:
-            self.put_local(key, value)
+            self.put_local(key, variable)
             return
         if self.parent is None:
             raise NotImplementedError()  # TODO.
-        self.parent.put_nonlocal(key, value)
+        self.parent.put_nonlocal(key, variable)
 
 
 class LuaFunction(LuaObject):
