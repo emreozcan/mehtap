@@ -512,8 +512,12 @@ class BlockInterpreter(lark.visitors.Interpreter):
         if frac_part or exp_part:
             if not exp_sign:
                 exp_sign = "+"
+            else:
+                exp_sign = exp_sign.children[0]
             if not exp_part:
                 exp_part = "0"
+            if not frac_part:
+                frac_part = "0"
             return LuaNumber(
                 float(f"{whole_part}.{frac_part}e{exp_sign}{exp_part}"),
                 LuaNumberType.FLOAT
