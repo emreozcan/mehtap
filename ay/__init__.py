@@ -671,8 +671,8 @@ class BlockInterpreter(lark.visitors.Interpreter):
         block = funcbody.children[1]
         parameter_names = [
             self.visit(name) for name in parlist.children[0].children
-        ]
-        is_variadic = parlist.data == "parlist_vararg"
+        ] if parlist else []
+        is_variadic = parlist.data == "parlist_vararg" if parlist else False
         return LuaFunction(
             param_names=parameter_names,
             variadic=is_variadic,
