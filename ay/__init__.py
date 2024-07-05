@@ -43,8 +43,7 @@ def create_global_table() -> LuaTable:
     global_table = LuaTable()
 
     def lua_print(*args) -> FlowControl:
-        print(*args)
-        return FlowControl()
+        print(*args, sep="\t")
         return flow_return()
     global_table.put(
         LuaString(b"print"),
