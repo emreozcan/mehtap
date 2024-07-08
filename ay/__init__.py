@@ -819,8 +819,8 @@ class BlockInterpreter(lark.visitors.Interpreter):
 
     def tableconstructor(self, tree) -> LuaTable:
         table = LuaTable()
-        field_list = tree.children[0]
-        if len(field_list.children) < 2:
+        fieldlist = tree.children[0]
+        if not fieldlist or len(fieldlist.children) < 2:
             # The optional trailing separator gets captured.
             # If there is a trailing separator, it is the last child.
             # If there is no trailing separator, the last child is None.
@@ -828,16 +828,17 @@ class BlockInterpreter(lark.visitors.Interpreter):
             # for the optional trailing separator as explained above.
             # That is the reason why we compare with 2.
             return table
+        fieldlist_children = fieldlist.children
         counter = 1
         # If the last field in the list has the form exp and the expression is a
         # multires expression,
         # then all values returned by this expression enter the list
         # consecutively (see §3.4.12).
-        last_field = field_list.children[-2]
+        last_field = fieldlist_children[-2]
         if last_field and last_field.data == "field_counter_key":
-            field_iter = iter(field_list.children[:-2])
+            field_iter = iter(fieldlist_children[:-2])
         else:
-            field_iter = iter(field_list.children)
+            field_iter = iter(fieldlist_children)
         for field in field_iter:
             if field.data == "field_with_key":
                 key = self.visit(field.children[0])

@@ -3,52 +3,16 @@ from . import lua_parser, LuaInterpreter
 
 def main():
     text = """
-function f() return "first", "second", "third", "etc" end
-function g() return "cte", "driht", "dnoces", "tsrif" end
-x = -999
-w = 1000
-
-function test(...)
-    print(x, f())      -- prints x and all results from f().
-    print(x, (f()))    -- prints x and the first result from f().
-    print(f(), x)      -- prints the first result from f() and x.
-    print(1 .. f())     -- prints 1 added to the first result from f().
-    local x = ...      -- x gets the first vararg argument.
-    print(x)
-    x,y = ...          -- x gets the first vararg argument,
-                       -- y gets the second vararg argument.
-    print(x, y)
-    x,y,z = w, f()     -- x gets w, y gets the first result from f(),
-                       -- z gets the second result from f().
-    print(x, y, z)
-    x,y,z = f()        -- x gets the first result from f(),
-                       -- y gets the second result from f(),
-                       -- z gets the third result from f().
-    print(x, y, z)
-    x,y,z = f(), g()   -- x gets the first result from f(),
-                       -- y gets the first result from g(),
-                       -- z gets the second result from g().
-    print(x, y, z)
-    x,y,z = (f())      -- x gets the first result from f(), y and z get nil.
-    print(x, y, z)
-    function m()
-       return f()      -- returns all results from f().
-    end
-    print(m())
-    function m(...)
-       return x, ...   -- returns x and all received vararg arguments.
-    end
-    print(m(...))
-    function m()
-       return x,y,f()  -- returns x, y, and all results from f().
-    end
-    print(m())
-    print{f()}         -- creates a list with all results from f().
-    print{...}         -- creates a list with all vararg arguments.
-    print{f(), 5}      -- creates a list with the first result from f() and 5.
+a = {}
+local x = 20
+for i = 1, 10 do
+    local y = 0
+    a[i] = function () y = y + 1; return x + y end
 end
 
-test("vararg1", "vararg2", "varargetc")
+for i,f in ipairs(a) do
+    print(f())
+end
 """
 
     print("\n".join([f"> {line}" for line in text[1:].splitlines()]))
