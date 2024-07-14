@@ -1,13 +1,20 @@
-import dataclasses
 from enum import Enum
-from typing import TYPE_CHECKING, Self, NamedTuple
+from typing import NamedTuple, TYPE_CHECKING, Optional
+
+if TYPE_CHECKING:
+    from .control_structures import Scope
 
 
 class LuaValue:
-    __slots__ = ["metatable"]
+    def get_metatable(self) -> "LuaNilType | LuaTable":
+        cls = self.__class__
+        if not hasattr(cls, "_metatable"):
+            return LuaNil
+        return cls._metatable
 
-    def __init__(self) -> None:
-        self.metatable = None
+    def set_metatable(self, value: "LuaValue"):
+        cls = self.__class__
+        cls._metatable = value
 
     def __eq__(self, other) -> bool:
         from .operations import rel_eq
@@ -160,11 +167,18 @@ class LuaThread(LuaObject):
 
 
 class LuaTable(LuaObject):
-    __slots__ = ["map", "metatable"]
+    __slots__ = ["map", "_metatable"]
 
     def __init__(self):
         super().__init__()
         self.map: dict[LuaValue, LuaValue] = {}
+        self._metatable = LuaNil
+
+    def get_metatable(self):
+        return self._metatable
+
+    def set_metatable(self, value: "LuaValue"):
+        self._metatable = value
 
     def __str__(self):
         return (
@@ -213,46 +227,6 @@ class Variable(NamedTuple):
         return f"<var {self.value}>"
 
 
-@dataclasses.dataclass(slots=True)
-class Scope:
-    parent: Self | None
-    locals: dict[LuaString, Variable]
-    varargs: list[LuaValue] | None = None
-
-    def has(self, key: LuaString) -> bool:
-        if key in self.locals:
-            return True
-        if self.parent is not None:
-            return self.parent.has(key)
-        return False
-
-    def get(self, key: LuaString) -> LuaValue:
-        if key in self.locals:
-            return self.locals[key].value
-        if self.parent is not None:
-            return self.parent.get(key)
-        return LuaNil
-
-    def put_local(self, key: LuaString, variable: Variable):
-        if not isinstance(variable, Variable):
-            raise TypeError(f"Expected Variable, got {type(variable)}")
-
-        if key in self.locals and self.locals[key].constant:
-            raise NotImplementedError()
-        self.locals[key] = variable
-
-    def put_nonlocal(self, key: LuaString, variable: Variable):
-        if not isinstance(variable, Variable):
-            raise TypeError(f"Expected Variable, got {type(variable)}")
-
-        if key in self.locals:
-            self.put_local(key, variable)
-            return
-        if self.parent is None:
-            raise NotImplementedError()  # TODO.
-        self.parent.put_nonlocal(key, variable)
-
-
 class LuaFunction(LuaObject):
     __slots__ = ["param_names", "variadic", "parent_scope", "block"]
 
@@ -261,7 +235,7 @@ class LuaFunction(LuaObject):
             *,
             param_names: list[LuaString],
             variadic: bool,
-            parent_scope: Scope | None,
+            parent_scope: Optional["Scope"],
             block,
     ):
         super().__init__()
