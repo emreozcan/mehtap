@@ -1,25 +1,44 @@
+from collections.abc import Callable
+from typing import TypeAlias
+
 from .values import LuaValue, LuaTable, LuaString, LuaFunction, \
     LuaNil, LuaNumber, MAX_INT64, LuaNumberType
 from .control_structures import FlowControl
 
 
-def create_global_table() -> LuaTable:
-    global_table = LuaTable()
+PyLuaFunction = Callable[..., FlowControl]
+LuaDecorator: TypeAlias = Callable[[PyLuaFunction], LuaFunction]
 
-    def lua_print(*args) -> FlowControl:
-        print(*args, sep="\t")
-        return flow_return()
-    global_table.put(
-        LuaString(b"print"),
-        LuaFunction(
+
+def lua_function(table: LuaTable = None, *, name: str = None) -> LuaDecorator:
+    def decorator(func: PyLuaFunction) -> LuaFunction:
+        if name:
+            func.__name__ = name
+        lf = LuaFunction(
             param_names=[],
             variadic=True,
             parent_scope=None,
-            block=lua_print
+            block=func
         )
-    )
+        if table is not None:
+            table.put(
+                LuaString(func.__name__.encode("utf-8")),
+                lf
+            )
+        return lf
+    return decorator
 
-    def lua_pairs(t: LuaTable) -> FlowControl:
+
+def create_global_table() -> LuaTable:
+    global_table = LuaTable()
+
+    @lua_function(global_table, name="print")
+    def print_(*args) -> FlowControl:
+        print(*args, sep="\t")
+        return flow_return()
+
+    @lua_function(global_table)
+    def pairs(t: LuaTable) -> FlowControl:
         # TODO: Implement this function in a way that uses state.
         # If t has a metamethod __pairs, calls it with t as argument and
         # returns the first three results from the call.
@@ -44,17 +63,9 @@ def create_global_table() -> LuaTable:
             t,
             LuaNil,
         ])
-    global_table.put(
-        LuaString(b"pairs"),
-        LuaFunction(
-            param_names=[],
-            variadic=False,
-            parent_scope=None,
-            block=lua_pairs
-        )
-    )
 
-    def lua_ipairs(t: LuaTable) -> FlowControl:
+    @lua_function(global_table)
+    def ipairs(t: LuaTable) -> FlowControl:
         # Returns three values (an iterator function, the table t, and 0) so
         # that the construction
         #      for i,v in ipairs(t) do body end
@@ -79,27 +90,10 @@ def create_global_table() -> LuaTable:
             t,
             LuaNumber(0, LuaNumberType.INTEGER),
         ])
-    global_table.put(
-        LuaString(b"ipairs"),
-        LuaFunction(
-            param_names=[],
-            variadic=False,
-            parent_scope=None,
-            block=lua_ipairs
-        )
-    )
 
+    @lua_function(global_table)
     def debugger() -> FlowControl:
         return flow_return()
-    global_table.put(
-        LuaString(b"debugger"),
-        LuaFunction(
-            param_names=[],
-            variadic=False,
-            parent_scope=None,
-            block=debugger
-        )
-    )
 
     return global_table
 
