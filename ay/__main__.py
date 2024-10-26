@@ -19,7 +19,7 @@ end
     print()
 
     parsed_lua = lua_parser.parse(text)
-    # print(f"Parse tree:\n{parsed_lua.pretty()}")
+    print(f"Parse tree:\n{parsed_lua.pretty()}")
 
     lua_interpreter = LuaInterpreter()
     ret_val = lua_interpreter.visit(parsed_lua)

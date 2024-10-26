@@ -25,6 +25,7 @@ lua_parser = lark.Lark(
     start="chunk",
     parser="earley",
     propagate_positions=True,
+    debug=True,
 )
 
 
@@ -46,6 +47,9 @@ class BlockInterpreter(lark.visitors.Interpreter):
     def get_stacked_interpreter(self):
         return BlockInterpreter(self.globals, Scope(self.scope, {}))
 
+    def _ambig(self, tree):
+        return tree.children[0]
+
     def block(self, tree) -> FlowControl:
         return_stat = tree.children[-1]
         for statement in tree.children[:-1]:
@@ -61,7 +65,7 @@ class BlockInterpreter(lark.visitors.Interpreter):
             )
         return FlowControl()
 
-    def _call_function(self, function: LuaFunction, args: list[LuaValue]) \
+    def call_function(self, function: LuaFunction, args: list[LuaValue]) \
             -> list[LuaValue]:
         new_scope = Scope(function.parent_scope, {})
         if not callable(function.block):
@@ -73,7 +77,10 @@ class BlockInterpreter(lark.visitors.Interpreter):
                 new_scope.put_local(param_name, Variable(arg))
             result: FlowControl = new_interpreter.visit(function.block)
         else:
-            result: FlowControl = function.block(*args)
+            if not function.interacts_with_the_interpreter:
+                result: FlowControl = function.block(*args)
+            else:
+                result: FlowControl = function.block(self, *args)
         if result.return_flag and result.return_value:
             return result.return_value
         return [LuaNil]
@@ -81,16 +88,16 @@ class BlockInterpreter(lark.visitors.Interpreter):
     def functioncall_regular(self, tree) -> list[LuaValue]:
         function: LuaFunction = self.visit(tree.children[0])
         args: list[LuaValue] = self.visit(tree.children[1])
-        return self._call_function(function, args)
+        return self.call_function(function, args)
 
 
     def functioncall_method(self, tree) -> list[LuaValue]:
         # A call v:name(args) is syntactic sugar for v.name(v,args),
         # except that v is evaluated only once.
         v = self.visit(tree.children[0])
-        name = self.visit(tree.children[1])
+        name = tree.children[1]
         args = self.visit(tree.children[2])
-        return self._call_function(v.get(name), [v] + args)
+        return self.call_function(v.get(name), [v] + args)
 
 
     def args_list(self, tree) -> list[LuaValue]:
@@ -109,7 +116,7 @@ class BlockInterpreter(lark.visitors.Interpreter):
         exp_vals = adjust(exp_vals, len(var_list))
         for var, exp_val in zip(var_list, exp_vals):
             if var.data == "var_name":
-                var_name = str_to_lua_string(var.children[0].children[0])
+                var_name = str_to_lua_string(var.children[0])
                 if self.scope.has(var_name):
                     self.scope.put_nonlocal(var_name, Variable(exp_val))
                 else:
@@ -131,7 +138,7 @@ class BlockInterpreter(lark.visitors.Interpreter):
             exp_vals = [LuaNil] * len(attname_list.children)
         used_closed = False
         for attname, exp_val in zip(attname_list.children, exp_vals):
-            var_name = self.visit(attname.children[0])
+            var_name = str_to_lua_string(attname.children[0])
             attrib_rule = attname.children[1].children[0]
             if not attrib_rule:
                 self.scope.put_local(var_name, Variable(exp_val))
@@ -204,7 +211,7 @@ class BlockInterpreter(lark.visitors.Interpreter):
         # This for loop is the "numerical" for loop explained in 3.3.5.
         # The given identifier (Name) defines the control variable,
         # which is a new variable local to the loop body (block).
-        control_varname: LuaString = self.visit(tree.children[1])
+        control_varname: LuaString = tree.children[1]
         # The loop starts by evaluating once the three control expressions.
         control_expr_1 = tree.children[2]
         control_expr_2 = tree.children[3]
@@ -258,7 +265,7 @@ class BlockInterpreter(lark.visitors.Interpreter):
         block_interpreter = self.get_stacked_interpreter()
         while condition_func(control_val, limit).true:
             block_interpreter.scope.put_local(
-                control_varname,
+                str_to_lua_string(control_varname),
                 Variable(control_val)
             )
             result: FlowControl = block_interpreter.visit(block)
@@ -285,7 +292,7 @@ class BlockInterpreter(lark.visitors.Interpreter):
         body_scope = body_interpreter.scope
         namelist = tree.children[1]
         name_count = len(namelist.children)
-        names = [self.visit(name) for name in namelist.children]
+        names = [str_to_lua_string(name) for name in namelist.children]
         for name in names:
             body_scope.put_local(name, Variable(LuaNil))
         # The first of these variables is the control variable.
@@ -307,7 +314,7 @@ class BlockInterpreter(lark.visitors.Interpreter):
             # Then, at each iteration, Lua calls the iterator function with two
             # arguments: the state and the control variable.
             results = adjust(
-                self._call_function(
+                self.call_function(
                     iterator_function,
                     [state, body_scope.get(control_variable_name)]
                 ),
@@ -342,7 +349,7 @@ class BlockInterpreter(lark.visitors.Interpreter):
         #      local f = function () body end
         # (This only makes a difference
         # when the body of the function contains references to f.)
-        name = self.visit(tree.children[1])
+        name = tree.children[1]
         self.scope.put_local(name, Variable(LuaNil))
         function = self._evaluate_funcbody(tree.children[2])
         self.scope.put_local(name, Variable(function))
@@ -376,14 +383,14 @@ class BlockInterpreter(lark.visitors.Interpreter):
         middle_names = tree.children[1:-1]
         if method_name:
             return FuncName(
-                [self.visit(root_name)]
-                + [self.visit(name) for name in middle_names]
-                + [self.visit(method_name)],
+                [root_name]
+                + middle_names
+                + [method_name],
                 method=True
             )
         return FuncName(
-            [self.visit(root_name)]
-            + [self.visit(name) for name in middle_names],
+            [root_name]
+            + middle_names,
             method=False
         )
 
@@ -527,7 +534,7 @@ class BlockInterpreter(lark.visitors.Interpreter):
         return val
 
     def var_name(self, tree) -> LuaValue:
-        name: LuaString = self.visit(tree.children[0])
+        name: LuaString = str_to_lua_string(tree.children[0])
         local = self.scope.get(name)
         if local is LuaNil and self.globals.has(name):
             return self.globals.get(name)
@@ -729,7 +736,7 @@ class BlockInterpreter(lark.visitors.Interpreter):
             field_iter = iter(fieldlist_children)
         for field in field_iter:
             if field.data == "field_with_key":
-                key = self.visit(field.children[0])
+                key = field.children[0]
                 value = self.visit(field.children[1])
                 table.put(key, value)
             elif field.data == "field_counter_key":

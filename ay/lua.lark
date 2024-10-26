@@ -7,15 +7,15 @@ block: stat* [retstat]
      | functioncall
      | label
      | BREAK -> stat_break
-     | GOTO name -> stat_goto
+     | GOTO NAME -> stat_goto
      | DO block END -> stat_do
      | WHILE exp DO block END -> stat_while
      | REPEAT block UNTIL exp -> stat_repeat
      | stat_if
-     | FOR name "=" exp "," exp ["," exp] DO block END -> stat_for
+     | FOR NAME "=" exp "," exp ["," exp] DO block END -> stat_for
      | FOR namelist IN explist DO block END -> stat_forin
      | FUNCTION funcname funcbody -> stat_function
-     | LOCAL FUNCTION name funcbody -> stat_localfunction
+     | LOCAL FUNCTION NAME funcbody -> stat_localfunction
      | LOCAL attnamelist ["=" explist] -> stat_localassignment
 
 stat_if: "if" exp "then" block elseif* [else] "end"
@@ -23,26 +23,26 @@ elseif: "elseif" exp "then" block
 ?else: "else" block
 
 attnamelist: attname ("," attname)*
-attname: name attrib
-attrib: ["<" name ">"]
+attname: NAME attrib
+attrib: ["<" NAME ">"]
 
 retstat: RETURN [explist] [";"]
 
-label: "::" name "::"
+label: "::" NAME "::"
 
-funcname: name ("." name)* [":" name]
+funcname: NAME ("." NAME)* [":" NAME]
 
 varlist: var ("," var)*
-var: name -> var_name
+var: NAME -> var_name
    | prefixexp "[" exp "]" -> var_index
-   | prefixexp "." name -> var_index
+   | prefixexp "." NAME -> var_index
 
-namelist: name ("," name)*
+namelist: NAME ("," NAME)*
 
 explist: explist_entry ("," explist_entry)*
 ?explist_entry: var | functioncall | exp
 
-exp: NIL -> exp_nil
+?exp: NIL -> exp_nil
     | FALSE -> exp_false
     | TRUE -> exp_true
     | numeral
@@ -68,7 +68,7 @@ exp: NIL -> exp_nil
           | "(" exp ")"
 
 functioncall: prefixexp args -> functioncall_regular
-            | prefixexp ":" name args -> functioncall_method
+            | prefixexp ":" NAME args -> functioncall_method
 args: "(" [explist] ")" -> args_list
     | tableconstructor -> args_value
     | literalstring -> args_value
@@ -81,7 +81,7 @@ parlist: namelist
 tableconstructor: "{" [fieldlist] "}"
 fieldlist: field (fieldsep field)* [fieldsep]
 field: "[" exp "]" "=" exp -> field_with_key
-     | name "=" exp -> field_with_key
+     | NAME "=" exp -> field_with_key
      | exp -> field_counter_key
 fieldsep: "," | ";"
 
@@ -91,7 +91,7 @@ fieldsep: "," | ";"
 !productop: "*" | "/" | "//" | "%"
 !unop: "-" | "not" | "#" | "~"
 
-name: /(?!and$|break$|do$|else$|elseif$|end$|false$|for$|function$|goto$|if$|in$|local$|nil$|not$|or$|repeat$|return$|then$|true$|until$|while$)[a-zA-Z_][a-zA-Z_0-9]*/
+NAME.-1: /(?!and$|break$|do$|else$|elseif$|end$|false$|for$|function$|goto$|if$|in$|local$|nil$|not$|or$|repeat$|return$|then$|true$|until$|while$)[a-zA-Z_][a-zA-Z_0-9]*/
 literalstring: /"([^"\\]|\\.)*"|'([^'\\]|\\.)*'|(\[(=*)\[(.|\n)*?\]\4\])/
 ?numeral: numeral_hex | numeral_dec
 

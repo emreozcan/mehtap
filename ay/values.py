@@ -228,7 +228,13 @@ class Variable(NamedTuple):
 
 
 class LuaFunction(LuaObject):
-    __slots__ = ["param_names", "variadic", "parent_scope", "block"]
+    __slots__ = [
+        "param_names",
+        "variadic",
+        "parent_scope",
+        "block",
+        "interacts_with_the_interpreter",
+    ]
 
     def __init__(
             self,
@@ -237,10 +243,11 @@ class LuaFunction(LuaObject):
             variadic: bool,
             parent_scope: Optional["Scope"],
             block,
+            interacts_with_the_interpreter: bool = False
     ):
         super().__init__()
         self.param_names = param_names
         self.variadic = variadic
         self.parent_scope = parent_scope
         self.block = block
-
+        self.interacts_with_the_interpreter = interacts_with_the_interpreter
