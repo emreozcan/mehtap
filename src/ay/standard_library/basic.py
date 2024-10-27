@@ -159,8 +159,8 @@ def provide(table: LuaTable) -> None:
         """loadfile ([filename [, mode [, env]]])"""
         raise NotImplementedError()  # todo.
 
-    @lua_function(table)
-    def next(
+    @lua_function(table, name="next")
+    def next_(
             table: LuaTable,
             index: LuaValue = LuaNil
     ) -> PyLuaRet:
