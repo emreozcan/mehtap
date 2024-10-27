@@ -96,6 +96,10 @@ def provide(table: LuaTable) -> None:
     # (see §2.2).
     # Lua itself does not use this variable; changing its value does not
     # affect any environment, nor vice versa.
+    table.put(
+        LuaString(b"_G"),
+        table
+    )
 
     @lua_function(table)
     def getmetatable(object: LuaValue) -> PyLuaRet:
