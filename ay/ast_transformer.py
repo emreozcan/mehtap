@@ -82,6 +82,11 @@ class LuaTransformer(lark.Transformer):
         return nodes.FieldWithKey(key=key, value=value)
 
     @staticmethod
+    def field_counter_key(
+            value: nodes.Expression) -> nodes.FieldCounterKey:
+        return nodes.FieldCounterKey(value=value)
+
+    @staticmethod
     def fieldsep():
         return lark.Discard
 
@@ -189,3 +194,20 @@ class LuaTransformer(lark.Transformer):
             name: nodes.Expression,
             args: Sequence[nodes.Expression]) -> nodes.FuncCallRegular:
         return nodes.FuncCallRegular(name=name, args=args)
+
+    @staticmethod
+    def literalstring(
+            terminal: nodes.Terminal) -> nodes.LiteralString:
+        return nodes.LiteralString(text=terminal)
+
+    @staticmethod
+    def exp_false(FALSE: nodes.Terminal) -> nodes.LiteralFalse:
+        return nodes.LiteralFalse()
+
+    @staticmethod
+    def exp_true(TRUE: nodes.Terminal) -> nodes.LiteralTrue:
+        return nodes.LiteralTrue()
+
+    @staticmethod
+    def exp_nil(NIL: nodes.Terminal) -> nodes.LiteralNil:
+        return nodes.LiteralNil()

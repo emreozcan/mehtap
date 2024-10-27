@@ -139,6 +139,8 @@ class NumeralDec(Numeral):
 
 @attrs.define(slots=True)
 class LiteralString(Expression):
+    text: Terminal
+
     def evaluate(self, vm: VirtualMachine) -> LuaValue:
         bytes_io = io.BytesIO()
         currently_skipping_whitespace = False
@@ -221,7 +223,23 @@ class LiteralString(Expression):
         bytes_io.seek(0)
         return LuaString(bytes_io.read())
 
-    text: Terminal
+
+@attrs.define(slots=True)
+class LiteralFalse(Expression):
+    def evaluate(self, vm: VirtualMachine) -> LuaValue:
+        return ay_values.LuaBool(False)
+
+
+@attrs.define(slots=True)
+class LiteralTrue(Expression):
+    def evaluate(self, vm: VirtualMachine) -> LuaValue:
+        return ay_values.LuaBool(True)
+
+
+@attrs.define(slots=True)
+class LiteralNil(Expression):
+    def evaluate(self, vm: VirtualMachine) -> LuaValue:
+        return ay_values.LuaNil
 
 
 @attrs.define(slots=True)
