@@ -21,6 +21,12 @@ def rel_eq(a: LuaValue, b: LuaValue, *, raw: bool = False) -> LuaBool:
         a: LuaNumber
         b: LuaNumber
         return LuaBool(a.value == b.value)
+    # ay extension: All LuaBool(False) _and true_ objects are currently not all
+    #               the same object :(
+    if type_a is LuaBool:
+        a: LuaBool
+        b: LuaBool
+        return LuaBool(a.true == b.true)
     # Tables, userdata, and threads are compared by reference:
     # two objects are considered equal only if they are the same object.
     if a is b or raw:
