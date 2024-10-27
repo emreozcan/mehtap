@@ -122,6 +122,7 @@ def provide(table: LuaTable) -> None:
         #      for i,v in ipairs(t) do body end
         # will iterate over the key–value pairs (1,t[1]), (2,t[2]), ..., up
         # to the first absent index.
+        @lua_function()
         def iterator_function(state, control_variable: LuaNumber) \
                 -> PyLuaRet:
             index = control_variable.value + 1
@@ -134,12 +135,7 @@ def provide(table: LuaTable) -> None:
             return [index_val, value]
 
         return [
-            LuaFunction(
-                param_names=[],
-                variadic=False,
-                parent_stack_frame=None,
-                block=iterator_function
-            ),
+            iterator_function,
             t,
             LuaNumber(0, LuaNumberType.INTEGER),
         ]
