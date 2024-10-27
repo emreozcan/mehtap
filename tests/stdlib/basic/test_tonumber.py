@@ -2,7 +2,7 @@ from _pytest.python_api import raises
 
 from ay.__main__ import work_chunk
 from ay.control_structures import LuaError
-from ay.values import LuaNumber
+from ay.values import LuaNumber, LuaNil
 from ay.vm import VirtualMachine
 
 
@@ -38,3 +38,9 @@ def test_base():
         "return tonumber(\"ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ"
         "ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ\", 36)",
     ) == [LuaNumber(-1)]
+
+
+def test_fail():
+    assert execute(
+        "return tonumber(\"5\", 3)",
+    ) == [LuaNil]
