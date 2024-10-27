@@ -1,8 +1,8 @@
 from collections.abc import Sequence
 
-import lark
+import ay.ast_nodes as nodes
 
-from abstract_syntax_tree import nodes
+import lark
 
 
 def to_string_literal(

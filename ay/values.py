@@ -1,19 +1,18 @@
 from __future__ import annotations
 
+from abc import ABC
+from collections.abc import Callable
 from enum import Enum
-from typing import NamedTuple, TYPE_CHECKING, Optional
+from typing import NamedTuple, Self, TYPE_CHECKING
 
 import attrs
 
-from abstract_syntax_tree.nodes import Block
-from util.node import Node
-
 if TYPE_CHECKING:
-    from .control_structures import Scope
+    from ast_nodes import Block
 
 
-@attrs.define(slots=True)
-class LuaValue(Node):
+@attrs.define(slots=True, eq=False)
+class LuaValue(ABC):
     def get_metatable(self) -> LuaNilType | LuaTable:
         cls = self.__class__
         if hasattr(cls, "_metatable"):
@@ -33,7 +32,7 @@ class LuaValue(Node):
         return rel_ne(self, other).true
 
 
-@attrs.define(slots=True, repr=False)
+@attrs.define(slots=True, eq=False, repr=False)
 class LuaNilType(LuaValue):
     def __str__(self) -> str:
         return "nil"
@@ -49,7 +48,7 @@ LuaNil = LuaNilType()
 LuaNilType.__new__ = lambda cls: LuaNil
 
 
-@attrs.define(slots=True)
+@attrs.define(slots=True, eq=False)
 class LuaBool(LuaValue):
     true: bool
 
@@ -71,7 +70,7 @@ SIGN_BIT = 1 << 63
 ALL_SET = 2**64 - 1
 
 
-@attrs.define(slots=True, init=False)
+@attrs.define(slots=True, init=False, eq=False)
 class LuaNumber(LuaValue):
     value: int | float
     type: LuaNumberType | None
@@ -98,35 +97,41 @@ class LuaNumber(LuaValue):
     def __str__(self) -> str:
         return str(self.value)
 
+    def __hash__(self):
+        return hash(self.value)
 
-@attrs.define(slots=True)
+
+@attrs.define(slots=True, eq=False, frozen=True)
 class LuaString(LuaValue):
     content: bytes
 
     def __str__(self) -> str:
         return self.content.decode("utf-8")
 
+    def __hash__(self):
+        return hash(self.content)
 
 
-@attrs.define(slots=True)
+
+@attrs.define(slots=True, eq=False)
 class LuaObject(LuaValue):
     def __str__(self):
         return repr(self)
 
 
-@attrs.define(slots=True)
+@attrs.define(slots=True, eq=False)
 class LuaUserdata(LuaObject):
     pass
 
 
-@attrs.define(slots=True)
+@attrs.define(slots=True, eq=False)
 class LuaThread(LuaObject):
     pass
 
 
-@attrs.define(slots=True)
+@attrs.define(slots=True, eq=False)
 class LuaTable(LuaObject):
-    map: dict[LuaValue, LuaValue] = attrs.field(default=dict)
+    map: dict[LuaValue, LuaValue] = attrs.field(factory=dict)
     _metatable: LuaValue = LuaNil
 
     def get_metatable(self):
@@ -179,10 +184,59 @@ class Variable(NamedTuple):
         return f"<var {self.value}>"
 
 
-@attrs.define(slots=True)
+@attrs.define(slots=True, eq=False)
 class LuaFunction(LuaObject):
     param_names: list[LuaString]
     variadic: bool
-    parent_scope: Optional[Scope]
-    block: Block
-    interacts_with_the_interpreter: bool = False
+    parent_stack_frame: StackFrame | None
+    block: Block | Callable
+    interacts_with_the_vm: bool = False
+
+
+class StackExhaustionException(Exception):
+    pass
+
+
+@attrs.define(slots=True)
+class StackFrame:
+    parent: Self | None
+    locals: dict[LuaString, Variable] = attrs.field(factory=dict)
+    varargs: list[LuaValue] | None = None
+    protected: bool = False
+
+    def has(self, key: LuaString) -> bool:
+        assert isinstance(key, LuaString)
+        if key in self.locals:
+            return True
+        if self.parent is not None:
+            return self.parent.has(key)
+        return False
+
+    def get(self, key: LuaString) -> LuaValue:
+        assert isinstance(key, LuaString)
+        if key in self.locals:
+            return self.locals[key].value
+        if self.parent is not None:
+            return self.parent.get(key)
+        return LuaNil
+
+    def put_local(self, key: LuaString, variable: Variable):
+        assert isinstance(key, LuaString)
+        if not isinstance(variable, Variable):
+            raise TypeError(f"Expected Variable, got {type(variable)}")
+
+        if key in self.locals and self.locals[key].constant:
+            raise NotImplementedError()
+        self.locals[key] = variable
+
+    def put_nonlocal(self, key: LuaString, variable: Variable):
+        assert isinstance(key, LuaString)
+        if not isinstance(variable, Variable):
+            raise TypeError(f"Expected Variable, got {type(variable)}")
+
+        if key in self.locals:
+            self.put_local(key, variable)
+            return
+        if self.parent is None:
+            raise StackExhaustionException()
+        self.parent.put_nonlocal(key, variable)
