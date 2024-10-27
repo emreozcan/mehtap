@@ -8,14 +8,14 @@ from ay.ast_transformer import transformer
 from ay.util.py_lua_function import LibraryProvider, PyLuaRet
 from ay.util.py_lua_function import lua_function
 from ay.values import LuaTable, LuaValue, LuaNil, LuaString, LuaNumber, \
-    LuaNumberType, MAX_INT64, LuaFunction, LuaNilType, LuaThread, LuaUserdata
+    LuaNumberType, MAX_INT64, LuaFunction, LuaThread, LuaUserdata
 from ay.control_structures import LuaError
 from ay.values import LuaBool
 from ay.parser import chunk_parser, numeral_parser
 from ay.operations import rel_eq, length, rel_ne
 
 if TYPE_CHECKING:
-    from vm import VirtualMachine
+    from ay.vm import VirtualMachine
 
 
 SYMBOL_METATABLE = LuaString(b"__metatable")
@@ -430,7 +430,7 @@ def provide(table: LuaTable) -> None:
         #  (a string, not the value nil),
         #  "number", "string", "boolean", "table", "function", "thread", and
         #  "userdata".
-        if isinstance(v, LuaNilType):
+        if isinstance(v is LuaNil):
             return [LuaString(b"nil")]
         if isinstance(v, LuaNumber):
             return [LuaString(b"number")]
