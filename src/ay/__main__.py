@@ -145,7 +145,7 @@ def display_object(val: LuaValue | list[LuaValue]) -> str | None:
 def work_expr(
         expr: str,
         vm: VirtualMachine,
-) -> LuaValue:
+) -> LuaValue | list[LuaValue]:
     parsed_lua = expr_parser.parse(expr)
     ast = transformer.transform(parsed_lua)
     r = ast.evaluate(vm)
