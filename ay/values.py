@@ -8,7 +8,7 @@ from typing import NamedTuple, Self, TYPE_CHECKING
 import attrs
 
 if TYPE_CHECKING:
-    from ast_nodes import Block
+    from ay.ast_nodes import Block
 
 
 @attrs.define(slots=True, eq=False)

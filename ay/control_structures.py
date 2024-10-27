@@ -7,7 +7,7 @@ import attrs
 from ay.values import LuaValue
 
 if TYPE_CHECKING:
-    from ast_nodes import Name
+    from ay.ast_nodes import Name
 
 
 class LuaError(Exception):

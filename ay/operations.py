@@ -1,6 +1,6 @@
 from typing import Self
 
-from .values import LuaBool, LuaValue, LuaString, LuaNumber, MAX_INT64, \
+from ay.values import LuaBool, LuaValue, LuaString, LuaNumber, MAX_INT64, \
     LuaNumberType, MIN_INT64, SIGN_BIT, ALL_SET, LuaNil, LuaTable
 
 

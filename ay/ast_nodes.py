@@ -9,7 +9,8 @@ from typing import Literal, TYPE_CHECKING
 import attrs
 
 import ay.values as ay_values
-from ay.control_structures import BreakException, GotoException, ReturnException
+from ay.control_structures import BreakException, GotoException, \
+    ReturnException, LuaError
 from ay.values import LuaNumber, LuaValue, LuaNumberType, LuaString, \
     MAX_INT64, LuaTable, LuaFunction, StackFrame
 from ay.operations import int_overflow_wrap_around, str_to_lua_string, adjust, \

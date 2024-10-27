@@ -6,7 +6,7 @@ from typing import TypeAlias, TYPE_CHECKING
 from ay.values import LuaValue, LuaTable, LuaString, LuaFunction, \
     LuaNil, LuaNumber, MAX_INT64, LuaNumberType, LuaBool
 from ay.control_structures import LuaError, ReturnException
-from ast_nodes import call_function
+from ay.ast_nodes import call_function
 
 if TYPE_CHECKING:
     from ay.vm import VirtualMachine
