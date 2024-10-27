@@ -211,3 +211,7 @@ class LuaTransformer(lark.Transformer):
     @staticmethod
     def exp_nil(NIL: nodes.Terminal) -> nodes.LiteralNil:
         return nodes.LiteralNil()
+
+
+transformer = LuaTransformer()
+

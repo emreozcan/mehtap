@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 import attrs
 
 from ay.values import LuaValue
+from operations import str_to_lua_string
 
 if TYPE_CHECKING:
     from ay.ast_nodes import Name
@@ -16,8 +17,10 @@ class LuaError(Exception):
     message: LuaValue
     level: int
 
-    def __init__(self, message: LuaValue, level: int = 1):
+    def __init__(self, message: LuaValue | str, level: int = 1):
         if not isinstance(message, LuaValue):
+            if isinstance(message, str):
+                message = str_to_lua_string(message)
             raise TypeError(f"Expected LuaValue, got {type(message)}")
         self.message = message
         self.level = level

@@ -21,3 +21,11 @@ expr_parser = lark.Lark(
     propagate_positions=True,
     debug=True,
 )
+
+numeral_parser = lark.Lark(
+    lua_grammar,
+    start="numeral",
+    parser="earley",
+    propagate_positions=True,
+    debug=True,
+)

@@ -19,6 +19,18 @@ class LuaValue(ABC):
             return cls._metatable
         return LuaNil
 
+    def has_metamethod(self, name: LuaString) -> bool:
+        metatable = self.get_metatable()
+        if metatable is LuaNil:
+            return False
+        return metatable.has(name)
+
+    def get_metamethod(self, name: LuaString) -> LuaValue | None:
+        metatable = self.get_metatable()
+        if metatable is LuaNil:
+            return None
+        return metatable.get_with_fallback(name, fallback=None)
+
     def set_metatable(self, value: LuaValue):
         cls = self.__class__
         cls._metatable = value
@@ -147,7 +159,11 @@ class LuaTable(LuaObject):
             + "}"
         )
 
-    def put(self, key: LuaValue, value: LuaValue):
+    # TODO: Change raw's default value to False.
+    def put(self, key: LuaValue, value: LuaValue, *, raw: bool = True):
+        if not raw:
+            raise NotImplementedError()  # todo. (__newindex metavalue)
+
         if key is LuaNil:
             raise NotImplementedError()
         if isinstance(key, LuaNumber):
@@ -162,10 +178,16 @@ class LuaTable(LuaObject):
         # traversing it by using next().
         self.map[key] = value
 
-    def get(self, key: LuaValue) -> LuaValue:
+    # TODO: Change raw's default value to False.
+    def get(self, key: LuaValue, *, raw: bool = True) -> LuaValue:
+        if not raw:
+            raise NotImplementedError()  # todo. (__index metavalue)
         if key in self.map:
             return self.map[key]
         return LuaNil
+
+    def get_with_fallback[T](self, key: LuaValue, fallback: T) -> LuaValue | T:
+        return self.map.get(key, fallback)
 
     def has(self, key: LuaValue) -> bool:
         return key in self.map
@@ -191,6 +213,15 @@ class LuaFunction(LuaObject):
     parent_stack_frame: StackFrame | None
     block: Block | Callable
     interacts_with_the_vm: bool = False
+
+    def __str__(self):
+        if not self.param_names:
+            return f"function: {hex(id(self))}"
+
+        return (
+            f"function({', '.join(map(str, self.param_names))}): "
+            f"{hex(id(self))}"
+        )
 
 
 class StackExhaustionException(Exception):

@@ -4,7 +4,7 @@ from ay.values import LuaBool, LuaValue, LuaString, LuaNumber, MAX_INT64, \
     LuaNumberType, MIN_INT64, SIGN_BIT, ALL_SET, LuaNil, LuaTable
 
 
-def rel_eq(a: LuaValue, b: LuaValue) -> LuaBool:
+def rel_eq(a: LuaValue, b: LuaValue, *, raw: bool = False) -> LuaBool:
     # Equality (==) first compares the type of its operands.
     # If the types are different, then the result is false.
     type_a = type(a)
@@ -23,7 +23,12 @@ def rel_eq(a: LuaValue, b: LuaValue) -> LuaBool:
         return LuaBool(a.value == b.value)
     # Tables, userdata, and threads are compared by reference:
     # two objects are considered equal only if they are the same object.
-    return LuaBool(a is b)
+    if a is b or raw:
+        return LuaBool(True)
+    # You can change the way that Lua compares tables and userdata by using the
+    # __eq metamethod (see §2.4).
+    return LuaBool(a is b)  # TODO.
+
 
 
 def rel_ne(a: LuaValue, b: LuaValue) -> LuaBool:
@@ -310,7 +315,8 @@ def concat(a: LuaValue, b: LuaValue) -> LuaString:
     raise NotImplementedError()  # TODO.
 
 
-def length(a: LuaValue) -> LuaNumber:
+# TODO: Change the default value of raw to False.
+def length(a: LuaValue, *, raw: bool = True) -> LuaNumber:
     # The length of a string is its number of bytes.
     if isinstance(a, LuaString):
         return LuaNumber(len(a.content), LuaNumberType.INTEGER)
@@ -318,6 +324,9 @@ def length(a: LuaValue) -> LuaNumber:
     # A program can modify the behavior of the length operator for any value but
     # strings through the __len metamethod (see §2.4).
     # TODO.
+
+    if a.has_metamethod(LuaString(b"__len")) and not raw:
+        raise NotImplementedError()  # TODO.
 
     if isinstance(a, LuaTable):
         if not a.map:

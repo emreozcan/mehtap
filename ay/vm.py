@@ -13,11 +13,13 @@ from ay.values import LuaTable, LuaString, Variable, StackFrame, \
 class VirtualMachine:
     globals_: LuaTable = attrs.field(factory=create_global_table)
     stack_frame: StackFrame = attrs.field(factory=lambda: StackFrame(None, {}))
+    emitting_warnings: bool = False
 
     def push(self) -> Self:
         return VirtualMachine(
             globals_=self.globals_,
-            stack_frame=StackFrame(self.stack_frame, {})
+            stack_frame=StackFrame(self.stack_frame, {}),
+            emitting_warnings=self.emitting_warnings,
         )
 
     def has(self, key: LuaString):
