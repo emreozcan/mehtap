@@ -123,8 +123,7 @@ def provide(table: LuaTable) -> None:
         # will iterate over the key–value pairs (1,t[1]), (2,t[2]), ..., up
         # to the first absent index.
         @lua_function()
-        def iterator_function(state, control_variable: LuaNumber) \
-                -> PyLuaRet:
+        def iterator_function(state, control_variable: LuaNumber) -> PyLuaRet:
             index = control_variable.value + 1
             if index > MAX_INT64:
                 return None
@@ -201,21 +200,18 @@ def provide(table: LuaTable) -> None:
         #      for k,v in pairs(t) do body end
         # will iterate over all key–value pairs of table t.
         items = iter(t.map.items())
+
         # TODO: Implement this function in a way that uses state.
-        def iterator_function(state, control_variable) -> list[LuaValue] | None:
+        @lua_function()
+        def iterator_function(state, control_variable) -> PyLuaRet:
             try:
                 key, value = next(items)
             except StopIteration:
-                return
+                return None
             return [key, value]
 
         return [
-            LuaFunction(
-                param_names=[],
-                variadic=False,
-                parent_stack_frame=None,
-                block=iterator_function
-            ),
+            iterator_function,
             t,
             LuaNil,
         ]
