@@ -40,7 +40,7 @@ def provide(table: LuaTable) -> None:
             #  when absent, it defaults to "assertion failed!"
             raise LuaError("assertion failed!")
         #  otherwise, returns all its arguments.
-        return [v, message]
+        return [v, message, *a]
 
     @lua_function(table)
     def collectgarbage() -> PyLuaRet:
