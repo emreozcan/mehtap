@@ -10,7 +10,7 @@ import attrs
 
 import ay.values as ay_values
 from ay.control_structures import BreakException, GotoException, \
-    ReturnException, LuaError
+    ReturnException
 from ay.values import LuaNumber, LuaValue, LuaNumberType, LuaString, \
     MAX_INT64, LuaTable, LuaFunction, StackFrame
 from ay.operations import int_overflow_wrap_around, str_to_lua_string, adjust, \
@@ -18,7 +18,7 @@ from ay.operations import int_overflow_wrap_around, str_to_lua_string, adjust, \
 import ay.operations as ay_operations
 
 if TYPE_CHECKING:
-    from ay.vm import VirtualMachine
+    from vm import VirtualMachine
 
 
 @attrs.define(slots=True)

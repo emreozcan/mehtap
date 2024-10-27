@@ -90,7 +90,7 @@ class LuaNumber(LuaValue):
     def __init__(
             self,
             value: int | float,
-            type: LuaNumberType | None
+            type: LuaNumberType | None = None,
     ) -> None:
         super().__init__()
         self.value = value

@@ -39,6 +39,14 @@ COPYRIGHT_TEXT = f"ay {__ay_version__} Copyright (c) 2024 Emre Özcan"
 
 
 def main():
+    try:
+        sys.exit(_main())
+    except KeyboardInterrupt:
+        print("KeyboardInterrupt")
+        sys.exit(1)
+
+
+def _main():
     arg_parser = argparse.ArgumentParser(
         description="Lua interpreter in Python",
     )
@@ -100,6 +108,7 @@ def main():
 
 
 def enter_interactive(vm: VirtualMachine) -> None:
+    print(COPYRIGHT_TEXT)
     collected_line = ""
     while True:
         try:
@@ -154,8 +163,4 @@ def work_chunk(
 
 
 if __name__ == "__main__":
-    try:
-        sys.exit(main())
-    except KeyboardInterrupt:
-        print("KeyboardInterrupt")
-        sys.exit(1)
+    main()

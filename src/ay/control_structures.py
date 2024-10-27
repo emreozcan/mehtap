@@ -5,10 +5,10 @@ from typing import TYPE_CHECKING
 import attrs
 
 from ay.values import LuaValue
-from operations import str_to_lua_string
+from ay.operations import str_to_lua_string
 
 if TYPE_CHECKING:
-    from ay.ast_nodes import Name
+    from ast_nodes import Name
 
 
 class LuaError(Exception):

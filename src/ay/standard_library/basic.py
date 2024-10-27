@@ -15,7 +15,7 @@ from ay.parser import chunk_parser, numeral_parser
 from ay.operations import rel_eq, length, rel_ne
 
 if TYPE_CHECKING:
-    from ay.vm import VirtualMachine
+    from vm import VirtualMachine
 
 
 SYMBOL_METATABLE = LuaString(b"__metatable")
