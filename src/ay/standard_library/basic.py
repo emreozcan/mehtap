@@ -313,13 +313,16 @@ def provide(table: LuaTable) -> None:
                 )
             index = int(index.value)
             # a negative number indexes from the end (-1 is the last argument).
-            while index < 0:
-                index = len(a) + index
-            return list(a[index:])
+            if index == 0 or index < -len(a):
+                raise LuaError(
+                    "bad argument #1 to 'select' (index out of range)"
+                )
+            return list(a[index-1:])
         # Otherwise, index must be the string "#",
-        if rel_ne(index, LuaString(b"#")):
+        if index != LuaString(b"#"):
             raise LuaError(
-                "bad argument #1 to 'select' (integer or '#')"
+                "bad argument #1 to 'select' "
+                "(must be integer or the string '#')"
             )
         # and select returns the total number of extra arguments it received.
         return [LuaNumber(len(a), LuaNumberType.INTEGER)]
