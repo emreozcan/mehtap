@@ -354,7 +354,13 @@ class TableConstructor(Expression):
             field_iter = iter(self.fields)
         for field in field_iter:
             if isinstance(field, FieldWithKey):
-                table.put(field.key.evaluate(vm), field.value.evaluate(vm))
+                if isinstance(field.key, Name):
+                    key = str_to_lua_string(field.key.name.text)
+                elif isinstance(field.key, Expression):
+                    key = field.key.evaluate(vm)
+                else:
+                    raise NotImplementedError(f"{type(field.key)=}")
+                table.put(key, field.value.evaluate(vm))
             elif isinstance(field, FieldCounterKey):
                 key = LuaNumber(counter, LuaNumberType.INTEGER)
                 counter += 1
