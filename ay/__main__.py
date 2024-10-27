@@ -1,4 +1,6 @@
-from . import lua_parser, LuaInterpreter
+from ay.abstract_syntax_tree import nodes
+from ay.abstract_syntax_tree.transformer import LuaTransformer
+from ay import lua_parser, LuaInterpreter
 
 
 def main():
@@ -21,10 +23,10 @@ end
     parsed_lua = lua_parser.parse(text)
     print(f"Parse tree:\n{parsed_lua.pretty()}")
 
-    lua_interpreter = LuaInterpreter()
-    ret_val = lua_interpreter.visit(parsed_lua)
-    if ret_val:
-        print("[" + ", ".join(str(x) for x in ret_val) + "]")
+    lua_transformer = LuaTransformer()
+    ast: nodes.Chunk = lua_transformer.transform(parsed_lua)
+
+    print(f"Abstract syntax tree:\n{ast!r}")
 
 
 if __name__ == "__main__":

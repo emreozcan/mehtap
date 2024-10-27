@@ -8,6 +8,8 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "^3.13"
 lark = "^1.2.2"
+attrs = "^24.2.0"
+pydantic = "^2.9.2"
 
 
 [tool.poetry.group.dev.dependencies]
