@@ -3,6 +3,7 @@ from __future__ import annotations
 import sys
 from typing import TYPE_CHECKING
 
+from ay import operations
 from ay.ast_nodes import call_function, Unary, Terminal
 from ay.ast_transformer import transformer
 from ay.util.py_lua_function import LibraryProvider, PyLuaRet
@@ -374,7 +375,9 @@ def provide(table: LuaTable) -> None:
                     elif e_string[0] == "-":
                         e_parsed = Unary(
                             op=Terminal("-"),
-                            exp=numeral_parser.parse(e_string[1:])
+                            exp=transformer.transform(
+                                numeral_parser.parse(e_string[1:])
+                            )
                         )
                     else:
                         e_parsed = numeral_parser.parse(e_string)
@@ -384,14 +387,22 @@ def provide(table: LuaTable) -> None:
         # When called with base, then e must be a string to be interpreted as an
         # integer numeral in that base. The base may be any integer between
         # 2 and 36, inclusive.
-        # TODO: Determine if e can have leading and trailing spaces and a sign
-        #       when base is provided.
+        if not isinstance(e, LuaString):
+            raise LuaError(
+                f"bad argument to 'tonumber' "
+                f"(string expected, got {operations.type_(e)!s})"
+            )
         # In bases above 10, the letter 'A' (in either upper or lower case)
         # represents 10, 'B' represents 11, and so forth, with 'Z' representing
         # 35. If the string e is not a valid numeral in the given base, the
         # function returns fail.
         acc = 0
-        for i, c in enumerate(e.content.decode("utf-8")):
+        e_string = e.content.strip().decode("utf-8")
+        if e_string[0] in ("+", "-"):
+            start = 1
+        else:
+            start = 0
+        for i, c in enumerate(e_string[start:]):
             if "0" <= c <= "9":
                 digit = int(c)
             elif "a" <= c <= "z":
@@ -404,8 +415,12 @@ def provide(table: LuaTable) -> None:
                 return [FAIL]
             acc = acc * base.value + digit
         if acc < MAX_INT64:
-            return [LuaNumber(acc, LuaNumberType.INTEGER)]
-        return [LuaNumber(float(acc), LuaNumberType.FLOAT)]
+            number = LuaNumber(acc, LuaNumberType.INTEGER)
+        else:
+            number = LuaNumber(-1, LuaNumberType.INTEGER)
+        if e_string[0] == "-":
+            number.value = -number.value
+        return [number]
 
     @lua_function(table, interacts_with_the_vm=True)
     def tostring(vm: VirtualMachine, v: LuaValue) -> PyLuaRet:
@@ -437,23 +452,7 @@ def provide(table: LuaTable) -> None:
         #  (a string, not the value nil),
         #  "number", "string", "boolean", "table", "function", "thread", and
         #  "userdata".
-        if isinstance(v is LuaNil):
-            return [LuaString(b"nil")]
-        if isinstance(v, LuaNumber):
-            return [LuaString(b"number")]
-        if isinstance(v, LuaString):
-            return [LuaString(b"string")]
-        if isinstance(v, LuaBool):
-            return [LuaString(b"boolean")]
-        if isinstance(v, LuaTable):
-            return [LuaString(b"table")]
-        if isinstance(v, LuaFunction):
-            return [LuaString(b"function")]
-        if isinstance(v, LuaThread):
-            return [LuaString(b"thread")]
-        if isinstance(v, LuaUserdata):
-            return [LuaString(b"userdata")]
-        raise TypeError(f"Unexpected type: {type(v)}")
+        return [operations.type_(v)]
 
     from ay import __ay_version__
     # _VERSION

@@ -1,7 +1,8 @@
 from typing import Self
 
 from ay.values import LuaBool, LuaValue, LuaString, LuaNumber, MAX_INT64, \
-    LuaNumberType, MIN_INT64, SIGN_BIT, ALL_SET, LuaNil, LuaTable
+    LuaNumberType, MIN_INT64, SIGN_BIT, ALL_SET, LuaNil, LuaTable, LuaFunction, \
+    LuaThread, LuaUserdata
 
 
 def rel_eq(a: LuaValue, b: LuaValue, *, raw: bool = False) -> LuaBool:
@@ -386,3 +387,30 @@ def adjust_without_requirement(multires: Multires) -> list[LuaValue]:
         if isinstance(value, list):
             multires[i] = adjust(value, 1)[0]
     return multires
+
+
+def type_(v: LuaValue) -> LuaString:
+    """type (v)"""
+    #  Returns the type of its only argument, coded as a string.
+    #  The possible results of this function are "nil"
+    #  (a string, not the value nil),
+    #  "number", "string", "boolean", "table", "function", "thread", and
+    #  "userdata".
+    if v is LuaNil:
+        return LuaString(b"nil")
+    if isinstance(v, LuaNumber):
+        return LuaString(b"number")
+    if isinstance(v, LuaString):
+        return LuaString(b"string")
+    if isinstance(v, LuaBool):
+        return LuaString(b"boolean")
+    if isinstance(v, LuaTable):
+        return LuaString(b"table")
+    if isinstance(v, LuaFunction):
+        return LuaString(b"function")
+    if isinstance(v, LuaThread):
+        return LuaString(b"thread")
+    if isinstance(v, LuaUserdata):
+        return LuaString(b"userdata")
+    raise TypeError(f"Unexpected type: {type(v)}")
+
