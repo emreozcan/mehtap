@@ -29,13 +29,13 @@ FAIL = LuaNil
 
 def provide(table: LuaTable) -> None:
     @lua_function(table, name="assert")
-    def assert_(v: LuaValue, message: LuaValue = None) -> PyLuaRet:
+    def assert_(v: LuaValue, message: LuaValue = LuaNil, *a) -> PyLuaRet:
         """assert (v [, message])"""
         #  Raises an error if the value of its argument v is false
         #  (i.e., nil or false);
         if v is LuaNil or (isinstance(v, LuaBool) and not v.true):
             #  In case of error, message is the error object;
-            if message is not None:
+            if message is not LuaNil:
                 raise LuaError(message)
             #  when absent, it defaults to "assertion failed!"
             raise LuaError("assertion failed!")
