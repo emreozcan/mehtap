@@ -75,11 +75,21 @@ def provide(table: LuaTable) -> None:
     @lua_function(table, interacts_with_the_vm=True)
     def error(
             vm: VirtualMachine,
-            message: LuaValue,
+            message: LuaValue = LuaNil,
             level: LuaNumber = LuaNumber(1, LuaNumberType.INTEGER)
     ) -> PyLuaRet:
         """error(message[, level])"""
-        raise NotImplementedError()  # todo.
+        #  Raises an error (see §2.3) with message as the error object.
+        #  This function never returns.
+        raise LuaError(message)
+        # TODO:
+        # Usually, error adds some information about the error position at the
+        # beginning of the message, if the message is a string.
+        # The level argument specifies how to get the error position.
+        # With level 1 (the default), the error position is where the error
+        # function was called. Level 2 points the error to where the function
+        # that called error was called; and so on. Passing a level 0 avoids the
+        # addition of error position information to the message.
 
     # _G
     # A global variable (not a function) that holds the global environment
