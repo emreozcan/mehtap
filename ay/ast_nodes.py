@@ -444,18 +444,10 @@ class SumOp(BinOp):
         left = self.lhs.evaluate(vm)
         right = self.rhs.evaluate(vm)
         match self.op:
-            case "<":
-                return ay_operations.rel_lt(left, right)
-            case "<=":
-                return ay_operations.rel_le(left, right)
-            case ">":
-                return ay_operations.rel_gt(left, right)
-            case ">=":
-                return ay_operations.rel_ge(left, right)
-            case "==":
-                return ay_operations.rel_eq(left, right)
-            case "~=":
-                return ay_operations.rel_ne(left, right)
+            case "+":
+                return ay_operations.arith_add(left, right)
+            case "-":
+                return ay_operations.arith_sub(left, right)
             case _:
                 raise NotImplementedError(f"{self.op=}")
 
