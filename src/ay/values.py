@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 
 @attrs.define(slots=True, eq=False)
 class LuaValue(ABC):
-    def get_metatable(self) -> LuaNilType | LuaTable:
+    def get_metatable(self) -> LuaNil | LuaTable:
         cls = self.__class__
         if hasattr(cls, "_metatable"):
             return cls._metatable
@@ -57,7 +57,7 @@ class LuaNilType(LuaValue):
 
 
 LuaNil = LuaNilType()
-LuaNilType.__new__ = lambda cls: LuaNil
+del LuaNilType
 
 
 @attrs.define(slots=True, eq=False)
