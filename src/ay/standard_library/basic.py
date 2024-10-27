@@ -472,7 +472,7 @@ def provide(table: LuaTable) -> None:
         #
         # By convention, a one-piece message starting with '@' is intended to be
         # a control message, which is a message to the warning system itself.
-        if not a and msg1.content[0] == b"@":
+        if not a and msg1.content.startswith(b"@"):
             # In particular, the standard warning function in Lua recognizes the
             # control messages
             if msg1.content == b"@off":
@@ -486,7 +486,7 @@ def provide(table: LuaTable) -> None:
         # TODO: Improve warning system.
         if not vm.emitting_warnings:
             return None
-        print("Warning:", *a, sep=" ")
+        print("Warning:", msg1, *a, sep=" ")
         return None
 
     @lua_function(table, interacts_with_the_vm=True)
