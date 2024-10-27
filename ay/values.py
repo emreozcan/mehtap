@@ -1,18 +1,26 @@
+from __future__ import annotations
+
 from enum import Enum
 from typing import NamedTuple, TYPE_CHECKING, Optional
+
+import attrs
+
+from abstract_syntax_tree.nodes import Block
+from util.node import Node
 
 if TYPE_CHECKING:
     from .control_structures import Scope
 
 
-class LuaValue:
-    def get_metatable(self) -> "LuaNilType | LuaTable":
+@attrs.define(slots=True)
+class LuaValue(Node):
+    def get_metatable(self) -> LuaNilType | LuaTable:
         cls = self.__class__
-        if not hasattr(cls, "_metatable"):
-            return LuaNil
-        return cls._metatable
+        if hasattr(cls, "_metatable"):
+            return cls._metatable
+        return LuaNil
 
-    def set_metatable(self, value: "LuaValue"):
+    def set_metatable(self, value: LuaValue):
         cls = self.__class__
         cls._metatable = value
 
@@ -25,24 +33,8 @@ class LuaValue:
         return rel_ne(self, other).true
 
 
-class SingletonType(type):
-    _instances: dict[type, object] = {}
-
-    def __call__(cls, *args, **kwargs):
-        if cls not in cls._instances:
-            cls._instances[cls] = (
-                super(SingletonType, cls).__call__(*args, **kwargs)
-            )
-        return cls._instances[cls]
-
-
-
-class LuaNilType(LuaValue, metaclass=SingletonType):
-    __slots__ = []
-
-    def __init__(self) -> None:
-        super().__init__()
-
+@attrs.define(slots=True, repr=False)
+class LuaNilType(LuaValue):
     def __str__(self) -> str:
         return "nil"
 
@@ -52,25 +44,17 @@ class LuaNilType(LuaValue, metaclass=SingletonType):
     def __hash__(self):
         return hash(None)
 
-    def __call__(self, *args, **kwargs):
-        return self
-
 
 LuaNil = LuaNilType()
+LuaNilType.__new__ = lambda cls: LuaNil
 
 
+@attrs.define(slots=True)
 class LuaBool(LuaValue):
-    __slots__ = ["true"]
-
-    def __init__(self, true) -> None:
-        super().__init__()
-        self.true = true
+    true: bool
 
     def __str__(self) -> str:
         return "true" if self.true else "false"
-
-    def __repr__(self):
-        return f"LuaBool({self.true})"
 
     def __hash__(self):
         return hash(self.true)
@@ -87,8 +71,10 @@ SIGN_BIT = 1 << 63
 ALL_SET = 2**64 - 1
 
 
+@attrs.define(slots=True, init=False)
 class LuaNumber(LuaValue):
-    __slots__ = ["value", "type"]
+    value: int | float
+    type: LuaNumberType | None
 
     def __init__(
             self,
@@ -112,67 +98,36 @@ class LuaNumber(LuaValue):
     def __str__(self) -> str:
         return str(self.value)
 
-    def __repr__(self) -> str:
-        return f"LuaNumber({self.value})"
 
-    def __hash__(self):
-        return hash(self.value)
-
-
+@attrs.define(slots=True)
 class LuaString(LuaValue):
-    __slots__ = ["content"]
-
-    def __init__(self, value: bytes):
-        super().__init__()
-        self.content = value
+    content: bytes
 
     def __str__(self) -> str:
         return self.content.decode("utf-8")
 
-    def __repr__(self):
-        return f"LuaString({self.content!r})"
-
-    def __hash__(self):
-        return hash(self.content)
 
 
+@attrs.define(slots=True)
 class LuaObject(LuaValue):
-    __slots__ = []
-
-    def __init__(self):
-        super().__init__()
-
     def __str__(self):
         return repr(self)
 
-    def __repr__(self):
-        return f"<{self.__class__.__name__} {hex(id(self))}>"
 
-    def __hash__(self):
-        return hash(id(self))
-
-
+@attrs.define(slots=True)
 class LuaUserdata(LuaObject):
-    __slots__ = []
-
-    def __init__(self):
-        super().__init__()
+    pass
 
 
+@attrs.define(slots=True)
 class LuaThread(LuaObject):
-    __slots__ = []
-
-    def __init__(self):
-        super().__init__()
+    pass
 
 
+@attrs.define(slots=True)
 class LuaTable(LuaObject):
-    __slots__ = ["map", "_metatable"]
-
-    def __init__(self):
-        super().__init__()
-        self.map: dict[LuaValue, LuaValue] = {}
-        self._metatable = LuaNil
+    map: dict[LuaValue, LuaValue] = attrs.field(default=dict)
+    _metatable: LuaValue = LuaNil
 
     def get_metatable(self):
         return self._metatable
@@ -186,9 +141,6 @@ class LuaTable(LuaObject):
             + ", ".join(f"{k!s}: {v!s}" for k, v in self.map.items())
             + "}"
         )
-
-    def __repr__(self):
-        return f"LuaTable({self.map})"
 
     def put(self, key: LuaValue, value: LuaValue):
         if key is LuaNil:
@@ -227,27 +179,10 @@ class Variable(NamedTuple):
         return f"<var {self.value}>"
 
 
+@attrs.define(slots=True)
 class LuaFunction(LuaObject):
-    __slots__ = [
-        "param_names",
-        "variadic",
-        "parent_scope",
-        "block",
-        "interacts_with_the_interpreter",
-    ]
-
-    def __init__(
-            self,
-            *,
-            param_names: list[LuaString],
-            variadic: bool,
-            parent_scope: Optional["Scope"],
-            block,
-            interacts_with_the_interpreter: bool = False
-    ):
-        super().__init__()
-        self.param_names = param_names
-        self.variadic = variadic
-        self.parent_scope = parent_scope
-        self.block = block
-        self.interacts_with_the_interpreter = interacts_with_the_interpreter
+    param_names: list[LuaString]
+    variadic: bool
+    parent_scope: Optional[Scope]
+    block: Block
+    interacts_with_the_interpreter: bool = False

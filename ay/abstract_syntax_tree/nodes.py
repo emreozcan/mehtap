@@ -1,29 +1,13 @@
 from __future__ import annotations
 
-from abc import ABC
+from abc import ABC, abstractmethod
 from collections.abc import Sequence
-from typing import Literal, Annotated
+from typing import Literal
 
 import attrs
 
-DEBUG = True
-
-if DEBUG:
-    from pydantic import BaseModel
-
-    def _serializer(o):
-        if isinstance(o, tuple):
-            return list(o)
-
-    BaseModel.__pydantic_serializer__ = _serializer
-    attrs.define = lambda *a, **kw: (lambda x: x)
-else:
-    BaseModel = object
-
-
-@attrs.define(slots=True)
-class Node(BaseModel, ABC):
-    pass
+from util.node import Node
+from vm import VirtualMachine
 
 
 @attrs.define(slots=True)
@@ -54,11 +38,13 @@ class Block(NonTerminal):
 
 @attrs.define(slots=True)
 class Statement(NonTerminal, ABC):
-    pass
+    # todo: @abstractmethod
+    def execute(self, vm: VirtualMachine) -> None:
+        pass
 
 
 @attrs.define(slots=True)
-class Expression(Statement, ABC):
+class Expression(NonTerminal, ABC):
     pass
 
 
@@ -142,13 +128,13 @@ class FuncDef(Expression):
 
 
 @attrs.define(slots=True)
-class FuncCallRegular(Expression):
+class FuncCallRegular(Expression, Statement):
     name: Expression
     args: Sequence[Expression]
 
 
 @attrs.define(slots=True)
-class FuncCallMethod(Expression):
+class FuncCallMethod(Expression, Statement):
     object: Expression
     method: Name
     args: Sequence[Expression]

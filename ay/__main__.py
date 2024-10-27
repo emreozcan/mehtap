@@ -1,6 +1,8 @@
+import json
+
 from ay.abstract_syntax_tree import nodes
 from ay.abstract_syntax_tree.transformer import LuaTransformer
-from ay import lua_parser, LuaInterpreter
+from ay import lua_parser
 
 
 def main():
@@ -26,7 +28,9 @@ end
     lua_transformer = LuaTransformer()
     ast: nodes.Chunk = lua_transformer.transform(parsed_lua)
 
-    print(f"Abstract syntax tree:\n{ast!r}")
+    serialized_ast = ast.as_dict()
+
+    print(f"Abstract syntax tree:\n{json.dumps(serialized_ast, indent=4)}")
 
 
 if __name__ == "__main__":
