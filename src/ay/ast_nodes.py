@@ -3,7 +3,7 @@ from __future__ import annotations
 import io
 import string
 from abc import ABC, abstractmethod
-from collections.abc import Sequence
+from collections.abc import Sequence, Iterable
 from typing import Literal, TYPE_CHECKING
 
 import attrs
@@ -19,6 +19,16 @@ import ay.operations as ay_operations
 
 if TYPE_CHECKING:
     from vm import VirtualMachine
+
+
+def flatten(v: Iterable[LuaValue | list[LuaValue]]) -> list[LuaValue]:
+    result = []
+    for elem in v:
+        if isinstance(elem, list):
+            result.extend(flatten(elem))
+        else:
+            result.append(elem)
+    return result
 
 
 @attrs.define(slots=True)
@@ -66,10 +76,10 @@ class Block(Statement, Expression):
     def evaluate(self, vm: VirtualMachine) -> Sequence[LuaValue]:
         for stmt in self.statements:
             stmt.execute(vm)
-        return [
+        return flatten(
             expr.evaluate(vm)
             for expr in self.return_statement.values
-        ] if self.return_statement else []
+        ) if self.return_statement else []
 
     def execute(self, vm: VirtualMachine) -> None:
         for stmt in self.statements:
@@ -435,7 +445,7 @@ def call_function(
     try:
         _call_function(vm, function, args)
     except ReturnException as e:
-        return e.values
+        return e.values if e.values is not None else []
     return [ay_values.LuaNil]
 
 
