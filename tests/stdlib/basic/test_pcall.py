@@ -4,7 +4,7 @@ from ay.values import LuaObject, LuaString, Variable, LuaBool
 from ay.vm import VirtualMachine
 
 
-def test_error_false():
+def test_pcall_false():
     vm = VirtualMachine()
 
     symbol = LuaObject()
@@ -18,7 +18,7 @@ def test_error_false():
     assert results[1] is symbol
 
 
-def test_error_true():
+def test_pcall_true():
     vm = VirtualMachine()
 
     symbol = LuaObject()
