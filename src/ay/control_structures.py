@@ -21,7 +21,8 @@ class LuaError(Exception):
         if not isinstance(message, LuaValue):
             if isinstance(message, str):
                 message = str_to_lua_string(message)
-            raise TypeError(f"Expected LuaValue, got {type(message)}")
+            else:
+                raise TypeError(f"Expected LuaValue, got {type(message)}")
         self.message = message
         self.level = level
         super().__init__(message, level)
