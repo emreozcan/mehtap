@@ -213,6 +213,7 @@ class LuaFunction(LuaObject):
     parent_stack_frame: StackFrame | None
     block: Block | Callable
     interacts_with_the_vm: bool = False
+    name: str = None
 
     def __str__(self):
         if not self.param_names:

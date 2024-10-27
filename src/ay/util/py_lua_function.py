@@ -31,6 +31,7 @@ def lua_function(
             parent_stack_frame=None,
             block=new_function,
             interacts_with_the_vm=interacts_with_the_vm,
+            name=func.__name__,
         )
         if table is not None:
             table.put(
