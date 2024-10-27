@@ -143,7 +143,7 @@ class NumeralDec(Numeral):
 class LiteralString(Expression):
     text: Terminal
 
-    def evaluate(self, vm: VirtualMachine) -> LuaValue:
+    def _simple_string(self) -> LuaString:
         bytes_io = io.BytesIO()
         currently_skipping_whitespace = False
         currently_reading_decimal = False
@@ -224,6 +224,54 @@ class LiteralString(Expression):
             bytes_io.write(character.encode("utf-8"))
         bytes_io.seek(0)
         return LuaString(bytes_io.read())
+
+    def _long_bracket(self) -> LuaString:
+        # Literals in this bracketed form can run for several lines,
+        # do not interpret any escape sequences,
+        # and ignore long brackets of any other level.
+        level = 1
+        while self.text.text[level] == "=":
+            level += 1
+        level -= 1
+        # [====[...
+        #   0123456
+        # ...]====]
+        # (-)654321
+        symbol_len = level + 2
+        bytes_io = io.BytesIO()
+        str_iter = iter(self.text.text[symbol_len:-symbol_len])
+        converting_end_of_line = False
+        first_character_seen = False
+        for character in str_iter:
+            # Any kind of end-of-line sequence (carriage return, newline,
+            # carriage return followed by newline, or newline followed by
+            # carriage return) is converted to a simple newline.
+            if character in ("\r", "\n"):
+                if not first_character_seen:
+                    # When the opening long bracket is immediately followed by a
+                    # newline, the newline is not included in the string.
+                    converting_end_of_line = True
+                    first_character_seen = True
+                    continue
+                if converting_end_of_line:
+                    continue
+                first_character_seen = True
+                converting_end_of_line = True
+                bytes_io.write(b"\n")
+                continue
+            else:
+                first_character_seen = True
+                converting_end_of_line = False
+                bytes_io.write(character.encode("utf-8"))
+        bytes_io.seek(0)
+        return LuaString(bytes_io.read())
+
+
+    def evaluate(self, vm: VirtualMachine) -> LuaString:
+        if self.text.text[0] != "[":
+            return self._simple_string()
+        return self._long_bracket()
+
 
 
 @attrs.define(slots=True)
