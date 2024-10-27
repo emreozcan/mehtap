@@ -96,7 +96,7 @@ literalstring: /"([^"\\]|\\.)*"|'([^'\\]|\\.)*'|(\[(=*)\[(.|\n)*?\]\4\])/
 ?numeral: numeral_hex | numeral_dec
 
 !sign: "+" | "-"
-numeral_hex: "0" ("x" | "X") hexdigits ["." hexdigits] [("p" | "P") sign hexdigits]
+numeral_hex: "0" ("x" | "X") hexdigits ["." hexdigits] [("p" | "P") [sign] hexdigits]
 numeral_dec: digits ["." digits] [("e" | "E") [sign] digits]
 ?hexdigits: /[0-9a-fA-F]+/
 ?digits: /[0-9]+/

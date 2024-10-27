@@ -60,8 +60,32 @@ def test_exponent_hexadecimal():
     assert parse("0x1p-2") == LuaNumber(0.25)
     assert parse("0x1p-3") == LuaNumber(0.125)
 
-    assert parse("0x123p0") == LuaNumber(0x123)
-    assert parse("0x123p1") == LuaNumber(0x246)
-    assert parse("0x123p2") == LuaNumber(0x48c)
-    assert parse("0x123p-1") == LuaNumber(0x91 + 1/16)
+    assert parse("0x1.fp10") == LuaNumber(1984)
+
+    assert parse("0x123p0") == LuaNumber(0x123 * 2**0)
+    assert parse("0x123p1") == LuaNumber(0x123 * 2**1)
+    assert parse("0x123p2") == LuaNumber(0x123 * 2**2)
+    assert parse("0x123p-1") == LuaNumber(0x123 * 2**-1)
+    assert parse("0x123p-2") == LuaNumber(0x123 * 2**-2)
+    assert parse("0x123p-3") == LuaNumber(0x123 * 2**-3)
+
+
+def test_fractional_exponent_decimal():
+    assert parse("1.5e0") == LuaNumber(1.5)
+    assert parse("1.5e1") == LuaNumber(15)
+    assert parse("1.5e2") == LuaNumber(150)
+    assert parse("1.5e-1") == LuaNumber(0.15)
+    assert parse("1.5e-2") == LuaNumber(0.015)
+    assert parse("1.5e-3") == LuaNumber(0.0015)
+
+
+def test_fractional_exponent_hexadecimal():
+    assert parse("0x1.5p0") == LuaNumber(0x15 / 16 * 2**0)
+    assert parse("0x1.5p1") == LuaNumber(0x15 / 16 * 2**1)
+    assert parse("0x1.5p2") == LuaNumber(0x15 / 16 * 2**2)
+    assert parse("0x1.5p-1") == LuaNumber(0x15 / 16 * 2**-1)
+    assert parse("0x1.5p-2") == LuaNumber(0x15 / 16 * 2**-2)
+    assert parse("0x1.5p-3") == LuaNumber(0x15 / 16 * 2**-3)
+
+
 

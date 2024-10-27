@@ -97,6 +97,8 @@ class NumeralHex(Numeral):
                 self.p_sign = Terminal("+")
             if not self.p_digits:
                 self.p_digits = Terminal("0")
+            if not self.fract_digits:
+                self.fract_digits = Terminal("")
             whole_val = int(self.digits.text + self.fract_digits.text, 16)
             frac_val = whole_val / 16**len(self.fract_digits.text)
             exp_val = 2**int(self.p_sign.text + self.p_digits.text)

@@ -63,6 +63,10 @@ class LuaTransformer(lark.Transformer):
         return nodes.Assignment(names=varlist, exprs=explist)
 
     @staticmethod
+    def sign(token: nodes.Terminal) -> nodes.Terminal:
+        return token
+
+    @staticmethod
     def numeral_dec(
             digits: nodes.Terminal,
             fract_digits: nodes.Terminal | None,
@@ -73,6 +77,19 @@ class LuaTransformer(lark.Transformer):
             fract_digits=fract_digits,
             e_sign=e_sign,
             e_digits=e_digits,
+        )
+
+    @staticmethod
+    def numeral_hex(
+            digits: nodes.Terminal,
+            fract_digits: nodes.Terminal | None,
+            p_sign: nodes.Terminal | None,
+            p_digits: nodes.Terminal | None) -> nodes.NumeralHex:
+        return nodes.NumeralHex(
+            digits=digits,
+            fract_digits=fract_digits,
+            p_sign=p_sign,
+            p_digits=p_digits,
         )
 
     @staticmethod
