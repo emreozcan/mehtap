@@ -335,15 +335,13 @@ def provide(table: LuaTable) -> None:
         """setmetatable (table, metatable)"""
         # Sets the metatable for the given table.
         assert isinstance(table, LuaTable)
+        # If the original metatable has a __metatable field, raises an error.
+        if table.has_metamethod(SYMBOL_METATABLE):
+            raise LuaError("cannot change a protected metatable")
         # If metatable is nil, removes the metatable of the given table.
         if metatable is LuaNil:
             table.set_metatable(LuaNil)
             return [table]
-        # If the original metatable has a __metatable field, raises an error.
-        # TODO: Determine the order of this condition in relation to the one
-        #       above.
-        if table.has_metamethod(SYMBOL_METATABLE):
-            raise LuaError("cannot change a protected metatable")
         table.set_metatable(metatable)
         # This function returns table.
         return [table]
