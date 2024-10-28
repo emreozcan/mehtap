@@ -43,10 +43,13 @@ def provide(table: LuaTable) -> None:
         #  otherwise, returns all its arguments.
         return [v, message, *a]
 
-    @lua_function(table)
-    def collectgarbage() -> PyLuaRet:
+    @lua_function(table, interacts_with_the_vm=True)
+    def collectgarbage(vm) -> PyLuaRet:
         """collectgarbage ([opt [, arg]])"""
-        raise NotImplementedError()
+        call_function(vm, warn, [
+            LuaString(b"collectgarbage(): ay doesn't have garbage collection.")
+        ])
+        return [LuaNil]
 
     @lua_function(table, interacts_with_the_vm=True)
     def dofile(
