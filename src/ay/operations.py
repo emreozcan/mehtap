@@ -1,8 +1,21 @@
 from typing import Self
 
-from ay.values import LuaBool, LuaValue, LuaString, LuaNumber, MAX_INT64, \
-    LuaNumberType, MIN_INT64, SIGN_BIT, ALL_SET, LuaNil, LuaTable, LuaFunction, \
-    LuaThread, LuaUserdata
+from ay.values import (
+    LuaBool,
+    LuaValue,
+    LuaString,
+    LuaNumber,
+    MAX_INT64,
+    LuaNumberType,
+    MIN_INT64,
+    SIGN_BIT,
+    ALL_SET,
+    LuaNil,
+    LuaTable,
+    LuaFunction,
+    LuaThread,
+    LuaUserdata,
+)
 
 
 def rel_eq(a: LuaValue, b: LuaValue, *, raw: bool = False) -> LuaBool:
@@ -35,7 +48,6 @@ def rel_eq(a: LuaValue, b: LuaValue, *, raw: bool = False) -> LuaBool:
     # You can change the way that Lua compares tables and userdata by using the
     # __eq metamethod (see §2.4).
     return LuaBool(a is b)  # TODO.
-
 
 
 def rel_ne(a: LuaValue, b: LuaValue) -> LuaBool:
@@ -129,7 +141,7 @@ def arith_add(a, b):
     # and the result is a float.
     return LuaNumber(
         coerce_int_to_float(a).value + coerce_int_to_float(b).value,
-        LuaNumberType.FLOAT
+        LuaNumberType.FLOAT,
     )
 
 
@@ -142,7 +154,7 @@ def overflow_arith_add(a, b) -> tuple[bool, LuaNumber]:
         return wrapped.value != summed, wrapped
     return False, LuaNumber(
         coerce_int_to_float(a).value + coerce_int_to_float(b).value,
-        LuaNumberType.FLOAT
+        LuaNumberType.FLOAT,
     )
 
 
@@ -153,7 +165,7 @@ def arith_sub(a, b):
         return int_overflow_wrap_around(a.value - b.value)
     return LuaNumber(
         coerce_int_to_float(a).value - coerce_int_to_float(b).value,
-        LuaNumberType.FLOAT
+        LuaNumberType.FLOAT,
     )
 
 
@@ -164,7 +176,7 @@ def arith_mul(a, b):
         return int_overflow_wrap_around(a.value * b.value)
     return LuaNumber(
         coerce_int_to_float(a).value * coerce_int_to_float(b).value,
-        LuaNumberType.FLOAT
+        LuaNumberType.FLOAT,
     )
 
 
@@ -175,7 +187,7 @@ def arith_float_div(a, b):
     # floats and the result is always a float.
     return LuaNumber(
         coerce_int_to_float(a).value / coerce_int_to_float(b).value,
-        LuaNumberType.FLOAT
+        LuaNumberType.FLOAT,
     )
 
 
@@ -188,7 +200,7 @@ def arith_floor_div(a, b):
         return int_overflow_wrap_around(a.value // b.value)
     return LuaNumber(
         coerce_int_to_float(a).value // coerce_int_to_float(b).value,
-        LuaNumberType.INTEGER
+        LuaNumberType.INTEGER,
     )
 
 
@@ -201,7 +213,7 @@ def arith_mod(a, b):
         return int_overflow_wrap_around(a.value % b.value)
     return LuaNumber(
         coerce_int_to_float(a).value % coerce_int_to_float(b).value,
-        LuaNumberType.INTEGER
+        LuaNumberType.INTEGER,
     )
 
 
@@ -212,7 +224,7 @@ def arith_exp(a, b):
     # so that it works for non-integer exponents too.
     return LuaNumber(
         coerce_int_to_float(a).value ** coerce_int_to_float(b).value,
-        LuaNumberType.FLOAT
+        LuaNumberType.FLOAT,
     )
 
 
@@ -413,4 +425,3 @@ def type_(v: LuaValue) -> LuaString:
     if isinstance(v, LuaUserdata):
         return LuaString(b"userdata")
     raise TypeError(f"Unexpected type: {type(v)}")
-

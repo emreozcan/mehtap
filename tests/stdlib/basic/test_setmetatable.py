@@ -13,49 +13,66 @@ def execute(program):
 
 def test_setmetatable_protected():
     vm = VirtualMachine()
-    work_chunk("""
+    work_chunk(
+        """
         mt = {__metatable = "hello"}
         t = {}
         setmetatable(t, mt)
-    """, vm)
+    """,
+        vm,
+    )
 
     with raises(LuaError) as excinfo:
-        work_chunk("""
+        work_chunk(
+            """
             setmetatable(t, mt)
-        """, vm)
+        """,
+            vm,
+        )
     assert "protected metatable" in str(excinfo.value.message)
 
 
 def test_setmetatable_clear():
     vm = VirtualMachine()
-    t, = work_chunk("""
+    (t,) = work_chunk(
+        """
         mt = {hello = "hello"}
         t = {}
         return setmetatable(t, mt)
-    """, vm)
+    """,
+        vm,
+    )
 
     assert t.get_metamethod(LuaString(b"hello")) == LuaString(b"hello")
 
-    t, = work_chunk("""
+    (t,) = work_chunk(
+        """
         return setmetatable(t, nil)
-    """, vm)
+    """,
+        vm,
+    )
     assert t.get_metatable() is LuaNil
 
 
 def test_setmetatable_clear_protected():
     vm = VirtualMachine()
-    t, = work_chunk("""
+    (t,) = work_chunk(
+        """
         mt = {__metatable = "hello"}
         t = {}
         return setmetatable(t, mt)
-    """, vm)
+    """,
+        vm,
+    )
 
     assert t.get_metatable() is not LuaNil
 
     with raises(LuaError) as excinfo:
-        work_chunk("""
+        work_chunk(
+            """
             return setmetatable(t, nil)
-        """, vm)
+        """,
+            vm,
+        )
     assert "protected metatable" in str(excinfo.value.message)
     assert t.get_metatable() is not LuaNil
-

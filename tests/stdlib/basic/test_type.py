@@ -31,9 +31,9 @@ def test_type_table():
 
 
 def test_type_function():
-    assert execute(
-        "return type(function() return 1 end)"
-    ) == [LuaString(b"function")]
+    assert execute("return type(function() return 1 end)") == [
+        LuaString(b"function")
+    ]
 
 
 def test_type_thread():

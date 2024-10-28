@@ -14,29 +14,48 @@ def execute(program):
 
 def test_assert_fail_simple():
     with raises(LuaError) as excinfo:
-        execute("""
+        execute(
+            """
             return assert(false)
-        """)
+        """
+        )
     assert excinfo.value.message == str_to_lua_string("assertion failed!")
 
 
 def test_assert_fail_with_message():
     with raises(LuaError) as excinfo:
-        execute("""
+        execute(
+            """
             return assert(false, "message")
-        """)
+        """
+        )
     assert excinfo.value.message == str_to_lua_string("message")
 
 
 def test_assert_success():
-    assert execute("""
+    assert (
+        execute(
+            """
         return assert(true)
-    """) == [LuaBool(True), LuaNil]
+    """
+        )
+        == [LuaBool(True), LuaNil]
+    )
 
-    assert execute("""
+    assert (
+        execute(
+            """
         return assert(true, 1)
-    """) == [LuaBool(True), LuaNumber(1)]
+    """
+        )
+        == [LuaBool(True), LuaNumber(1)]
+    )
 
-    assert execute("""
+    assert (
+        execute(
+            """
         return assert(true, 1, 2)
-    """) == [LuaBool(True), LuaNumber(1), LuaNumber(2)]
+    """
+        )
+        == [LuaBool(True), LuaNumber(1), LuaNumber(2)]
+    )

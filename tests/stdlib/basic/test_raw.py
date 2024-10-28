@@ -12,12 +12,14 @@ def fail():
 def get_vm(m1: dict | None = None, m2: dict | None = None):
     vm = VirtualMachine()
 
-    mt = LuaTable({
-        LuaString(b"__eq"): fail,
-        LuaString(b"__index"): fail,
-        LuaString(b"__len"): fail,
-        LuaString(b"__newindex"): fail,
-    })
+    mt = LuaTable(
+        {
+            LuaString(b"__eq"): fail,
+            LuaString(b"__index"): fail,
+            LuaString(b"__len"): fail,
+            LuaString(b"__newindex"): fail,
+        }
+    )
 
     o1 = LuaTable(m1 if m1 is not None else {})
     o1.set_metatable(mt)
@@ -36,17 +38,13 @@ def test_rawequal():
 
 def test_rawget():
     obj = LuaObject()
-    assert work_expr(
-        "rawget(o1, 1)",
-        get_vm({LuaNumber(1): obj})
-    )[0] is obj
+    assert work_expr("rawget(o1, 1)", get_vm({LuaNumber(1): obj}))[0] is obj
 
 
 def test_rawlen():
-    assert work_expr(
-        "rawlen(o1)",
-        get_vm({LuaNumber(1): LuaObject()})
-    ) == [LuaNumber(1)]
+    assert work_expr("rawlen(o1)", get_vm({LuaNumber(1): LuaObject()})) == [
+        LuaNumber(1)
+    ]
 
 
 def test_rawset():
@@ -57,4 +55,3 @@ def test_rawset():
         vm,
     )
     assert vm.get(LuaString(b"o1")).get(LuaNumber(1)) is obj
-

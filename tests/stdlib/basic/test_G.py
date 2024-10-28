@@ -9,10 +9,12 @@ def execute(program):
 
 
 def test_global():
-    table, = execute("""
+    (table,) = execute(
+        """
         x = 1
         return _G
-    """)
+    """
+    )
     assert isinstance(table, LuaTable)
     x = LuaString(b"x")
     assert table.has(x)

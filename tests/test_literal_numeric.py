@@ -32,9 +32,9 @@ def test_fractional_decimal():
 
 def test_fractional_hexadecimal():
     assert parse("0x0.0") == LuaNumber(0x0)
-    assert parse("0x0.1") == LuaNumber(1/16)
+    assert parse("0x0.1") == LuaNumber(1 / 16)
     assert parse("0x1.0") == LuaNumber(0x1)
-    assert parse("0x123.456") == LuaNumber(0x123456/16**3)
+    assert parse("0x123.456") == LuaNumber(0x123456 / 16**3)
 
 
 def test_exponent_decimal():
@@ -86,6 +86,3 @@ def test_fractional_exponent_hexadecimal():
     assert parse("0x1.5p-1") == LuaNumber(0x15 / 16 * 2**-1)
     assert parse("0x1.5p-2") == LuaNumber(0x15 / 16 * 2**-2)
     assert parse("0x1.5p-3") == LuaNumber(0x15 / 16 * 2**-3)
-
-
-

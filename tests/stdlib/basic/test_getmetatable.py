@@ -9,9 +9,14 @@ def execute(program):
 
 
 def test_getmetatable_no_mt():
-    assert execute("""
+    assert (
+        execute(
+            """
         return getmetatable(1)
-    """) == [LuaNil]
+    """
+        )
+        == [LuaNil]
+    )
 
 
 def test_getmetatable_yes_mt():
@@ -22,9 +27,12 @@ def test_getmetatable_yes_mt():
     table.set_metatable(source_mt)
     vm.put_nonlocal(LuaString(b"example_table"), Variable(table))
 
-    recvd_mt, = work_chunk("""
+    (recvd_mt,) = work_chunk(
+        """
         return getmetatable(example_table)
-    """, vm)
+    """,
+        vm,
+    )
 
     assert recvd_mt is source_mt
 
@@ -40,9 +48,11 @@ def test_getmetatable_meta_metatable():
     table.set_metatable(metatable)
     vm.put_nonlocal(LuaString(b"example_table"), Variable(table))
 
-    recvd_object, = work_chunk("""
+    (recvd_object,) = work_chunk(
+        """
         return getmetatable(example_table)
-    """, vm)
+    """,
+        vm,
+    )
 
     assert recvd_object is source_object
-

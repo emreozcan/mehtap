@@ -9,12 +9,23 @@ from typing import Literal, TYPE_CHECKING
 import attrs
 
 import ay.values as ay_values
-from ay.control_structures import BreakException, GotoException, \
-    ReturnException
-from ay.values import LuaNumber, LuaValue, LuaNumberType, LuaString, \
-    MAX_INT64, LuaTable, LuaFunction, StackFrame
-from ay.operations import int_overflow_wrap_around, str_to_lua_string, adjust, \
-    coerce_to_bool
+from ay.control_structures import BreakException, GotoException, ReturnException
+from ay.values import (
+    LuaNumber,
+    LuaValue,
+    LuaNumberType,
+    LuaString,
+    MAX_INT64,
+    LuaTable,
+    LuaFunction,
+    StackFrame,
+)
+from ay.operations import (
+    int_overflow_wrap_around,
+    str_to_lua_string,
+    adjust,
+    coerce_to_bool,
+)
 import ay.operations as ay_operations
 
 if TYPE_CHECKING:
@@ -76,10 +87,11 @@ class Block(Statement, Expression):
     def evaluate(self, vm: VirtualMachine) -> Sequence[LuaValue]:
         for stmt in self.statements:
             stmt.execute(vm)
-        return flatten(
-            expr.evaluate(vm)
-            for expr in self.return_statement.values
-        ) if self.return_statement else []
+        return (
+            flatten(expr.evaluate(vm) for expr in self.return_statement.values)
+            if self.return_statement
+            else []
+        )
 
     def execute(self, vm: VirtualMachine) -> None:
         for stmt in self.statements:
@@ -110,8 +122,8 @@ class NumeralHex(Numeral):
             if not self.fract_digits:
                 self.fract_digits = Terminal("")
             whole_val = int(self.digits.text + self.fract_digits.text, 16)
-            frac_val = whole_val / 16**len(self.fract_digits.text)
-            exp_val = 2**int(self.p_sign.text + self.p_digits.text)
+            frac_val = whole_val / 16 ** len(self.fract_digits.text)
+            exp_val = 2 ** int(self.p_sign.text + self.p_digits.text)
             return LuaNumber(frac_val * exp_val, LuaNumberType.FLOAT)
         # if the value overflows, it wraps around to fit into a valid integer.
         return int_overflow_wrap_around(int(self.digits.text, 16))
@@ -166,8 +178,8 @@ class LiteralString(Expression):
                 currently_skipping_whitespace = False
             if currently_reading_decimal:
                 if (
-                        character in string.digits
-                        and len(currently_read_decimal) < 3
+                    character in string.digits
+                    and len(currently_read_decimal) < 3
                 ):
                     currently_read_decimal += character
                     continue
@@ -196,8 +208,8 @@ class LiteralString(Expression):
                     bytes_io.write(b"\v")
                 elif escape_char == "\\":
                     bytes_io.write(b"\\")
-                elif escape_char == "\"":
-                    bytes_io.write(b"\"")
+                elif escape_char == '"':
+                    bytes_io.write(b'"')
                 elif escape_char == "'":
                     bytes_io.write(b"'")
                 elif escape_char == "\n":
@@ -276,12 +288,10 @@ class LiteralString(Expression):
         bytes_io.seek(0)
         return LuaString(bytes_io.read())
 
-
     def evaluate(self, vm: VirtualMachine) -> LuaString:
         if self.text.text[0] != "[":
             return self._simple_string()
         return self._long_bracket()
-
 
 
 @attrs.define(slots=True)
@@ -423,9 +433,9 @@ class FuncDef(Expression):
 
 
 def _call_function(
-        vm: VirtualMachine,
-        function: LuaFunction,
-        args: list[LuaValue],
+    vm: VirtualMachine,
+    function: LuaFunction,
+    args: list[LuaValue],
 ):
     new_stack_frame = StackFrame(parent=function.parent_stack_frame)
     if not callable(function.block):
@@ -444,9 +454,7 @@ def _call_function(
 
 
 def call_function(
-        vm: VirtualMachine,
-        function: LuaFunction,
-        args: list[LuaValue]
+    vm: VirtualMachine, function: LuaFunction, args: list[LuaValue]
 ) -> list[LuaValue]:
     try:
         _call_function(vm, function, args)
@@ -553,8 +561,7 @@ class EmptyStatement(Statement):
 class Assignment(Statement):
     def execute(self, vm: VirtualMachine) -> None:
         values = adjust(
-            [expr.evaluate(vm) for expr in self.exprs],
-            len(self.names)
+            [expr.evaluate(vm) for expr in self.exprs], len(self.names)
         )
         for variable, value in zip(self.names, values):
             if isinstance(variable, VarName):
@@ -682,8 +689,8 @@ class For(Statement):
         # the loop is done with integers;
         # note that the limit may not be an integer.
         integer_loop = (
-                initial_value.type == LuaNumberType.INTEGER and
-                step.type == LuaNumberType.INTEGER
+            initial_value.type == LuaNumberType.INTEGER
+            and step.type == LuaNumberType.INTEGER
         )
         if not integer_loop:
             # Otherwise, the three values are converted to floats
@@ -706,9 +713,7 @@ class For(Statement):
         # the body is not executed.
         step_negative = step.value < 0
         condition_func = (
-            ay_operations.rel_ge
-            if step_negative
-            else ay_operations.rel_le
+            ay_operations.rel_ge if step_negative else ay_operations.rel_le
         )
         # For integer loops, the control variable never wraps around; instead,
         # the loop ends in case of an overflow.
@@ -719,14 +724,10 @@ class For(Statement):
         control_val = initial_value
         new_vm = vm.push()
         while condition_func(control_val, limit).true:
-            new_vm.put_local(
-                control_varname,
-                ay_values.Variable(control_val)
-            )
+            new_vm.put_local(control_varname, ay_values.Variable(control_val))
             self.block.execute(new_vm)
             overflow, control_val = ay_operations.overflow_arith_add(
-                control_val,
-                step
+                control_val, step
             )
             if overflow and integer_loop:
                 break
@@ -759,8 +760,7 @@ class ForIn(Statement):
         names = [name.as_lua_string() for name in self.names]
         for name in names:
             body_stack_frame.put_local(
-                name,
-                ay_values.Variable(ay_values.LuaNil)
+                name, ay_values.Variable(ay_values.LuaNil)
             )
         # The first of these variables is the control variable.
         control_variable_name = names[0]
@@ -773,8 +773,7 @@ class ForIn(Statement):
         # an initial value for the control variable,
         initial_value = exp_vals[2]
         body_stack_frame.put_local(
-            control_variable_name,
-            ay_values.Variable(initial_value)
+            control_variable_name, ay_values.Variable(initial_value)
         )
         # and a closing value.
         closing_value = exp_vals[3]
@@ -787,9 +786,9 @@ class ForIn(Statement):
                 call_function(
                     vm,
                     iterator_function,
-                    [state, body_stack_frame.get(control_variable_name)]
+                    [state, body_stack_frame.get(control_variable_name)],
                 ),
-                name_count
+                name_count,
             )
             # The results from this call are then assigned to the loop
             # variables, following the rules of multiple assignments.
@@ -813,7 +812,6 @@ class ForIn(Statement):
 class FuncName(NonTerminal):
     names: Sequence[Name]
     method: bool
-
 
 
 @attrs.define(slots=True)
@@ -885,13 +883,11 @@ class LocalAssignment(Statement):
                         raise NotImplementedError()
                     used_closed = True
                     vm.put_local(
-                        var_name,
-                        ay_values.Variable(exp_val, to_be_closed=True)
+                        var_name, ay_values.Variable(exp_val, to_be_closed=True)
                     )
                 elif attrib.content == b"const":
                     vm.put_local(
-                        var_name,
-                        ay_values.Variable(exp_val, constant=True)
+                        var_name, ay_values.Variable(exp_val, constant=True)
                     )
                 else:
                     # TODO: Create an error

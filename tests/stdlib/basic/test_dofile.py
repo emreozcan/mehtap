@@ -20,16 +20,23 @@ def path_of_this_file():
 
 def test_dofile_success():
     filename = path_of_this_file().parent / "test_dofile_values.lua"
-    assert execute(f"""
+    assert (
+        execute(
+            f"""
         return dofile({str(filename)!r})
-    """) == [LuaNumber(42), LuaNumber(-42)]
+    """
+        )
+        == [LuaNumber(42), LuaNumber(-42)]
+    )
 
 
 def test_dofile_error():
     filename = path_of_this_file().parent / "test_dofile_error.lua"
     with raises(LuaError) as excinfo:
-        execute(f"""
+        execute(
+            f"""
             return dofile({str(filename)!r})
-        """)
+        """
+        )
 
     assert excinfo.value.message == str_to_lua_string("i am in another file")

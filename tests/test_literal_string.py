@@ -13,13 +13,17 @@ def test_alo():
     t1 = parse(r"""'alo\n123"'""")
     t2 = parse(r'''"alo\n123\""''')
     t3 = parse(r"""'\97lo\10\04923"'""")
-    t4 = parse(r"""[[alo
-123"]]""")
-    t5 = parse(r"""[==[
+    t4 = parse(
+        r"""[[alo
+123"]]"""
+    )
+    t5 = parse(
+        r"""[==[
 alo
-123"]==]""")
+123"]==]"""
+    )
 
-    ref = str_to_lua_string("alo\n123\"")
+    ref = str_to_lua_string('alo\n123"')
 
     assert t1 == ref
     assert t2 == ref

@@ -14,17 +14,22 @@ def test_tostring_mt_tostring():
         called[0] = True
         return LuaString(b"yay :D")
 
-    mt = LuaTable({
-        LuaString(b"__tostring"): callback,
-    })
+    mt = LuaTable(
+        {
+            LuaString(b"__tostring"): callback,
+        }
+    )
     lua_object.set_metatable(mt)
 
     vm = VirtualMachine()
     vm.put_nonlocal(LuaString(b"o"), Variable(lua_object))
 
-    lua_string, = work_chunk("""
+    (lua_string,) = work_chunk(
+        """
         return tostring(o)
-    """, vm)
+    """,
+        vm,
+    )
 
     assert lua_string == LuaString(b"yay :D")
     assert called[0]
@@ -33,16 +38,21 @@ def test_tostring_mt_tostring():
 def test_tostring_mt_name():
     lua_object = LuaObject()
 
-    mt = LuaTable({
-        LuaString(b"__name"): LuaString(b"my_object"),
-    })
+    mt = LuaTable(
+        {
+            LuaString(b"__name"): LuaString(b"my_object"),
+        }
+    )
     lua_object.set_metatable(mt)
 
     vm = VirtualMachine()
     vm.put_nonlocal(LuaString(b"o"), Variable(lua_object))
 
-    lua_string, = work_chunk("""
+    (lua_string,) = work_chunk(
+        """
         return tostring(o)
-    """, vm)
+    """,
+        vm,
+    )
 
     assert b"my_object" in lua_string.content

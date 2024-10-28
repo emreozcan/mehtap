@@ -34,8 +34,8 @@ class LuaTransformer(lark.Transformer):
 
     @staticmethod
     def var_index(
-            base: nodes.Expression,
-            index: nodes.Expression | nodes.Name,
+        base: nodes.Expression,
+        index: nodes.Expression | nodes.Name,
     ) -> nodes.VarIndex:
         if isinstance(index, nodes.Name):
             return nodes.VarIndex(base=base, index=to_string_literal(index))
@@ -46,8 +46,9 @@ class LuaTransformer(lark.Transformer):
         return args
 
     @staticmethod
-    def tableconstructor(fieldlist: Sequence[nodes.FieldWithKey] | None) \
-            -> nodes.TableConstructor:
+    def tableconstructor(
+        fieldlist: Sequence[nodes.FieldWithKey] | None,
+    ) -> nodes.TableConstructor:
         if fieldlist is None:
             return nodes.TableConstructor(fields=tuple())
         return nodes.TableConstructor(fields=fieldlist)
@@ -58,8 +59,8 @@ class LuaTransformer(lark.Transformer):
 
     @staticmethod
     def stat_assignment(
-            varlist: list[nodes.Variable],
-            explist: list[nodes.Expression]) -> nodes.Assignment:
+        varlist: list[nodes.Variable], explist: list[nodes.Expression]
+    ) -> nodes.Assignment:
         return nodes.Assignment(names=varlist, exprs=explist)
 
     @staticmethod
@@ -68,10 +69,11 @@ class LuaTransformer(lark.Transformer):
 
     @staticmethod
     def numeral_dec(
-            digits: nodes.Terminal,
-            fract_digits: nodes.Terminal | None,
-            e_sign: nodes.Terminal | None,
-            e_digits: nodes.Terminal | None) -> nodes.NumeralDec:
+        digits: nodes.Terminal,
+        fract_digits: nodes.Terminal | None,
+        e_sign: nodes.Terminal | None,
+        e_digits: nodes.Terminal | None,
+    ) -> nodes.NumeralDec:
         return nodes.NumeralDec(
             digits=digits,
             fract_digits=fract_digits,
@@ -81,10 +83,11 @@ class LuaTransformer(lark.Transformer):
 
     @staticmethod
     def numeral_hex(
-            digits: nodes.Terminal,
-            fract_digits: nodes.Terminal | None,
-            p_sign: nodes.Terminal | None,
-            p_digits: nodes.Terminal | None) -> nodes.NumeralHex:
+        digits: nodes.Terminal,
+        fract_digits: nodes.Terminal | None,
+        p_sign: nodes.Terminal | None,
+        p_digits: nodes.Terminal | None,
+    ) -> nodes.NumeralHex:
         return nodes.NumeralHex(
             digits=digits,
             fract_digits=fract_digits,
@@ -94,13 +97,12 @@ class LuaTransformer(lark.Transformer):
 
     @staticmethod
     def field_with_key(
-            key: nodes.Expression | nodes.Name,
-            value: nodes.Expression) -> nodes.FieldWithKey:
+        key: nodes.Expression | nodes.Name, value: nodes.Expression
+    ) -> nodes.FieldWithKey:
         return nodes.FieldWithKey(key=key, value=value)
 
     @staticmethod
-    def field_counter_key(
-            value: nodes.Expression) -> nodes.FieldCounterKey:
+    def field_counter_key(value: nodes.Expression) -> nodes.FieldCounterKey:
         return nodes.FieldCounterKey(value=value)
 
     @staticmethod
@@ -129,13 +131,15 @@ class LuaTransformer(lark.Transformer):
         return name
 
     @staticmethod
-    def attname(name: nodes.Name, attrib: nodes.Name | None) \
-            -> nodes.AttributeName:
+    def attname(
+        name: nodes.Name, attrib: nodes.Name | None
+    ) -> nodes.AttributeName:
         return nodes.AttributeName(name=name, attrib=attrib)
 
     @staticmethod
-    def attnamelist(*args: nodes.AttributeName) \
-            -> Sequence[nodes.AttributeName]:
+    def attnamelist(
+        *args: nodes.AttributeName,
+    ) -> Sequence[nodes.AttributeName]:
         return args
 
     @staticmethod
@@ -148,11 +152,15 @@ class LuaTransformer(lark.Transformer):
         return op
 
     @staticmethod
-    def exp_sum(l: nodes.Expression, o: nodes.Terminal, r: nodes.Expression):
+    def exp_sum(
+        left: nodes.Expression,
+        operation: nodes.Terminal,
+        right: nodes.Expression
+    ):
         return nodes.SumOp(
-            lhs=l,
-            op=o.text,
-            rhs=r,
+            lhs=left,
+            op=operation.text,
+            rhs=right,
         )
 
     @staticmethod
@@ -196,8 +204,9 @@ class LuaTransformer(lark.Transformer):
         return names
 
     @staticmethod
-    def args_list(explist: Sequence[nodes.Expression]) \
-            -> Sequence[nodes.Expression]:
+    def args_list(
+        explist: Sequence[nodes.Expression],
+    ) -> Sequence[nodes.Expression]:
         if explist is None:
             return tuple()
         return explist
@@ -208,13 +217,12 @@ class LuaTransformer(lark.Transformer):
 
     @staticmethod
     def functioncall_regular(
-            name: nodes.Expression,
-            args: Sequence[nodes.Expression]) -> nodes.FuncCallRegular:
+        name: nodes.Expression, args: Sequence[nodes.Expression]
+    ) -> nodes.FuncCallRegular:
         return nodes.FuncCallRegular(name=name, args=args)
 
     @staticmethod
-    def literalstring(
-            terminal: nodes.Terminal) -> nodes.LiteralString:
+    def literalstring(terminal: nodes.Terminal) -> nodes.LiteralString:
         return nodes.LiteralString(text=terminal)
 
     @staticmethod
@@ -231,4 +239,3 @@ class LuaTransformer(lark.Transformer):
 
 
 transformer = LuaTransformer()
-

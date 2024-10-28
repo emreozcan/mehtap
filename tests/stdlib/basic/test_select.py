@@ -2,7 +2,7 @@ from _pytest.python_api import raises
 
 from ay.__main__ import work_chunk
 from ay.control_structures import LuaError
-from ay.values import LuaNumber, LuaNumberType
+from ay.values import LuaNumber
 from ay.vm import VirtualMachine
 
 
@@ -12,20 +12,25 @@ def execute(chunk):
 
 
 def test_select_positive():
-    assert execute("""
+    assert (
+        execute(
+            """
         return select(6, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
-    """) == [
-        LuaNumber(x) for x
-        in [6, 7, 8, 9, 10]
-    ]
+    """
+        )
+        == [LuaNumber(x) for x in [6, 7, 8, 9, 10]]
+    )
 
 
 def test_select_negative():
-    assert execute("""
+    assert (
+        execute(
+            """
         return select(0-2, 1, 2)
-    """) == [
-        LuaNumber(1), LuaNumber(2)
-    ]
+    """
+        )
+        == [LuaNumber(1), LuaNumber(2)]
+    )
 
 
 def test_select_invalid():
@@ -43,12 +48,20 @@ def test_select_invalid():
 
 
 def test_select_count():
-    assert execute("""
+    assert (
+        execute(
+            """
         return select("#", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
-    """) == [LuaNumber(10)]
+    """
+        )
+        == [LuaNumber(10)]
+    )
 
-    assert execute("""
+    assert (
+        execute(
+            """
         return select("#")
-    """) == [LuaNumber(0)]
-
-
+    """
+        )
+        == [LuaNumber(0)]
+    )

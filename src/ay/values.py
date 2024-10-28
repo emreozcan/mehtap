@@ -37,10 +37,12 @@ class LuaValue(ABC):
 
     def __eq__(self, other) -> bool:
         from .operations import rel_eq
+
         return rel_eq(self, other).true
 
     def __ne__(self, other) -> bool:
         from .operations import rel_ne
+
         return rel_ne(self, other).true
 
 
@@ -77,7 +79,7 @@ class LuaNumberType(Enum):
 
 
 MAX_INT64 = 2**63 - 1
-MIN_INT64 = -2**63
+MIN_INT64 = -(2**63)
 SIGN_BIT = 1 << 63
 ALL_SET = 2**64 - 1
 
@@ -88,9 +90,9 @@ class LuaNumber(LuaValue):
     type: LuaNumberType | None
 
     def __init__(
-            self,
-            value: int | float,
-            type: LuaNumberType | None = None,
+        self,
+        value: int | float,
+        type: LuaNumberType | None = None,
     ) -> None:
         super().__init__()
         self.value = value
@@ -124,7 +126,6 @@ class LuaString(LuaValue):
         return hash(self.content)
 
 
-
 @attrs.define(slots=True, eq=False)
 class LuaObject(LuaValue):
     def __str__(self):
@@ -154,9 +155,7 @@ class LuaTable(LuaObject):
 
     def __str__(self):
         return (
-            "{"
-            + ", ".join(f"{k!s}: {v!s}" for k, v in self.map.items())
-            + "}"
+            "{" + ", ".join(f"{k!s}: {v!s}" for k, v in self.map.items()) + "}"
         )
 
     # TODO: Change raw's default value to False.

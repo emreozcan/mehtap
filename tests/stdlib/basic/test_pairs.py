@@ -1,7 +1,14 @@
 from ay.__main__ import work_chunk
 from ay.util.py_lua_function import lua_function
-from ay.values import LuaString, Variable, LuaTable, LuaNumber, LuaNil, LuaBool, \
-    LuaValue
+from ay.values import (
+    LuaString,
+    Variable,
+    LuaTable,
+    LuaNumber,
+    LuaNil,
+    LuaBool,
+    LuaValue,
+)
 from ay.vm import VirtualMachine
 
 
@@ -52,12 +59,16 @@ def test_ipairs():
     table = LuaTable(src_map.copy())
     vm.put_nonlocal(LuaString(b"t"), Variable(table))
 
-    assert work_chunk("""
+    assert (
+        work_chunk(
+            """
         for k, v in pairs(t) do
             f(k, v)
         end
-    """, vm) == []
+    """,
+            vm,
+        )
+        == []
+    )
 
-    assert tracker.calls == [
-        (k, v) for k, v in src_map.items()
-    ]
+    assert tracker.calls == [(k, v) for k, v in src_map.items()]

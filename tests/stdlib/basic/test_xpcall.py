@@ -17,9 +17,12 @@ def test_xpcall_false():
         assert s is initial_symbol
         return [handled_symbol]
 
-    results = work_chunk("""
+    results = work_chunk(
+        """
         return xpcall(error, handler, symbol)
-    """, vm)
+    """,
+        vm,
+    )
 
     assert results[0] == LuaBool(False)
     assert results[1] is handled_symbol
@@ -42,10 +45,12 @@ def test_xpcall_true():
         assert s is initial_symbol
         return [handled_symbol]
 
-    results = work_chunk("""
+    results = work_chunk(
+        """
         return xpcall(succeed, handler, symbol)
-    """, vm)
+    """,
+        vm,
+    )
 
     assert results[0] == LuaBool(True)
     assert results[1] is initial_symbol
-

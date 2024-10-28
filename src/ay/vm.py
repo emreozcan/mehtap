@@ -5,8 +5,13 @@ from typing import Self
 import attrs
 
 from ay.global_table import create_global_table
-from ay.values import LuaTable, LuaString, Variable, StackFrame, \
-    StackExhaustionException
+from ay.values import (
+    LuaTable,
+    LuaString,
+    Variable,
+    StackFrame,
+    StackExhaustionException,
+)
 
 
 @attrs.define(slots=True)

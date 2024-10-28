@@ -8,12 +8,20 @@ from ay.ast_nodes import call_function, Unary, Terminal
 from ay.ast_transformer import transformer
 from ay.util.py_lua_function import LibraryProvider, PyLuaRet
 from ay.util.py_lua_function import lua_function
-from ay.values import LuaTable, LuaValue, LuaNil, LuaString, LuaNumber, \
-    LuaNumberType, MAX_INT64, LuaFunction, LuaThread, LuaUserdata
+from ay.values import (
+    LuaTable,
+    LuaValue,
+    LuaNil,
+    LuaString,
+    LuaNumber,
+    LuaNumberType,
+    MAX_INT64,
+    LuaFunction
+)
 from ay.control_structures import LuaError
 from ay.values import LuaBool
 from ay.parser import chunk_parser, numeral_parser
-from ay.operations import rel_eq, length, rel_ne
+from ay.operations import rel_eq, length
 
 if TYPE_CHECKING:
     from ay.vm import VirtualMachine
@@ -46,15 +54,21 @@ def provide(table: LuaTable) -> None:
     @lua_function(table, interacts_with_the_vm=True)
     def collectgarbage(vm) -> PyLuaRet:
         """collectgarbage ([opt [, arg]])"""
-        call_function(vm, warn, [
-            LuaString(b"collectgarbage(): ay doesn't have garbage collection.")
-        ])
+        call_function(
+            vm,
+            warn,
+            [
+                LuaString(
+                    b"collectgarbage(): ay doesn't have garbage collection."
+                )
+            ],
+        )
         return [LuaNil]
 
     @lua_function(table, interacts_with_the_vm=True)
     def dofile(
-            vm: VirtualMachine,
-            filename: LuaString | None = None,
+        vm: VirtualMachine,
+        filename: LuaString | None = None,
     ) -> PyLuaRet:
         """dofile ([filename])"""
         #  Opens the named file and executes its content as a Lua chunk.
@@ -65,9 +79,7 @@ def provide(table: LuaTable) -> None:
             if isinstance(filename, LuaString):
                 infile = open(filename.content, "r", encoding="utf-8")
             else:
-                raise LuaError(
-                    "bad argument #1 to 'dofile' (string expected)"
-                )
+                raise LuaError("bad argument #1 to 'dofile' (string expected)")
         #  Returns all values returned by the chunk. In case of errors,
         #  dofile propagates the error to its caller.
         #  (That is, dofile does not run in protected mode.)
@@ -78,9 +90,9 @@ def provide(table: LuaTable) -> None:
 
     @lua_function(table, interacts_with_the_vm=True)
     def error(
-            vm: VirtualMachine,
-            message: LuaValue = LuaNil,
-            level: LuaNumber = LuaNumber(1, LuaNumberType.INTEGER)
+        vm: VirtualMachine,
+        message: LuaValue = LuaNil,
+        level: LuaNumber = LuaNumber(1, LuaNumberType.INTEGER),
     ) -> PyLuaRet:
         """error(message[, level])"""
         #  Raises an error (see §2.3) with message as the error object.
@@ -100,10 +112,7 @@ def provide(table: LuaTable) -> None:
     # (see §2.2).
     # Lua itself does not use this variable; changing its value does not
     # affect any environment, nor vice versa.
-    table.put(
-        LuaString(b"_G"),
-        table
-    )
+    table.put(LuaString(b"_G"), table)
 
     @lua_function(table)
     def getmetatable(object: LuaValue) -> PyLuaRet:
@@ -145,41 +154,38 @@ def provide(table: LuaTable) -> None:
 
     @lua_function(table)
     def load(
-            chunk: LuaString | LuaFunction,
-            chunk_name: LuaString | None = None,
-            mode: LuaString | None = None,
-            env: LuaTable | None = None
+        chunk: LuaString | LuaFunction,
+        chunk_name: LuaString | None = None,
+        mode: LuaString | None = None,
+        env: LuaTable | None = None,
     ) -> PyLuaRet:
         """load (chunk [, chunkname [, mode [, env]]])"""
         raise NotImplementedError()  # todo.
 
     @lua_function(table)
     def loadfile(
-            filename: LuaString | None = None,
-            mode: LuaString | None = None,
-            env: LuaTable | None = None
+        filename: LuaString | None = None,
+        mode: LuaString | None = None,
+        env: LuaTable | None = None,
     ) -> PyLuaRet:
         """loadfile ([filename [, mode [, env]]])"""
         raise NotImplementedError()  # todo.
 
     @lua_function(table, name="next")
-    def next_(
-            table: LuaTable,
-            index: LuaValue = LuaNil
-    ) -> PyLuaRet:
+    def next_(table: LuaTable, index: LuaValue = LuaNil) -> PyLuaRet:
         """next (table [, index])"""
-        #  Allows a program to traverse all fields of a table.
-        #  Its first argument is a table and its second argument is an index
-        #  in this table.
-        #  A call to next returns the next index of the table and its
-        #  associated value.
-        #  When called with nil as its second argument, next returns an
-        #  initial index and its associated value.
-        #  When called with the last index, or with nil in an empty table,
-        #  next returns nil.
-        #  If the second argument is absent, then it is interpreted as nil.
-        #  In particular, you can use next(t) to check whether a table is
-        #  empty.
+        # Allows a program to traverse all fields of a table.
+        # Its first argument is a table and its second argument is an index
+        # in this table.
+        # A call to next returns the next index of the table and its
+        # associated value.
+        # When called with nil as its second argument, next returns an
+        # initial index and its associated value.
+        # When called with the last index, or with nil in an empty table,
+        # next returns nil.
+        # If the second argument is absent, then it is interpreted as nil.
+        # In particular, you can use next(t) to check whether a table is
+        # empty.
         #
         # The order in which the indices are enumerated is not specified,
         # even for numeric indices.
@@ -222,9 +228,9 @@ def provide(table: LuaTable) -> None:
 
     @lua_function(table, interacts_with_the_vm=True)
     def pcall(
-            vm: VirtualMachine,
-            f: LuaFunction,
-            *args: LuaValue,
+        vm: VirtualMachine,
+        f: LuaFunction,
+        *args: LuaValue,
     ):
         """pcall (f [, arg1, ···])"""
         #  Calls the function f with the given arguments in protected mode.
@@ -271,8 +277,8 @@ def provide(table: LuaTable) -> None:
 
     @lua_function(table)
     def rawget(
-            table: LuaTable,
-            index: LuaValue,
+        table: LuaTable,
+        index: LuaValue,
     ) -> PyLuaRet:
         """rawget (table, index)"""
         # Gets the real value of table[index], without using the __index
@@ -291,9 +297,9 @@ def provide(table: LuaTable) -> None:
 
     @lua_function(table)
     def rawset(
-            table: LuaTable,
-            index: LuaValue,
-            value: LuaValue,
+        table: LuaTable,
+        index: LuaValue,
+        value: LuaValue,
     ) -> PyLuaRet:
         """rawset (table, index, value)"""
         #  Sets the real value of table[index] to value, without using the
@@ -321,7 +327,7 @@ def provide(table: LuaTable) -> None:
                 raise LuaError(
                     "bad argument #1 to 'select' (index out of range)"
                 )
-            return list(a[index-1:])
+            return list(a[index - 1:])
         # Otherwise, index must be the string "#",
         if index != LuaString(b"#"):
             raise LuaError(
@@ -333,8 +339,8 @@ def provide(table: LuaTable) -> None:
 
     @lua_function(table)
     def setmetatable(
-            table: LuaTable,
-            metatable: LuaTable | LuaNil,
+        table: LuaTable,
+        metatable: LuaTable | LuaNil,
     ) -> PyLuaRet:
         """setmetatable (table, metatable)"""
         # Sets the metatable for the given table.
@@ -353,11 +359,7 @@ def provide(table: LuaTable) -> None:
         # debug library (§6.10).
 
     @lua_function(table, interacts_with_the_vm=True)
-    def tonumber(
-            vm: VirtualMachine,
-            e,
-            base=None
-    ) -> PyLuaRet:
+    def tonumber(vm: VirtualMachine, e, base=None) -> PyLuaRet:
         """tonumber (e [, base])"""
         # When called with no base, tonumber tries to convert its argument to a
         # number.
@@ -380,7 +382,7 @@ def provide(table: LuaTable) -> None:
                             op=Terminal("-"),
                             exp=transformer.transform(
                                 numeral_parser.parse(e_string[1:])
-                            )
+                            ),
                         )
                     else:
                         e_parsed = numeral_parser.parse(e_string)
@@ -458,13 +460,14 @@ def provide(table: LuaTable) -> None:
         return [operations.type_(v)]
 
     from ay import __ay_version__
+
     # _VERSION
     #  A global variable (not a function) that holds a string containing the
     #  running Lua version.
     #  The current value of this variable is "Lua 5.4".
     table.put(
         LuaString(b"_VERSION"),
-        LuaString(f"ay {__ay_version__}".encode("utf-8"))
+        LuaString(f"ay {__ay_version__}".encode("utf-8")),
     )
 
     @lua_function(table, interacts_with_the_vm=True)
@@ -494,10 +497,10 @@ def provide(table: LuaTable) -> None:
 
     @lua_function(table, interacts_with_the_vm=True)
     def xpcall(
-            vm: VirtualMachine,
-            f: LuaFunction,
-            msgh: LuaFunction,
-            *args: LuaFunction,
+        vm: VirtualMachine,
+        f: LuaFunction,
+        msgh: LuaFunction,
+        *args: LuaFunction,
     ) -> list[LuaValue] | None:
         #  This function is similar to pcall, except that it sets a new message
         #  handler msgh.
@@ -512,7 +515,7 @@ def provide(table: LuaTable) -> None:
                 # In case of any error, xpcall returns false
                 LuaBool(False),
                 # plus the result from msgh.
-                *call_function(vm, msgh, [lua_error.message])
+                *call_function(vm, msgh, [lua_error.message]),
             ]
         else:
             return [
@@ -521,7 +524,7 @@ def provide(table: LuaTable) -> None:
                 LuaBool(True),
                 # In such case, xpcall also returns all results from the call,
                 # after this first result.
-                *return_vals
+                *return_vals,
             ]
 
 

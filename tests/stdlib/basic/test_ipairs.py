@@ -1,6 +1,6 @@
 from ay.__main__ import work_chunk
 from ay.util.py_lua_function import lua_function
-from ay.values import LuaString, Variable, LuaTable, LuaNumber, LuaNil
+from ay.values import LuaString, Variable, LuaTable, LuaNumber
 from ay.vm import VirtualMachine
 
 
@@ -21,18 +21,26 @@ def test_ipairs():
     def f(*a):
         tracker(*a)
 
-    table = LuaTable({
-        LuaNumber(k): LuaString(v.encode("utf-8"))
-        for k, v in enumerate(["a", "b", "c", "d", "e"], start=1)
-    })
+    table = LuaTable(
+        {
+            LuaNumber(k): LuaString(v.encode("utf-8"))
+            for k, v in enumerate(["a", "b", "c", "d", "e"], start=1)
+        }
+    )
     table.put(LuaNumber(7), LuaString(b"g"))
     vm.put_nonlocal(LuaString(b"t"), Variable(table))
 
-    assert work_chunk("""
+    assert (
+        work_chunk(
+            """
         for i, v in ipairs(t) do
             f(i, v)
         end
-    """, vm) == []
+    """,
+            vm,
+        )
+        == []
+    )
 
     assert tracker.calls == [
         (LuaNumber(1), LuaString(b"a")),
@@ -41,5 +49,3 @@ def test_ipairs():
         (LuaNumber(4), LuaString(b"d")),
         (LuaNumber(5), LuaString(b"e")),
     ]
-
-

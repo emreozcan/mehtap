@@ -6,7 +6,6 @@ from ay.vm import VirtualMachine
 
 def test_version():
     vm = VirtualMachine()
-    assert work_chunk(
-        "return _VERSION",
-        vm
-    ) == [LuaString(f"ay {__ay_version__}".encode("utf-8"))]
+    assert work_chunk("return _VERSION", vm) == [
+        LuaString(f"ay {__ay_version__}".encode("utf-8"))
+    ]

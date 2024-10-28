@@ -51,31 +51,39 @@ def _main():
         description="Lua interpreter in Python",
     )
     arg_parser.add_argument(
-        "-e", metavar="stat",
+        "-e",
+        metavar="stat",
         help="execute string 'stat'",
     )
     arg_parser.add_argument(
-        "-i", action="store_true",
+        "-i",
+        action="store_true",
         help="enter interactive mode after executing 'script'",
     )
     arg_parser.add_argument(
-        "-l", metavar="name",
+        "-l",
+        metavar="name",
         help="require library 'name' into global 'name'",
     )
     arg_parser.add_argument(
-        "-v", action="store_true",
+        "-v",
+        action="store_true",
         help="show version information",
     )
     arg_parser.add_argument(
-        "-E", action="store_true",
+        "-E",
+        action="store_true",
         help="ignore environment variables",
     )
     arg_parser.add_argument(
-        "-W", action="store_true",
+        "-W",
+        action="store_true",
         help="turn warnings on",
     )
     arg_parser.add_argument(
-        "script", default=None, nargs="?",
+        "script",
+        default=None,
+        nargs="?",
         help="script to execute",
     )
 
@@ -84,7 +92,6 @@ def _main():
         print(COPYRIGHT_TEXT)
         return
 
-    transformer = LuaTransformer()
     vm = VirtualMachine()
 
     if args.e:
@@ -119,7 +126,7 @@ def enter_interactive(vm: VirtualMachine) -> None:
         r = None
         try:
             r = work_chunk(collected_line, vm)
-        except lark.exceptions.UnexpectedEOF as e:
+        except lark.exceptions.UnexpectedEOF:
             continue
         except lark.exceptions.UnexpectedInput as e:
             if e.line == 1 and e.column == 1:
@@ -143,8 +150,8 @@ def display_object(val: LuaValue | list[LuaValue]) -> str | None:
 
 
 def work_expr(
-        expr: str,
-        vm: VirtualMachine,
+    expr: str,
+    vm: VirtualMachine,
 ) -> LuaValue | list[LuaValue]:
     parsed_lua = expr_parser.parse(expr)
     ast = transformer.transform(parsed_lua)
@@ -153,8 +160,8 @@ def work_expr(
 
 
 def work_chunk(
-        chunk: str,
-        vm: VirtualMachine,
+    chunk: str,
+    vm: VirtualMachine,
 ) -> list[LuaValue]:
     parsed_lua = chunk_parser.parse(chunk)
     ast = transformer.transform(parsed_lua)

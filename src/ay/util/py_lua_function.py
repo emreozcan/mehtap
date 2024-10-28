@@ -12,10 +12,10 @@ LuaDecorator: TypeAlias = Callable[[PyLuaFunction], LuaFunction]
 
 
 def lua_function(
-        table: LuaTable = None,
-        *,
-        name: str = None,
-        interacts_with_the_vm: bool = False
+    table: LuaTable = None,
+    *,
+    name: str = None,
+    interacts_with_the_vm: bool = False,
 ) -> LuaDecorator:
     def decorator(func: PyLuaFunction) -> LuaFunction:
         if name:
@@ -34,11 +34,9 @@ def lua_function(
             name=func.__name__,
         )
         if table is not None:
-            table.put(
-                LuaString(func.__name__.encode("utf-8")),
-                lf
-            )
+            table.put(LuaString(func.__name__.encode("utf-8")), lf)
         return lf
+
     return decorator
 
 

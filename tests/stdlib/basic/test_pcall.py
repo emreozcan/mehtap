@@ -10,9 +10,12 @@ def test_pcall_false():
     symbol = LuaObject()
     vm.put_nonlocal(LuaString(b"symbol"), Variable(symbol))
 
-    results = work_chunk("""
+    results = work_chunk(
+        """
         return pcall(error, symbol)
-    """, vm)
+    """,
+        vm,
+    )
 
     assert results[0] == LuaBool(False)
     assert results[1] is symbol
@@ -28,10 +31,12 @@ def test_pcall_true():
     def succeed(t) -> PyLuaRet:
         return [t]
 
-    results = work_chunk("""
+    results = work_chunk(
+        """
         return pcall(succeed, symbol)
-    """, vm)
+    """,
+        vm,
+    )
 
     assert results[0] == LuaBool(True)
     assert results[1] is symbol
-

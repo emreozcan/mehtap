@@ -13,7 +13,10 @@ def test_error():
     vm.put_nonlocal(LuaString(b"symbol"), Variable(symbol))
 
     with raises(LuaError) as excinfo:
-        work_chunk("""
+        work_chunk(
+            """
             return error(symbol)
-        """, vm)
+        """,
+            vm,
+        )
     assert excinfo.value.message is symbol
