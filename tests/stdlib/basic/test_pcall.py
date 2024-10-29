@@ -1,13 +1,13 @@
 from ay.__main__ import work_chunk
 from ay.util.py_lua_function import lua_function, PyLuaRet
-from ay.values import LuaObject, LuaString, Variable, LuaBool
+from ay.values import LuaString, Variable, LuaBool, LuaTable
 from ay.vm import VirtualMachine
 
 
 def test_pcall_false():
     vm = VirtualMachine()
 
-    symbol = LuaObject()
+    symbol = LuaTable()
     vm.put_nonlocal(LuaString(b"symbol"), Variable(symbol))
 
     results = work_chunk(
@@ -24,7 +24,7 @@ def test_pcall_false():
 def test_pcall_true():
     vm = VirtualMachine()
 
-    symbol = LuaObject()
+    symbol = LuaTable()
     vm.put_nonlocal(LuaString(b"symbol"), Variable(symbol))
 
     @lua_function(vm.globals_)

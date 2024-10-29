@@ -1,6 +1,6 @@
 from ay.__main__ import work_expr
 from ay.util.py_lua_function import lua_function
-from ay.values import LuaObject, LuaTable, LuaString, Variable, LuaNumber
+from ay.values import LuaTable, LuaString, Variable, LuaNumber, LuaBool
 from ay.vm import VirtualMachine
 
 
@@ -58,7 +58,7 @@ def test_rawlen():
 
 
 def test_rawset():
-    obj = LuaObject()
+    obj = LuaTable()
     vm = get_vm(m2={LuaNumber(1): obj})
     work_expr(
         "rawset(o1, 1, o2[1])",

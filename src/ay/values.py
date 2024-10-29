@@ -13,10 +13,9 @@ if TYPE_CHECKING:
 
 @attrs.define(slots=True, eq=False)
 class LuaValue(ABC):
-    def get_metatable(self) -> LuaNil | LuaTable:
-        cls = self.__class__
-        if hasattr(cls, "_metatable"):
-            return cls._metatable
+    def get_metatable(self) -> LuaNilType | LuaTable:
+        if hasattr(self, "_metatable"):
+            return self._metatable
         return LuaNil
 
     def has_metamethod(self, name: LuaString) -> bool:
@@ -31,9 +30,11 @@ class LuaValue(ABC):
             return None
         return metatable.get_with_fallback(name, fallback=None)
 
-    def set_metatable(self, value: LuaValue):
-        cls = self.__class__
-        cls._metatable = value
+    def set_metatable(self, value: LuaTable):
+        if "_metatable" in self.__slots__:
+            self._metatable = value
+        else:
+            raise NotImplementedError()
 
     def __eq__(self, other) -> bool:
         from .operations import rel_eq
@@ -127,7 +128,7 @@ class LuaString(LuaValue):
 
 
 @attrs.define(slots=True, eq=False)
-class LuaObject(LuaValue):
+class LuaObject(LuaValue, ABC):
     def __str__(self):
         return repr(self)
 
@@ -145,7 +146,7 @@ class LuaThread(LuaObject):
 @attrs.define(slots=True, eq=False)
 class LuaTable(LuaObject):
     map: dict[LuaValue, LuaValue] = attrs.field(factory=dict)
-    _metatable: LuaValue = LuaNil
+    _metatable: LuaTable = LuaNil
 
     def get_metatable(self):
         return self._metatable

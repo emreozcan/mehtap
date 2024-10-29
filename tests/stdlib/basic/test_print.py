@@ -1,6 +1,6 @@
 from ay.__main__ import work_chunk
 from ay.util.py_lua_function import lua_function
-from ay.values import LuaObject, LuaString, Variable, LuaTable
+from ay.values import LuaString, Variable, LuaTable
 from ay.vm import VirtualMachine
 
 
@@ -13,7 +13,7 @@ def test_print_one_string(capsys):
 def test_print_tostring(capsys):
     vm = VirtualMachine()
 
-    lua_object = LuaObject()
+    lua_object = LuaTable()
     lua_object.set_metatable(
         LuaTable(
             {

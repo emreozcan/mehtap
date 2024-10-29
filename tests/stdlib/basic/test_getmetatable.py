@@ -1,5 +1,5 @@
 from ay.__main__ import work_chunk
-from ay.values import LuaNil, LuaTable, LuaString, Variable, LuaObject
+from ay.values import LuaNil, LuaTable, LuaString, Variable
 from ay.vm import VirtualMachine
 
 
@@ -40,7 +40,7 @@ def test_getmetatable_yes_mt():
 def test_getmetatable_meta_metatable():
     vm = VirtualMachine()
 
-    source_object = LuaObject()
+    source_object = LuaTable()
 
     metatable = LuaTable()
     metatable.put(LuaString(b"__metatable"), source_object)

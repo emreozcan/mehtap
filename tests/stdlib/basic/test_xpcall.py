@@ -1,16 +1,16 @@
 from ay.__main__ import work_chunk
 from ay.util.py_lua_function import lua_function, PyLuaRet
-from ay.values import LuaObject, LuaString, Variable, LuaBool
+from ay.values import LuaString, Variable, LuaBool, LuaTable
 from ay.vm import VirtualMachine
 
 
 def test_xpcall_false():
     vm = VirtualMachine()
 
-    initial_symbol = LuaObject()
+    initial_symbol = LuaTable()
     vm.put_nonlocal(LuaString(b"symbol"), Variable(initial_symbol))
 
-    handled_symbol = LuaObject()
+    handled_symbol = LuaTable()
 
     @lua_function(vm.globals_)
     def handler(s, /) -> PyLuaRet:
@@ -35,10 +35,10 @@ def test_xpcall_true():
     def succeed(t, /) -> PyLuaRet:
         return [t]
 
-    initial_symbol = LuaObject()
+    initial_symbol = LuaTable()
     vm.put_nonlocal(LuaString(b"symbol"), Variable(initial_symbol))
 
-    handled_symbol = LuaObject()
+    handled_symbol = LuaTable()
 
     @lua_function(vm.globals_)
     def handler(s, /) -> PyLuaRet:

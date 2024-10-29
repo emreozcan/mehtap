@@ -1,11 +1,11 @@
 from ay.__main__ import work_chunk
 from ay.util.py_lua_function import lua_function
-from ay.values import LuaObject, LuaTable, LuaString, Variable
+from ay.values import LuaTable, LuaString, Variable, LuaValue
 from ay.vm import VirtualMachine
 
 
 def test_tostring_mt_tostring():
-    lua_object = LuaObject()
+    lua_object = LuaTable()
 
     called = [False]
 
@@ -36,7 +36,7 @@ def test_tostring_mt_tostring():
 
 
 def test_tostring_mt_name():
-    lua_object = LuaObject()
+    lua_object = LuaTable()
 
     mt = LuaTable(
         {
