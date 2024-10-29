@@ -19,8 +19,6 @@ def py_to_lua(value: Any) -> LuaValue:
         return LuaNumber(value)
     if isinstance(value, str):
         return LuaString(str(value).encode("utf-8"))
-    if isinstance(value, bytes):
-        return LuaUserdata(value)
     if isinstance(value, Mapping):
         m = LuaTable()
         for k, v in value.items():
