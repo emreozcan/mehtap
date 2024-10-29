@@ -240,10 +240,27 @@ class LuaFunction(LuaObject):
     block: Block | Callable
     gets_stack_frame: bool = False
     name: str | None = None
+    min_req: int | None = None
+
+    def _py_param_str(self, index):
+        if index == len(self.param_names):
+            if self.variadic:
+                if self.param_names:
+                    return "[, ...]"
+                return "[...]"
+            return ""
+        if index == 0:
+            return f"{self.param_names[index]}{self._py_param_str(index+1)}"
+        if index < self.min_req:
+            return f", {self.param_names[index]}{self._py_param_str(index+1)}"
+        if index >= self.min_req:
+            return f"[, {self.param_names[index]}{self._py_param_str(index+1)}]"
 
     def _stringify_params(self):
         if self.param_names is None:
             return ""
+        if self.min_req is not None:
+            return f"({self._py_param_str(0)})"
         param_names = [str(name) for name in self.param_names]
         if self.variadic:
             param_names.append("...")

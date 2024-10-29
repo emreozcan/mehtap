@@ -460,6 +460,7 @@ class FuncBody(Expression):
             block=self.body,
             parent_stack_frame=frame,
             gets_stack_frame=False,
+            min_req=0,  # The parameters get adjusted.
         )
 
 

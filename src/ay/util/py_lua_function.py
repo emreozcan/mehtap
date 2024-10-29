@@ -81,28 +81,30 @@ def lua_function(
 
         f_signature = signature(func)
         param_names = []
+        minimum_required = 0
         f_variadic = False
+        stack_frame_skipped = False
         for param in f_signature.parameters.values():
+            if gets_stack_frame and not stack_frame_skipped:
+                stack_frame_skipped = True
+                continue
             if f_variadic:
                 raise ValueError(
                     f"Function {func.__name__} has a parameter after a "
                     f"variadic parameter ({param.name})"
                 )
-            if param.kind not in (
-                param.POSITIONAL_ONLY,
-                param.VAR_POSITIONAL,
-            ):
+            if param.kind == param.POSITIONAL_ONLY:
+                if param.default is param.empty:
+                    minimum_required += 1
+            elif param.kind == param.VAR_POSITIONAL:
+                f_variadic = True
+                continue
+            else:
                 raise ValueError(
                     f"Function {func.__name__} has a parameter that is not "
                     f"positional or variadic"
                 )
-            if param.kind == param.VAR_POSITIONAL:
-                f_variadic = True
-                continue
             param_names.append(param.name)
-
-        if gets_stack_frame:
-            param_names.pop(0)
 
         def new_function(*args: LuaValue) -> None:
             return_values: list[LuaValue] | None = func(*args)
@@ -119,6 +121,7 @@ def lua_function(
             block=new_function,
             gets_stack_frame=gets_stack_frame,
             name=func.__name__,
+            min_req=minimum_required,
         )
         if table is not None:
             table.put(LuaString(func.__name__.encode("utf-8")), lf)

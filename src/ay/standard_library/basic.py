@@ -53,7 +53,7 @@ def provide(table: LuaTable) -> None:
         return [v, message, *a]
 
     @lua_function(table, gets_stack_frame=True)
-    def collectgarbage(vm, /) -> PyLuaRet:
+    def collectgarbage(vm, opt=None, arg=None, /) -> PyLuaRet:
         """collectgarbage ([opt [, arg]])"""
         call_function(
             vm,
