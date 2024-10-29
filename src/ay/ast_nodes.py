@@ -474,10 +474,9 @@ def _call_function(
         if function.variadic:
             new_frame.varargs = args[len(function.param_names):]
         args = adjust(args, len(function.param_names))
-        new_vm = old_frame.push()
         for param_name, arg in zip(function.param_names, args):
             new_frame.put_local_ls(param_name, ay_values.Variable(arg))
-        retvals = function.block.evaluate(new_vm)
+        retvals = function.block.evaluate(new_frame)
         if retvals is not None:
             raise ReturnException(retvals)
     else:
