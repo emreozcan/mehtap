@@ -162,9 +162,28 @@ class LuaTable(LuaObject):
         self._metatable = value
 
     def __str__(self):
-        return (
-            "{" + ", ".join(f"{k!s}: {v!s}" for k, v in self.map.items()) + "}"
-        )
+        return self.recursive_detecting_str(set())
+
+    def recursive_detecting_str(
+        self,
+        seen_objects: set[int],
+    ) -> str:
+        i = id(self)
+        if i in seen_objects:
+            return "{<...>}"
+        seen_objects.add(i)
+        pair_list = []
+        for key, value in self.map.items():
+            if not isinstance(key, LuaTable):
+                key_str = str(key)
+            else:
+                key_str = key.recursive_detecting_str(seen_objects)
+            if not isinstance(value, LuaTable):
+                value_str = str(value)
+            else:
+                value_str = value.recursive_detecting_str(seen_objects)
+            pair_list.append((key_str, value_str))
+        return "{" + ", ".join(f"({k})=({v})" for k, v in pair_list) + "}"
 
     # TODO: Change raw's default value to False.
     def put(self, key: LuaValue, value: LuaValue, *, raw: bool = True):
@@ -223,18 +242,18 @@ class LuaFunction(LuaObject):
     gets_stack_frame: bool = False
     name: str | None = None
 
+    def _stringify_params(self):
+        if self.param_names is None:
+            return ""
+        param_names = [str(name) for name in self.param_names]
+        if self.variadic:
+            param_names.append("...")
+        param_list = ", ".join(param_names)
+        return f"({param_list})"
+
     def __str__(self):
         if not self.name:
-            if self.param_names is None:
-                return f"function: {hex(id(self))}"
-
-            return (
-                f"function({', '.join(map(str, self.param_names))}): "
-                f"{hex(id(self))}"
-            )
-        if self.param_names is None:
-            return f"function {self.name}: {hex(id(self))}"
+            return f"function{self._stringify_params()}: {hex(id(self))}"
         return (
-            f"function {self.name}({', '.join(map(str, self.param_names))}): "
-            f"{hex(id(self))}"
+            f"function {self.name}{self._stringify_params()}: {hex(id(self))}"
         )
