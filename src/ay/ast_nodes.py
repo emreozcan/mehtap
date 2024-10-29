@@ -340,7 +340,7 @@ class Name(NonTerminal):
 @attrs.define(slots=True)
 class VarArgExpr(Expression):
     def evaluate(self, frame: StackFrame) -> LuaValue | Sequence[LuaValue]:
-        if frame.varargs:
+        if frame.varargs is not None:
             return frame.varargs
         raise NotImplementedError()
 
@@ -466,13 +466,15 @@ class FuncDef(Expression):
 def _call_function(
     old_frame: StackFrame,
     function: LuaFunction,
-    args: list[LuaValue],
+    args: list[LuaValue | list[LuaValue]],
 ):
     if not callable(function.block):
         new_frame = old_frame.push()
         # Function is implemented in Lua
         if function.variadic:
+            args = adjust_without_requirement(args)
             new_frame.varargs = args[len(function.param_names):]
+            args = args[:len(function.param_names)]
         args = adjust(args, len(function.param_names))
         for param_name, arg in zip(function.param_names, args):
             new_frame.put_local_ls(param_name, ay_values.Variable(arg))
