@@ -554,6 +554,10 @@ def provide(table: LuaTable) -> None:
             ]
 
 
+library_table = LuaTable()
+provide(library_table)
+
+
 class BasicLibrary(LibraryProvider):
     def provide(self, table: LuaTable) -> None:
         provide(table)
