@@ -25,6 +25,7 @@ from ay.operations import rel_eq, length
 
 if TYPE_CHECKING:
     from ay.vm import VirtualMachine
+    from ay.values import LuaNilType
 
 
 SYMBOL_METATABLE = LuaString(b"__metatable")
@@ -38,7 +39,7 @@ FAIL = LuaNil
 
 def provide(table: LuaTable) -> None:
     @lua_function(table, name="assert")
-    def assert_(v: LuaValue, message: LuaValue = LuaNil, *a) -> PyLuaRet:
+    def assert_(v: LuaValue, message: LuaValue = LuaNil, /, *a) -> PyLuaRet:
         """assert (v [, message])"""
         #  Raises an error if the value of its argument v is false
         #  (i.e., nil or false);
@@ -52,7 +53,7 @@ def provide(table: LuaTable) -> None:
         return [v, message, *a]
 
     @lua_function(table, interacts_with_the_vm=True)
-    def collectgarbage(vm) -> PyLuaRet:
+    def collectgarbage(vm, /) -> PyLuaRet:
         """collectgarbage ([opt [, arg]])"""
         call_function(
             vm,
@@ -69,6 +70,7 @@ def provide(table: LuaTable) -> None:
     def dofile(
         vm: VirtualMachine,
         filename: LuaString | None = None,
+        /,
     ) -> PyLuaRet:
         """dofile ([filename])"""
         #  Opens the named file and executes its content as a Lua chunk.
@@ -93,6 +95,7 @@ def provide(table: LuaTable) -> None:
         vm: VirtualMachine,
         message: LuaValue = LuaNil,
         level: LuaNumber = LuaNumber(1, LuaNumberType.INTEGER),
+        /,
     ) -> PyLuaRet:
         """error(message[, level])"""
         #  Raises an error (see §2.3) with message as the error object.
@@ -115,7 +118,7 @@ def provide(table: LuaTable) -> None:
     table.put(LuaString(b"_G"), table)
 
     @lua_function(table)
-    def getmetatable(object: LuaValue) -> PyLuaRet:
+    def getmetatable(object: LuaValue, /) -> PyLuaRet:
         """getmetatable(object)"""
         # If object does not have a metatable, returns nil.
         # Otherwise, if the object's metatable has a __metatable field,
@@ -127,7 +130,7 @@ def provide(table: LuaTable) -> None:
         return [mt.get_with_fallback(SYMBOL_METATABLE, mt)]
 
     @lua_function(table)
-    def ipairs(t: LuaTable) -> PyLuaRet:
+    def ipairs(t: LuaTable, /) -> PyLuaRet:
         """ipairs (t)"""
 
         # Returns three values (an iterator function, the table t, and 0) so
@@ -136,7 +139,7 @@ def provide(table: LuaTable) -> None:
         # will iterate over the key–value pairs (1,t[1]), (2,t[2]), ..., up
         # to the first absent index.
         @lua_function()
-        def iterator_function(state, control_variable: LuaNumber) -> PyLuaRet:
+        def iterator_function(state, control_variable: LuaNumber, /) -> PyLuaRet:
             index = control_variable.value + 1
             if index > MAX_INT64:
                 return None
@@ -158,6 +161,7 @@ def provide(table: LuaTable) -> None:
         chunk_name: LuaString | None = None,
         mode: LuaString | None = None,
         env: LuaTable | None = None,
+        /,
     ) -> PyLuaRet:
         """load (chunk [, chunkname [, mode [, env]]])"""
         raise NotImplementedError()  # todo.
@@ -167,12 +171,13 @@ def provide(table: LuaTable) -> None:
         filename: LuaString | None = None,
         mode: LuaString | None = None,
         env: LuaTable | None = None,
+        /,
     ) -> PyLuaRet:
         """loadfile ([filename [, mode [, env]]])"""
         raise NotImplementedError()  # todo.
 
     @lua_function(table, name="next")
-    def next_(table: LuaTable, index: LuaValue = LuaNil) -> PyLuaRet:
+    def next_(table: LuaTable, index: LuaValue = LuaNil, /) -> PyLuaRet:
         """next (table [, index])"""
         # Allows a program to traverse all fields of a table.
         # Its first argument is a table and its second argument is an index
@@ -198,7 +203,7 @@ def provide(table: LuaTable) -> None:
         raise NotImplementedError()  # todo.
 
     @lua_function(table, interacts_with_the_vm=True)
-    def pairs(vm: VirtualMachine, t: LuaTable) -> list[LuaValue] | None:
+    def pairs(vm: VirtualMachine, t: LuaTable, /) -> list[LuaValue] | None:
         """pairs (t)"""
         # If t has a metamethod __pairs, calls it with t as argument and
         # returns the first three results from the call.
@@ -213,7 +218,7 @@ def provide(table: LuaTable) -> None:
 
         # TODO: Implement this function in a way that uses state.
         @lua_function()
-        def iterator_function(state, control_variable) -> PyLuaRet:
+        def iterator_function(state, control_variable, /) -> PyLuaRet:
             try:
                 key, value = next(items)
             except StopIteration:
@@ -230,6 +235,7 @@ def provide(table: LuaTable) -> None:
     def pcall(
         vm: VirtualMachine,
         f: LuaFunction,
+        /,
         *args: LuaValue,
     ):
         """pcall (f [, arg1, ···])"""
@@ -250,7 +256,7 @@ def provide(table: LuaTable) -> None:
             return [LuaBool(True), *return_vals]
 
     @lua_function(table, name="print", interacts_with_the_vm=True)
-    def print_(vm: VirtualMachine, *args: LuaValue) -> PyLuaRet:
+    def print_(vm: VirtualMachine, /, *args: LuaValue) -> PyLuaRet:
         """print (···)"""
         # Receives any number of arguments and prints their values to stdout,
         # converting each argument to a string following the same rules of
@@ -268,7 +274,7 @@ def provide(table: LuaTable) -> None:
         return None
 
     @lua_function(table)
-    def rawequal(v1, v2) -> PyLuaRet:
+    def rawequal(v1, v2, /) -> PyLuaRet:
         """rawequal (v1, v2)"""
         # Checks whether v1 is equal to v2, without invoking the __eq
         # metamethod.
@@ -279,6 +285,7 @@ def provide(table: LuaTable) -> None:
     def rawget(
         table: LuaTable,
         index: LuaValue,
+        /,
     ) -> PyLuaRet:
         """rawget (table, index)"""
         # Gets the real value of table[index], without using the __index
@@ -288,7 +295,7 @@ def provide(table: LuaTable) -> None:
         return [table.get(index, raw=True)]
 
     @lua_function(table)
-    def rawlen(v: LuaTable | LuaString) -> PyLuaRet:
+    def rawlen(v: LuaTable | LuaString, /) -> PyLuaRet:
         """rawlen (v)"""
         # Returns the length of the object v, which must be a table or a string,
         # without invoking the __len metamethod. Returns an integer.
@@ -300,6 +307,7 @@ def provide(table: LuaTable) -> None:
         table: LuaTable,
         index: LuaValue,
         value: LuaValue,
+        /,
     ) -> PyLuaRet:
         """rawset (table, index, value)"""
         #  Sets the real value of table[index] to value, without using the
@@ -312,7 +320,7 @@ def provide(table: LuaTable) -> None:
         return [table]
 
     @lua_function(table, name="select")
-    def select(index, *a) -> PyLuaRet:
+    def select(index, /, *a) -> PyLuaRet:
         """select (index, ···)"""
         # If index is a number,
         if isinstance(index, LuaNumber):
@@ -340,7 +348,8 @@ def provide(table: LuaTable) -> None:
     @lua_function(table)
     def setmetatable(
         table: LuaTable,
-        metatable: LuaTable | LuaNil,
+        metatable: LuaTable | LuaNilType,
+        /,
     ) -> PyLuaRet:
         """setmetatable (table, metatable)"""
         # Sets the metatable for the given table.
@@ -359,7 +368,7 @@ def provide(table: LuaTable) -> None:
         # debug library (§6.10).
 
     @lua_function(table, interacts_with_the_vm=True)
-    def tonumber(vm: VirtualMachine, e, base=None) -> PyLuaRet:
+    def tonumber(vm: VirtualMachine, e, base=None, /) -> PyLuaRet:
         """tonumber (e [, base])"""
         # When called with no base, tonumber tries to convert its argument to a
         # number.
@@ -428,7 +437,7 @@ def provide(table: LuaTable) -> None:
         return [number]
 
     @lua_function(table, interacts_with_the_vm=True)
-    def tostring(vm: VirtualMachine, v: LuaValue) -> PyLuaRet:
+    def tostring(vm: VirtualMachine, v: LuaValue, /) -> PyLuaRet:
         """tostring (v)"""
         # Receives a value of any type and converts it to a string in a
         # human-readable format.
@@ -450,7 +459,7 @@ def provide(table: LuaTable) -> None:
         return [LuaString(str(v).encode("utf-8"))]
 
     @lua_function(table, name="type")
-    def type_(v: LuaValue) -> PyLuaRet:
+    def type_(v: LuaValue, /) -> PyLuaRet:
         """type (v)"""
         #  Returns the type of its only argument, coded as a string.
         #  The possible results of this function are "nil"
@@ -471,7 +480,7 @@ def provide(table: LuaTable) -> None:
     )
 
     @lua_function(table, interacts_with_the_vm=True)
-    def warn(vm: VirtualMachine, msg1: LuaString, *a: LuaString) -> PyLuaRet:
+    def warn(vm: VirtualMachine, msg1: LuaString, /, *a: LuaString) -> PyLuaRet:
         """warn (msg1, ···)"""
         # Emits a warning with a message composed by the concatenation of all
         # its arguments (which should be strings).
@@ -500,6 +509,7 @@ def provide(table: LuaTable) -> None:
         vm: VirtualMachine,
         f: LuaFunction,
         msgh: LuaFunction,
+        /,
         *args: LuaFunction,
     ) -> list[LuaValue] | None:
         #  This function is similar to pcall, except that it sets a new message

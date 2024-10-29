@@ -13,7 +13,7 @@ def test_xpcall_false():
     handled_symbol = LuaObject()
 
     @lua_function(vm.globals_)
-    def handler(s) -> PyLuaRet:
+    def handler(s, /) -> PyLuaRet:
         assert s is initial_symbol
         return [handled_symbol]
 
@@ -32,7 +32,7 @@ def test_xpcall_true():
     vm = VirtualMachine()
 
     @lua_function(vm.globals_)
-    def succeed(t) -> PyLuaRet:
+    def succeed(t, /) -> PyLuaRet:
         return [t]
 
     initial_symbol = LuaObject()
@@ -41,7 +41,7 @@ def test_xpcall_true():
     handled_symbol = LuaObject()
 
     @lua_function(vm.globals_)
-    def handler(s) -> PyLuaRet:
+    def handler(s, /) -> PyLuaRet:
         assert s is initial_symbol
         return [handled_symbol]
 

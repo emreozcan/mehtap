@@ -28,7 +28,7 @@ def test_pcall_true():
     vm.put_nonlocal(LuaString(b"symbol"), Variable(symbol))
 
     @lua_function(vm.globals_)
-    def succeed(t) -> PyLuaRet:
+    def succeed(t, /) -> PyLuaRet:
         return [t]
 
     results = work_chunk(

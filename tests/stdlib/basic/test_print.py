@@ -18,7 +18,7 @@ def test_print_tostring(capsys):
         LuaTable(
             {
                 LuaString(b"__tostring"): lua_function()(
-                    lambda _: [LuaString(b";)")]
+                    lambda _, /: [LuaString(b";)")]
                 )
             }
         )
