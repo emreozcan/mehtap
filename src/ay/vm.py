@@ -12,7 +12,7 @@ from ay.values import (
 )
 
 
-@attrs.define(slots=True)
+@attrs.define(slots=True, repr=False)
 class VirtualMachine:
     globals_: LuaTable = attrs.field(factory=create_global_table)
     stack_frame: StackFrame = attrs.field(factory=lambda: StackFrame(None, {}))
