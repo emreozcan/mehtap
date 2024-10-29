@@ -223,11 +223,18 @@ class LuaFunction(LuaObject):
     name: str | None = None
 
     def __str__(self):
-        if not self.param_names:
-            return f"function: {hex(id(self))}"
+        if not self.name:
+            if self.param_names is None:
+                return f"function: {hex(id(self))}"
 
+            return (
+                f"function({', '.join(map(str, self.param_names))}): "
+                f"{hex(id(self))}"
+            )
+        if self.param_names is None:
+            return f"function {self.name}: {hex(id(self))}"
         return (
-            f"function({', '.join(map(str, self.param_names))}): "
+            f"function {self.name}({', '.join(map(str, self.param_names))}): "
             f"{hex(id(self))}"
         )
 
