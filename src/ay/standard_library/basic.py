@@ -383,19 +383,24 @@ def provide(table: LuaTable) -> None:
                 return [e]
             if isinstance(e, LuaString):
                 try:
-                    e_string = e.content.strip().decode("utf-8")
-                    if e_string[0] == "+":
-                        e_parsed = numeral_parser.parse(e_string[1:])
-                    elif e_string[0] == "-":
-                        e_parsed = Unary(
-                            op=Terminal("-"),
-                            exp=transformer.transform(
-                                numeral_parser.parse(e_string[1:])
-                            ),
-                        )
-                    else:
-                        e_parsed = numeral_parser.parse(e_string)
-                    return [transformer.transform(e_parsed).evaluate(vm)]
+                    e_str = e.content.strip().decode("utf-8")
+                    if e_str[0] == "-":
+                        return [
+                            Unary(
+                                op=Terminal("-"),
+                                exp=transformer.transform(
+                                    numeral_parser.parse(e_str[1:])
+                                ),
+                            ).evaluate(vm)
+                        ]
+
+                    if e_str[0] == "+":
+                        e_str = e_str[1:]
+                    return [
+                        transformer.transform(
+                            numeral_parser.parse(e_str)
+                        ).evaluate(vm)
+                    ]
                 except Exception:
                     return [FAIL]
         # When called with base, then e must be a string to be interpreted as an
@@ -411,12 +416,12 @@ def provide(table: LuaTable) -> None:
         # 35. If the string e is not a valid numeral in the given base, the
         # function returns fail.
         acc = 0
-        e_string = e.content.strip().decode("utf-8")
-        if e_string[0] in ("+", "-"):
+        e_str = e.content.strip().decode("utf-8")
+        if e_str[0] in ("+", "-"):
             start = 1
         else:
             start = 0
-        for i, c in enumerate(e_string[start:]):
+        for i, c in enumerate(e_str[start:]):
             if "0" <= c <= "9":
                 digit = int(c)
             elif "a" <= c <= "z":
@@ -432,7 +437,7 @@ def provide(table: LuaTable) -> None:
             number = LuaNumber(acc, LuaNumberType.INTEGER)
         else:
             number = LuaNumber(-1, LuaNumberType.INTEGER)
-        if e_string[0] == "-":
+        if e_str[0] == "-":
             number.value = -number.value
         return [number]
 
