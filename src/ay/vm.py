@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import sys
+
 import attrs
 
 from ay.global_table import create_global_table
@@ -47,6 +49,10 @@ class VirtualMachine:
             self.globals.put(key, variable)
             return
         assert False
+
+    def get_warning(self, *messages: str | bytes | LuaString):
+        if self.emitting_warnings:
+            print(f"Warning: ", *messages, sep="", file=sys.stderr)
 
 
 @attrs.define(slots=True, repr=False)

@@ -518,8 +518,7 @@ def provide(table: LuaTable) -> None:
             return None
         if not frame.vm.emitting_warnings:
             return None
-        print("Warning: ", msg1, *a, sep="", file=sys.stderr)
-        return None
+        frame.vm.get_warning(msg1, *a)
 
     @lua_function(table, gets_stack_frame=True)
     def xpcall(

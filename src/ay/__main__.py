@@ -10,7 +10,6 @@ from ay.ast_transformer import transformer
 from ay.control_structures import LuaError
 from ay.operations import str_to_lua_string
 from ay.parser import chunk_parser, expr_parser
-from ay.standard_library import basic
 from ay.vm import VirtualMachine
 from ay.values import LuaValue, LuaTable, LuaNumber, LuaString
 
