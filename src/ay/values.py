@@ -143,10 +143,16 @@ class LuaThread(LuaObject):
     pass
 
 
-@attrs.define(slots=True, eq=False)
+@attrs.define(slots=True, eq=False, repr=False)
 class LuaTable(LuaObject):
     map: dict[LuaValue, LuaValue] = attrs.field(factory=dict)
     _metatable: LuaTable = LuaNil
+
+    def __repr__(self):
+        values = ",".join(f"({k})=({v})" for k, v in self.map.items())
+        if not self._metatable:
+            return f"<StackFrame [{values}]>"
+        return f"<StackFrame [{values}] metatable={self._metatable}>"
 
     def get_metatable(self):
         return self._metatable
@@ -229,12 +235,20 @@ class StackExhaustionException(Exception):
     pass
 
 
-@attrs.define(slots=True)
+@attrs.define(slots=True, repr=False)
 class StackFrame:
     parent: StackFrame | None
     locals: dict[LuaString, Variable] = attrs.field(factory=dict)
     varargs: list[LuaValue] | None = None
     protected: bool = False
+
+    def __repr__(self):
+        values = ",".join(f"({k})=({v})" for k, v in self.locals.items())
+        if not self.varargs:
+            return f"<StackFrame locals=[{values}]>"
+        else:
+            varargs = ",".join(str(v) for v in self.varargs)
+            return f"<StackFrame locals=[{values}] varargs=[{varargs}]>"
 
     def has(self, key: LuaString) -> bool:
         assert isinstance(key, LuaString)
