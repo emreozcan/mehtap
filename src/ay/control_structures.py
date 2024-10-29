@@ -8,7 +8,7 @@ from ay.values import LuaValue
 from ay.operations import str_to_lua_string
 
 if TYPE_CHECKING:
-    from ast_nodes import Name
+    from ay.ast_nodes import Name
 
 
 class LuaError(Exception):

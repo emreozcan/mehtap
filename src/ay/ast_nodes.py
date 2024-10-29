@@ -29,13 +29,13 @@ from ay.operations import (
 import ay.operations as ay_operations
 
 if TYPE_CHECKING:
-    from vm import VirtualMachine
+    from ay.vm import VirtualMachine
 
 
-def flatten(v: Iterable[LuaValue | list[LuaValue]]) -> list[LuaValue]:
+def flatten(v: Iterable[LuaValue | Iterable[LuaValue]]) -> list[LuaValue]:
     result = []
     for elem in v:
-        if isinstance(elem, list):
+        if isinstance(elem, Iterable):
             result.extend(flatten(elem))
         else:
             result.append(elem)
@@ -543,7 +543,7 @@ class SumOp(BinOp):
             case _:
                 raise NotImplementedError(f"{self.op=}")
 
-    op: Literal["+", "-"]
+    op: str
 
 
 @attrs.define(slots=True)

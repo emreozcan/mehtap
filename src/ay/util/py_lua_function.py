@@ -13,9 +13,9 @@ LuaDecorator: TypeAlias = Callable[[PyLuaFunction], LuaFunction]
 
 
 def lua_function(
-    table: LuaTable = None,
+    table: Optional[LuaTable] = None,
     *,
-    name: str = None,
+    name: Optional[str] = None,
     interacts_with_the_vm: bool = False,
 ) -> LuaDecorator:
     def decorator(func: PyLuaFunction) -> LuaFunction:

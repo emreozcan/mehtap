@@ -212,7 +212,7 @@ class LuaFunction(LuaObject):
     parent_stack_frame: StackFrame | None
     block: Block | Callable
     interacts_with_the_vm: bool = False
-    name: str = None
+    name: str | None = None
 
     def __str__(self):
         if not self.param_names:
@@ -230,7 +230,7 @@ class StackExhaustionException(Exception):
 
 @attrs.define(slots=True)
 class StackFrame:
-    parent: Self | None
+    parent: StackFrame | None
     locals: dict[LuaString, Variable] = attrs.field(factory=dict)
     varargs: list[LuaValue] | None = None
     protected: bool = False

@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Self
-
 import attrs
 
 from ay.global_table import create_global_table
@@ -20,7 +18,7 @@ class VirtualMachine:
     stack_frame: StackFrame = attrs.field(factory=lambda: StackFrame(None, {}))
     emitting_warnings: bool = False
 
-    def push(self) -> Self:
+    def push(self) -> VirtualMachine:
         return VirtualMachine(
             globals_=self.globals_,
             stack_frame=StackFrame(self.stack_frame, {}),

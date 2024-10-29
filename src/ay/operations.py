@@ -18,28 +18,21 @@ from ay.values import (
 )
 
 
-def rel_eq(a: LuaValue, b: LuaValue, *, raw: bool = False) -> LuaBool:
+def rel_eq[T: LuaValue](a: T, b: T, *, raw: bool = False) -> LuaBool:
     # Equality (==) first compares the type of its operands.
     # If the types are different, then the result is false.
-    type_a = type(a)
-    if type_a is not type(b):
+    if type(a) is not type(b):
         return LuaBool(False)
     # Otherwise, the values of the operands are compared.
     # Strings are equal if they have the same byte content.
-    if type_a is LuaString:
-        a: LuaString
-        b: LuaString
+    if isinstance(a, LuaString):
         return LuaBool(a.content == b.content)
     # Numbers are equal if they denote the same mathematical value.
-    if type_a is LuaNumber:
-        a: LuaNumber
-        b: LuaNumber
+    if isinstance(a, LuaNumber):
         return LuaBool(a.value == b.value)
     # ay extension: All LuaBool(False) _and true_ objects are currently not all
     #               the same object :(
-    if type_a is LuaBool:
-        a: LuaBool
-        b: LuaBool
+    if isinstance(a, LuaBool):
         return LuaBool(a.true == b.true)
     # Tables, userdata, and threads are compared by reference:
     # two objects are considered equal only if they are the same object.

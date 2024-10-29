@@ -463,7 +463,8 @@ def provide(table: LuaTable) -> None:
         name_field = v.get_metamethod(SYMBOL_NAME)
         if name_field is not None and isinstance(name_field, LuaString):
             # tostring may use that string in its final result.
-            return [LuaString(f"{name_field.content}: {v}".encode("utf-8"))]
+            decoded_name = name_field.content.decode("utf-8")
+            return [LuaString(f"{decoded_name}: {v}".encode("utf-8"))]
         # For complete control of how numbers are converted, use string.format.
         return [LuaString(str(v).encode("utf-8"))]
 
