@@ -83,6 +83,9 @@ class Expression(NonTerminal, ABC):
     def evaluate(self, vm: VirtualMachine) -> LuaValue | Sequence[LuaValue]:
         pass
 
+    def evaluate_single(self, vm: VirtualMachine) -> LuaValue:
+        return adjust_to_one(self.evaluate(vm))
+
 
 @attrs.define(slots=True)
 class ParenExpression(Expression):
@@ -348,7 +351,7 @@ class VarIndex(Variable):
     def evaluate(self, vm: VirtualMachine) -> LuaValue:
         table = self.base.evaluate(vm)
         assert isinstance(table, LuaTable)
-        return table.get(self.index.evaluate(vm))
+        return table.get(self.index.evaluate_single(vm))
 
     base: Expression
     index: Expression
@@ -377,14 +380,14 @@ class TableConstructor(Expression):
                 if isinstance(field.key, Name):
                     key = str_to_lua_string(field.key.name.text)
                 elif isinstance(field.key, Expression):
-                    key = field.key.evaluate(vm)
+                    key = field.key.evaluate_single(vm)
                 else:
                     raise NotImplementedError(f"{type(field.key)=}")
-                table.put(key, field.value.evaluate(vm))
+                table.put(key, field.value.evaluate_single(vm))
             elif isinstance(field, FieldCounterKey):
                 key = LuaNumber(counter, LuaNumberType.INTEGER)
                 counter += 1
-                table.put(key, field.value.evaluate(vm))
+                table.put(key, field.value.evaluate_single(vm))
             else:
                 raise NotImplementedError(f"{type(field)=}")
         if last_field and isinstance(last_field, FieldCounterKey):
@@ -546,8 +549,8 @@ class BinOp(Expression, ABC):
 @attrs.define(slots=True)
 class SumOp(BinOp):
     def evaluate(self, vm: VirtualMachine) -> LuaValue:
-        left = self.lhs.evaluate(vm)
-        right = self.rhs.evaluate(vm)
+        left = self.lhs.evaluate_single(vm)
+        right = self.rhs.evaluate_single(vm)
         match self.op:
             case "+":
                 return ay_operations.arith_add(left, right)
