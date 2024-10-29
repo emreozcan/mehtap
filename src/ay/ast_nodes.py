@@ -1,10 +1,10 @@
 from __future__ import annotations
 
+import enum
 import io
 import string
 from abc import ABC, abstractmethod
-from collections.abc import Sequence, Iterable
-from typing import Literal, TYPE_CHECKING
+from collections.abc import Sequence, Iterable, Callable
 from typing import Literal, TYPE_CHECKING, Sequence
 
 import attrs
@@ -540,46 +540,118 @@ class FuncCallMethod(Expression, Statement):
     args: Sequence[Expression]
 
 
-@attrs.define(slots=True)
-class Unary(Expression):
-    def evaluate(self, frame: StackFrame) -> LuaValue:
-        v = self.exp.evaluate(frame)
-        match self.op.text:
-            case "-":
-                return ay_operations.arith_unary_minus(v)
-            case "#":
-                return ay_operations.length(v)
-            case "~":
-                return ay_operations.bitwise_unary_not(v)
-            case "not":
-                return ay_operations.logical_unary_not(v)
-            case _:
-                raise NotImplementedError(f"{self.op=}")
+class UnaryOperator(enum.Enum):
+    NEG = "-"
+    NOT = "not"
+    LENGTH = "#"
+    BIT_NOT = "~"
 
-    op: Terminal
+
+unary_operator_functions: dict[
+    UnaryOperator,
+    Callable[[LuaValue], LuaValue]
+] = {
+    UnaryOperator.NEG: ay_operations.arith_unary_minus,
+    UnaryOperator.NOT: ay_operations.logical_unary_not,
+    UnaryOperator.LENGTH: ay_operations.length,
+    UnaryOperator.BIT_NOT: ay_operations.bitwise_unary_not,
+}
+
+
+@attrs.define(slots=True)
+class UnaryOperation(Expression):
+    op: UnaryOperator
     exp: Expression
 
+    def evaluate(self, frame: StackFrame) -> LuaValue:
+        v = self.exp.evaluate(frame)
+        return unary_operator_functions[self.op](v)
+
+
+class BinaryOperator(enum.Enum):
+    OR = "or"
+    AND = "and"
+    LT = "<"
+    LE = "<="
+    GT = ">"
+    GE = ">="
+    EQ = "=="
+    NE = "~="
+    BIT_OR = "|"
+    BIT_XOR = "~"
+    BIT_AND = "&"
+    SHIFT_LEFT = "<<"
+    SHIFT_RIGHT = ">>"
+    CONCAT = ".."
+    ADD = "+"
+    SUBTRACT = "-"
+    MULTIPLY = "*"
+    FLOAT_DIV = "/"
+    FLOOR_DIV = "//"
+    MODULO = "%"
+    EXP = "^"
+
+
+binary_operator_functions: dict[
+    BinaryOperator,
+    Callable[[LuaValue, LuaValue], LuaValue]
+] = {
+    BinaryOperator.LT: ay_operations.rel_lt,
+    BinaryOperator.LE: ay_operations.rel_le,
+    BinaryOperator.GT: ay_operations.rel_gt,
+    BinaryOperator.GE: ay_operations.rel_ge,
+    BinaryOperator.EQ: ay_operations.rel_eq,
+    BinaryOperator.NE: ay_operations.rel_ne,
+    BinaryOperator.BIT_OR: ay_operations.bitwise_or,
+    BinaryOperator.BIT_XOR: ay_operations.bitwise_xor,
+    BinaryOperator.BIT_AND: ay_operations.bitwise_and,
+    BinaryOperator.SHIFT_LEFT: ay_operations.bitwise_shift_left,
+    BinaryOperator.SHIFT_RIGHT: ay_operations.bitwise_shift_right,
+    BinaryOperator.CONCAT: ay_operations.concat,
+    BinaryOperator.ADD: ay_operations.arith_add,
+    BinaryOperator.SUBTRACT: ay_operations.arith_sub,
+    BinaryOperator.MULTIPLY: ay_operations.arith_mul,
+    BinaryOperator.FLOAT_DIV: ay_operations.arith_float_div,
+    BinaryOperator.FLOOR_DIV: ay_operations.arith_floor_div,
+    BinaryOperator.MODULO: ay_operations.arith_mod,
+    BinaryOperator.EXP: ay_operations.arith_exp,
+}
+
+
 
 @attrs.define(slots=True)
-class BinOp(Expression, ABC):
+class BinaryOperation(Expression, ABC):
     lhs: Expression
+    op: BinaryOperator
     rhs: Expression
 
-
-@attrs.define(slots=True)
-class SumOp(BinOp):
     def evaluate(self, frame: StackFrame) -> LuaValue:
+        op = self.op
+        # Both and and or use short-circuit evaluation;
+        # that is, the second operand is evaluated only if necessary.
+        if op == BinaryOperator.AND:
+            # The conjunction operator "and" returns its first argument if this
+            # value is false or nil;
+            l_val = self.lhs.evaluate_single(frame)
+            if l_val is ay_values.LuaNil or l_val == ay_values.LuaBool(False):
+                return l_val
+            # otherwise, and returns its second argument.
+            return self.rhs.evaluate_single(frame)
+        if op == BinaryOperator.OR:
+            # The disjunction operator "or" returns its first argument if this
+            # value is different from nil and false;
+            l_val = self.lhs.evaluate_single(frame)
+            if (
+                l_val is not ay_values.LuaNil
+                and l_val != ay_values.LuaBool(False)
+            ):
+                return l_val
+            # otherwise, or returns its second argument.
+            return self.rhs.evaluate_single(frame)
+
         left = self.lhs.evaluate_single(frame)
         right = self.rhs.evaluate_single(frame)
-        match self.op:
-            case "+":
-                return ay_operations.arith_add(left, right)
-            case "-":
-                return ay_operations.arith_sub(left, right)
-            case _:
-                raise NotImplementedError(f"{self.op=}")
-
-    op: str
+        return binary_operator_functions[op](left, right)
 
 
 @attrs.define(slots=True)

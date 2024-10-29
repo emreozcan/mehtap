@@ -149,8 +149,115 @@ class LuaTransformer(lark.Transformer):
         return nodes.LocalAssignment(names=attnames, exprs=values)
 
     @staticmethod
+    def cmp_op(op: nodes.Terminal) -> nodes.Terminal:
+        return op
+
+    @staticmethod
+    def shift_op(op: nodes.Terminal) -> nodes.Terminal:
+        return op
+
+    @staticmethod
+    def productop(op: nodes.Terminal) -> nodes.Terminal:
+        return op
+
+    @staticmethod
     def sumop(op: nodes.Terminal) -> nodes.Terminal:
         return op
+
+    @staticmethod
+    def unop(op: nodes.Terminal) -> nodes.Terminal:
+        return op
+
+    @staticmethod
+    def exp_logical_or(
+        left: nodes.Expression,
+        right: nodes.Expression
+    ) -> nodes.BinaryOperation:
+        return nodes.BinaryOperation(
+            lhs=left,
+            op=BinaryOperator.OR,
+            rhs=right,
+        )
+
+    @staticmethod
+    def exp_logical_and(
+        left: nodes.Expression,
+        right: nodes.Expression
+    ) -> nodes.BinaryOperation:
+        return nodes.BinaryOperation(
+            lhs=left,
+            op=BinaryOperator.AND,
+            rhs=right,
+        )
+
+    @staticmethod
+    def exp_cmp(
+        left: nodes.Expression,
+        operation: nodes.Terminal,
+        right: nodes.Expression
+    ):
+        return nodes.BinaryOperation(
+            lhs=left,
+            op=BinaryOperator(operation.text),
+            rhs=right,
+        )
+
+    @staticmethod
+    def exp_bit_or(
+        left: nodes.Expression,
+        right: nodes.Expression
+    ):
+        return nodes.BinaryOperation(
+            lhs=left,
+            op=BinaryOperator.BIT_OR,
+            rhs=right,
+        )
+
+    @staticmethod
+    def exp_bit_xor(
+        left: nodes.Expression,
+        right: nodes.Expression
+    ):
+        return nodes.BinaryOperation(
+            lhs=left,
+            op=BinaryOperator.BIT_XOR,
+            rhs=right,
+        )
+
+    @staticmethod
+    def exp_bit_and(
+        left: nodes.Expression,
+        right: nodes.Expression
+    ):
+        return nodes.BinaryOperation(
+            lhs=left,
+            op=BinaryOperator.BIT_AND,
+            rhs=right,
+        )
+
+    @staticmethod
+    def exp_bit_shift(
+        left: nodes.Expression,
+        operation: nodes.Terminal,
+        right: nodes.Expression
+    ):
+        return nodes.BinaryOperation(
+            lhs=left,
+            op=BinaryOperator(operation.text),
+            rhs=right,
+        )
+
+    @staticmethod
+    def exp_concat(
+        left: nodes.Expression,
+        right: nodes.Expression
+    ):
+        return nodes.BinaryOperation(
+            lhs=left,
+            op=BinaryOperator.CONCAT,
+            rhs=right,
+        )
+
 
     @staticmethod
     def exp_sum(
@@ -158,9 +265,42 @@ class LuaTransformer(lark.Transformer):
         operation: nodes.Terminal,
         right: nodes.Expression
     ):
-        return nodes.SumOp(
+        return nodes.BinaryOperation(
             lhs=left,
-            op=operation.text,
+            op=BinaryOperator(operation.text),
+            rhs=right,
+        )
+
+    @staticmethod
+    def exp_product(
+        left: nodes.Expression,
+        operation: nodes.Terminal,
+        right: nodes.Expression
+    ):
+        return nodes.BinaryOperation(
+            lhs=left,
+            op=BinaryOperator(operation.text),
+            rhs=right,
+        )
+
+    @staticmethod
+    def exp_unop(
+        operation: nodes.Terminal,
+        operand: nodes.Expression
+    ):
+        return nodes.UnaryOperation(
+            op=UnaryOperator(operation.text),
+            exp=operand,
+        )
+
+    @staticmethod
+    def exp_pow(
+        left: nodes.Expression,
+        right: nodes.Expression
+    ):
+        return nodes.BinaryOperation(
+            lhs=left,
+            op=BinaryOperator.EXP,
             rhs=right,
         )
 

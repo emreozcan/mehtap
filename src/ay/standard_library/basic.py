@@ -4,7 +4,7 @@ import sys
 from typing import TYPE_CHECKING
 
 from ay import operations
-from ay.ast_nodes import call_function, Unary, Terminal
+from ay.ast_nodes import call_function, UnaryOperation, Terminal, UnaryOperator
 from ay.ast_transformer import transformer
 from ay.util.py_lua_function import LibraryProvider, PyLuaRet
 from ay.util.py_lua_function import lua_function
@@ -388,8 +388,8 @@ def provide(table: LuaTable) -> None:
                     e_str = e.content.strip().decode("utf-8")
                     if e_str[0] == "-":
                         return [
-                            Unary(
-                                op=Terminal("-"),
+                            UnaryOperation(
+                                op=UnaryOperator.NEG,
                                 exp=transformer.transform(
                                     numeral_parser.parse(e_str[1:])
                                 ),
