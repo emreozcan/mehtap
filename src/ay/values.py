@@ -199,7 +199,8 @@ class LuaTable(LuaObject):
         return key in self.map
 
 
-class Variable(NamedTuple):
+@attrs.define(slots=True, eq=True)
+class Variable:
     value: LuaValue
     constant: bool = False
     to_be_closed: bool = False
