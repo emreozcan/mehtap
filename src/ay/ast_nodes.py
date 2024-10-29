@@ -691,13 +691,13 @@ class For(Statement):
         assert isinstance(initial_value, LuaNumber)
         # the limit,
         limit: LuaNumber = self.stop.evaluate(vm)
-        assert isinstance(initial_value, LuaNumber)
+        assert isinstance(limit, LuaNumber)
         # and the step. If the step is absent, it defaults to 1.
         if self.step:
-            step: LuaNumber = self.step.evaluate(vm)
-            assert isinstance(initial_value, LuaNumber)
+            step = self.step.evaluate(vm)
+            assert isinstance(step, LuaNumber)
         else:
-            step: LuaNumber = LuaNumber(1, LuaNumberType.INTEGER)
+            step = LuaNumber(1, LuaNumberType.INTEGER)
         # If both the initial value and the step are integers,
         # the loop is done with integers;
         # note that the limit may not be an integer.
