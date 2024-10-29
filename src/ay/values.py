@@ -215,7 +215,7 @@ class Variable:
 
 @attrs.define(slots=True, eq=False)
 class LuaFunction(LuaObject):
-    param_names: list[LuaString]
+    param_names: list[LuaString] | None
     variadic: bool
     parent_stack_frame: StackFrame | None
     block: Block | Callable
