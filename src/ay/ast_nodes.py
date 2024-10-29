@@ -46,8 +46,7 @@ def flatten(v: Iterable[LuaValue | Iterable[LuaValue]]) -> list[LuaValue]:
 
 @attrs.define(slots=True)
 class Node(ABC):
-    def as_dict(self):
-        return attrs.asdict(self)
+    pass
 
 
 @attrs.define(slots=True)
@@ -73,7 +72,7 @@ class Chunk(NonTerminal):
 @attrs.define(slots=True)
 class Statement(NonTerminal, ABC):
     @abstractmethod
-    def execute(self, vm: VirtualMachine) -> None:
+    def execute(self, vm: VirtualMachine) -> Sequence[LuaValue] | None:
         pass
 
 
@@ -97,18 +96,21 @@ class ParenExpression(Expression):
 
 @attrs.define(slots=True)
 class Block(Statement, Expression):
-    def evaluate(self, vm: VirtualMachine) -> Sequence[LuaValue]:
+    def evaluate(self, vm: VirtualMachine) -> list[LuaValue]:
+        r = []
         for stmt in self.statements:
-            stmt.execute(vm)
+            r = stmt.execute(vm)
         return (
             flatten(expr.evaluate(vm) for expr in self.return_statement.values)
             if self.return_statement
-            else []
+            else r
         )
 
-    def execute(self, vm: VirtualMachine) -> None:
+    def execute(self, vm: VirtualMachine) -> Sequence[LuaValue] | None:
+        v = None
         for stmt in self.statements:
-            stmt.execute(vm)
+            v = stmt.execute(vm)
+        return v
 
     statements: Sequence[Statement]
     return_statement: ReturnStatement | None = None
@@ -486,22 +488,22 @@ def call_function(
         _call_function(vm, function, args)
     except ReturnException as e:
         return e.values if e.values is not None else []
-    return [ay_values.LuaNil]
+    return []
 
 
 @attrs.define(slots=True)
 class FuncCallRegular(Expression, Statement):
-    def evaluate(self, vm: VirtualMachine) -> Sequence[LuaValue]:
+    def evaluate(self, vm: VirtualMachine) -> list[LuaValue]:
         function = self.name.evaluate(vm)
         assert isinstance(function, LuaFunction)
         args = [arg.evaluate(vm) for arg in self.args]
         return call_function(vm, function, args)
 
-    def execute(self, vm: VirtualMachine) -> None:
-        try:
-            self.evaluate(vm)
-        except ReturnException:
-            pass
+    def execute(self, vm: VirtualMachine) -> None | list[LuaValue]:
+        r = self.evaluate(vm)
+        if r:
+            return r
+        return None
 
     name: Expression
     args: Sequence[Expression]
@@ -519,11 +521,11 @@ class FuncCallMethod(Expression, Statement):
         args = [arg.evaluate(vm) for arg in self.args]
         return call_function(vm, function, args)
 
-    def execute(self, vm: VirtualMachine) -> None:
+    def execute(self, vm: VirtualMachine) -> None | list[LuaValue]:
         try:
             self.evaluate(vm)
-        except ReturnException:
-            pass
+        except ReturnException as re:
+            return re.values
 
     object: Expression
     method: Name
@@ -585,7 +587,7 @@ class EmptyStatement(Statement):
 
 @attrs.define(slots=True)
 class Assignment(Statement):
-    def execute(self, vm: VirtualMachine) -> None:
+    def execute(self, vm: VirtualMachine) -> list[LuaValue]:
         values = adjust(
             [expr.evaluate(vm) for expr in self.exprs], len(self.names)
         )
@@ -599,6 +601,7 @@ class Assignment(Statement):
                 table.put(variable.index.evaluate(vm), value)
             else:
                 raise NotImplementedError(f"{type(variable)=}")
+        return values
 
     names: Sequence[Variable]
     exprs: Sequence[Expression]
@@ -843,31 +846,34 @@ class FuncName(NonTerminal):
 
 
 @attrs.define(slots=True)
-class Function(Statement):
+class FunctionStatement(Statement):
     name: FuncName
     body: FuncBody
 
-    def execute(self, vm: VirtualMachine) -> None:
+    def execute(self, vm: VirtualMachine) -> list[LuaFunction]:
         function = self.body.evaluate(vm)
         if self.name.method:
             function.param_names.insert(0, LuaString(b"self"))
         if len(self.name.names) == 1:
             name = self.name.names[0].as_lua_string()
+            function.name = name
             vm.put_nonlocal(name, ay_values.Variable(function))
         else:
             table = vm.get(self.name.names[0].as_lua_string())
             for name in self.name.names[1:-1]:
                 table = table.get(name.as_lua_string())
                 assert isinstance(table, LuaTable)
-            table.put(self.name.names[-1], function)
+            function.name = self.name.names[-1].as_lua_string()
+            table.put(function.name, function)
+        return [function]
 
 
 @attrs.define(slots=True)
-class LocalFunction(Statement):
+class LocalFunctionStatement(Statement):
     name: Name
     body: FuncBody
 
-    def execute(self, vm: VirtualMachine) -> None:
+    def execute(self, vm: VirtualMachine) -> list[LuaFunction]:
         # The statement
         #      local function f () body end
         # translates to
@@ -879,7 +885,9 @@ class LocalFunction(Statement):
         name = self.name.as_lua_string()
         vm.put_local(name, ay_values.Variable(ay_values.LuaNil))
         function = self.body.evaluate(vm)
+        function.name = name
         vm.put_local(name, ay_values.Variable(function))
+        return [function]
 
 
 @attrs.define(slots=True)
@@ -893,7 +901,7 @@ class LocalAssignment(Statement):
     names: Sequence[AttributeName]
     exprs: Sequence[Expression]
 
-    def execute(self, vm: VirtualMachine) -> None:
+    def execute(self, vm: VirtualMachine) -> list[LuaValue]:
         if self.exprs:
             exp_vals = [exp.evaluate(vm) for exp in self.exprs]
             exp_vals = adjust(exp_vals, len(self.names))
@@ -920,3 +928,4 @@ class LocalAssignment(Statement):
                 else:
                     # TODO: Create an error
                     raise NotImplementedError()
+        return exp_vals

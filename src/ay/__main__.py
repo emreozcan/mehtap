@@ -11,30 +11,6 @@ from ay.vm import VirtualMachine
 from ay.values import LuaValue
 
 
-def main_debug():
-    text = """
-local x <const> = 1
-print(x)
-return x
-"""
-
-    print("\n".join([f"> {line}" for line in text[1:].splitlines()]))
-    print()
-
-    parsed_lua = chunk_parser.parse(text)
-    print(f"Parse tree:\n{parsed_lua.pretty()}")
-
-    lua_transformer = LuaTransformer()
-    ast = lua_transformer.transform(parsed_lua)
-
-    serialized_ast = ast.as_dict()
-    print(f"Abstract syntax tree:\n{json.dumps(serialized_ast, indent=4)}")
-
-    vm = VirtualMachine()
-    r = ast.block.evaluate(vm)
-    print(f"Result:\n{r!r}")
-
-
 COPYRIGHT_TEXT = f"ay {__ay_version__} Copyright (c) 2024 Emre Özcan"
 
 
@@ -117,23 +93,25 @@ def _main():
 def enter_interactive(vm: VirtualMachine) -> None:
     print(COPYRIGHT_TEXT)
     collected_line = ""
+    prompt = "> " if not collected_line else ">> "
     while True:
         try:
-            line = input("> " if not collected_line else ">> ")
+            line = input(prompt)
             collected_line += line
         except EOFError:
             break
         r: list[LuaValue] | None = None
         try:
             r = work_chunk(collected_line, vm)
-        except lark.exceptions.UnexpectedEOF:
-            continue
+        except lark.exceptions.UnexpectedEOF as e:
+            try:
+                r = work_expr(collected_line, vm)
+            except lark.exceptions.UnexpectedEOF:
+                continue
         except lark.exceptions.UnexpectedInput as e:
-            if e.line == 1 and e.column == 1:
-                try:
-                    r = work_expr(collected_line, vm)
-                except lark.exceptions.UnexpectedEOF:
-                    continue
+            print(" "*len(prompt) + collected_line.splitlines()[e.line - 1])
+            print(f"{' '*len(prompt)}{' ' * (e.column - 1)}^")
+            print(f"error: unexpected input, line {e.line}, column {e.column}")
         if r is not None:
             d = display_object(r)
             if d is not None:
@@ -141,10 +119,8 @@ def enter_interactive(vm: VirtualMachine) -> None:
         collected_line = ""
 
 
-def display_object(val: LuaValue | list[LuaValue]) -> str | None:
-    if isinstance(val, LuaValue):
-        return str(val)
-    if len(val) == 0:
+def display_object(val: list[LuaValue]) -> str | None:
+    if not val:
         return None
     return ", ".join([str(v) for v in val])
 
