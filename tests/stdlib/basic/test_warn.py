@@ -2,37 +2,21 @@ from ay.__main__ import work_chunk
 from ay.vm import VirtualMachine
 
 
-def test_warn_disabled(capsys):
+def test_warn(capsys):
     work_chunk(
         """
         warn("@off")
-        print("hello")
-        warn("hello")
-        print("world")
-        warn("world")
-    """,
-        VirtualMachine(),
-    )
-    captured = capsys.readouterr()
-    assert captured.out == "hello\nworld\n"
-
-
-def test_warn_enabled(capsys):
-    work_chunk(
-        """
+        print("p1")
+        warn("w1")
         warn("@on")
-        print("hello")
-        warn("hello")
-        print("world")
-        warn("world")
+        print("p2")
+        warn("w2")
+        warn("@off")
+        print("p3")
+        warn("w3")
     """,
         VirtualMachine(),
     )
     captured = capsys.readouterr()
-
-    lines = captured.out.splitlines()
-    assert len(lines) == 4
-    assert lines[0] == "hello"
-    assert "hello" in lines[1]
-    assert lines[2] == "world"
-    assert "world" in lines[2]
+    assert captured.out == "p1\np2\np3\n"
+    assert captured.err.endswith("w2\n")

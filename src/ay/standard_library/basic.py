@@ -514,7 +514,6 @@ def provide(table: LuaTable) -> None:
                 vm.emitting_warnings = True
             # it ignores unknown control messages.
             return None
-        # TODO: Improve warning system.
         if not vm.emitting_warnings:
             return None
         print("Warning: ", msg1, *a, sep="", file=sys.stderr)
