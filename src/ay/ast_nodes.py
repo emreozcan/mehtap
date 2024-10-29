@@ -26,6 +26,7 @@ from ay.operations import (
     adjust,
     coerce_to_bool,
     adjust_to_one,
+    adjust_without_requirement,
 )
 import ay.operations as ay_operations
 
@@ -448,6 +449,7 @@ def _call_function(
 ):
     new_stack_frame = StackFrame(parent=function.parent_stack_frame)
     if not callable(function.block):
+        # Function is implemented in Lua
         if function.variadic:
             new_stack_frame.varargs = args[len(function.param_names):]
         args = adjust(args, len(function.param_names))
@@ -456,6 +458,8 @@ def _call_function(
             new_stack_frame.put_local(param_name, ay_values.Variable(arg))
         function.block.evaluate(new_vm)
     else:
+        # Function is implemented in Python
+        args = adjust_without_requirement(args)
         if not function.interacts_with_the_vm:
             function.block(*args)
         else:
