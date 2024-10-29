@@ -36,7 +36,7 @@ class VirtualMachine:
         assert isinstance(variable, Variable)
         self.root_stack_frame.put_local_ls(key, variable)
 
-    def put_nonlocal_ls(self, key: LuaString, variable: Variable):
+    def put_nonlocal_ls(self, key: LuaString, variable: Variable | LuaValue):
         assert isinstance(key, LuaString)
         if isinstance(variable, Variable):
             assert not variable.constant
@@ -45,6 +45,7 @@ class VirtualMachine:
             return
         elif isinstance(variable, LuaValue):
             self.globals.put(key, variable)
+            return
         assert False
 
 
