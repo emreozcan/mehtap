@@ -25,6 +25,7 @@ from ay.operations import (
     str_to_lua_string,
     adjust,
     coerce_to_bool,
+    adjust_to_one,
 )
 import ay.operations as ay_operations
 
@@ -80,6 +81,14 @@ class Expression(NonTerminal, ABC):
     @abstractmethod
     def evaluate(self, vm: VirtualMachine) -> LuaValue | Sequence[LuaValue]:
         pass
+
+
+@attrs.define(slots=True)
+class ParenExpression(Expression):
+    exp: Expression
+
+    def evaluate(self, vm: VirtualMachine) -> LuaValue | Sequence[LuaValue]:
+        return adjust_to_one(self.exp.evaluate(vm))
 
 
 @attrs.define(slots=True)

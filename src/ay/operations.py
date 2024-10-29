@@ -394,6 +394,12 @@ def adjust_without_requirement(multires: Multires) -> list[LuaValue]:
     return multires
 
 
+def adjust_to_one(multires_or_value: Multires | LuaValue) -> LuaValue:
+    if isinstance(multires_or_value, list):
+        return adjust(multires_or_value, 1)[0]
+    return multires_or_value
+
+
 def type_(v: LuaValue) -> LuaString:
     """type (v)"""
     #  Returns the type of its only argument, coded as a string.

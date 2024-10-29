@@ -65,7 +65,7 @@ explist: explist_entry ("," explist_entry)*
     | prefixexp
 ?prefixexp: var
           | functioncall
-          | "(" exp ")"
+          | "(" exp ")" -> exp_parenthesized
 
 functioncall: prefixexp args -> functioncall_regular
             | prefixexp ":" NAME args -> functioncall_method
