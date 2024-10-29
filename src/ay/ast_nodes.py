@@ -467,7 +467,9 @@ def _call_function(
         new_vm = vm.push()
         for param_name, arg in zip(function.param_names, args):
             new_stack_frame.put_local(param_name, ay_values.Variable(arg))
-        function.block.evaluate(new_vm)
+        retvals = function.block.evaluate(new_vm)
+        if retvals is not None:
+            raise ReturnException(retvals)
     else:
         # Function is implemented in Python
         args = adjust_without_requirement(args)
