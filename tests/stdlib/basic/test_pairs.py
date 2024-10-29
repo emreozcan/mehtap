@@ -39,7 +39,7 @@ def test_ipairs():
 
     tracker = CallTracker()
 
-    @lua_function(vm.globals_, name="f")
+    @lua_function(vm.globals, name="f")
     def f(*a):
         tracker(*a)
 

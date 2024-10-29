@@ -93,7 +93,7 @@ def _main():
     else:
         for i, arg in enumerate(sys.argv, start=1):
             arg_table.put(LuaNumber(i), str_to_lua_string(arg))
-    vm.globals_.put(LuaString(b"arg"), arg_table)
+    vm.globals.put(LuaString(b"arg"), arg_table)
 
     if not args.ignore_environment:
         env_vars = [

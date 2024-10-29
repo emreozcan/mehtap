@@ -14,26 +14,26 @@ from ay.values import (
 
 @attrs.define(slots=True, repr=False)
 class VirtualMachine:
-    globals_: LuaTable = attrs.field(factory=create_global_table)
+    globals: LuaTable = attrs.field(factory=create_global_table)
     stack_frame: StackFrame = attrs.field(factory=lambda: StackFrame(None, {}))
     emitting_warnings: bool = False
 
     def push(self) -> VirtualMachine:
         return VirtualMachine(
-            globals_=self.globals_,
+            globals=self.globals,
             stack_frame=StackFrame(self.stack_frame, {}),
             emitting_warnings=self.emitting_warnings,
         )
 
     def has(self, key: LuaString):
         assert isinstance(key, LuaString)
-        return self.stack_frame.has(key) or self.globals_.has(key)
+        return self.stack_frame.has(key) or self.globals.has(key)
 
     def get(self, key: LuaString):
         assert isinstance(key, LuaString)
         if self.stack_frame.has(key):
             return self.stack_frame.get(key)
-        return self.globals_.get(key)
+        return self.globals.get(key)
 
     def put_local(self, key: LuaString, variable: Variable):
         assert isinstance(key, LuaString)
@@ -48,4 +48,4 @@ class VirtualMachine:
         try:
             self.stack_frame.put_nonlocal(key, variable)
         except StackExhaustionException:
-            self.globals_.put(key, variable.value)
+            self.globals.put(key, variable.value)
