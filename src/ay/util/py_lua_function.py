@@ -2,14 +2,37 @@ from __future__ import annotations
 
 from abc import abstractmethod, ABC
 from inspect import signature
-from typing import Optional, Callable, TypeAlias
+from typing import Optional, Callable, TypeAlias, Any, Mapping, Iterable
 
 from ay.control_structures import ReturnException
-from ay.values import LuaValue, LuaFunction, LuaTable, LuaString
+from ay.values import LuaValue, LuaFunction, LuaTable, LuaString, LuaNil, \
+    LuaBool, LuaNumber
 
 PyLuaRet: TypeAlias = list[LuaValue] | None
 PyLuaFunction: TypeAlias = Callable[..., PyLuaRet]
 LuaDecorator: TypeAlias = Callable[[PyLuaFunction], LuaFunction]
+
+
+def py_to_lua(value: Any) -> LuaValue:
+    if value is None:
+        return LuaNil
+    if isinstance(value, bool):
+        return LuaBool(value)
+    if isinstance(value, (int, float)):
+        return LuaNumber(value)
+    if isinstance(value, str):
+        return LuaString(str(value).encode("utf-8"))
+    if isinstance(value, Mapping):
+        m = LuaTable()
+        for k, v in value.items():
+            m.put(py_to_lua(k), py_to_lua(v))
+        return m
+    if isinstance(value, Iterable):
+        m = LuaTable()
+        for i, v in enumerate(value, start=1):
+            m.put(LuaNumber(i), py_to_lua(v))
+        return m
+    raise NotImplementedError(f"can't yet convert {value!r} to LuaValue")
 
 
 def lua_function(
@@ -17,6 +40,7 @@ def lua_function(
     *,
     name: Optional[str] = None,
     interacts_with_the_vm: bool = False,
+    wrap_values: bool = False,
 ) -> LuaDecorator:
     def decorator(func: PyLuaFunction) -> LuaFunction:
         if name:
@@ -49,6 +73,10 @@ def lua_function(
 
         def new_function(*args: LuaValue) -> None:
             return_values: list[LuaValue] | None = func(*args)
+            if wrap_values and return_values:
+                raise ReturnException([
+                    py_to_lua(v) for v in return_values
+                ])
             raise ReturnException(return_values)
 
         lf = LuaFunction(
