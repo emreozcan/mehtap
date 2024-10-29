@@ -103,7 +103,7 @@ class Block(Statement, Expression):
         return (
             flatten(expr.evaluate(vm) for expr in self.return_statement.values)
             if self.return_statement
-            else r
+            else r if r else []
         )
 
     def execute(self, vm: VirtualMachine) -> Sequence[LuaValue] | None:
