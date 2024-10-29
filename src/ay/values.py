@@ -136,7 +136,7 @@ class LuaObject(LuaValue, ABC):
 
 @attrs.define(slots=True, eq=False)
 class LuaUserdata(LuaObject):
-    pass
+    data: bytes
 
 
 @attrs.define(slots=True, eq=False)

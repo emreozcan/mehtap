@@ -7,11 +7,7 @@ from typing import Optional, Callable, TypeAlias, Any, Mapping, Iterable
 from ay.control_structures import ReturnException
 from ay.operations import str_to_lua_string
 from ay.values import LuaValue, LuaFunction, LuaTable, LuaString, LuaNil, \
-    LuaBool, LuaNumber
-
-PyLuaRet: TypeAlias = list[LuaValue] | None
-PyLuaFunction: TypeAlias = Callable[..., PyLuaRet]
-LuaDecorator: TypeAlias = Callable[[PyLuaFunction], LuaFunction]
+    LuaBool, LuaNumber, LuaUserdata
 
 
 def py_to_lua(value: Any) -> LuaValue:
@@ -23,6 +19,8 @@ def py_to_lua(value: Any) -> LuaValue:
         return LuaNumber(value)
     if isinstance(value, str):
         return LuaString(str(value).encode("utf-8"))
+    if isinstance(value, bytes):
+        return LuaUserdata(value)
     if isinstance(value, Mapping):
         m = LuaTable()
         for k, v in value.items():
@@ -33,7 +31,14 @@ def py_to_lua(value: Any) -> LuaValue:
         for i, v in enumerate(value, start=1):
             m.put(LuaNumber(i), py_to_lua(v))
         return m
+    if callable(value):
+        return lua_function(wrap_values=True)(value)
     raise NotImplementedError(f"can't yet convert {value!r} to LuaValue")
+
+
+PyLuaRet: TypeAlias = list[LuaValue] | None
+PyLuaFunction: TypeAlias = Callable[..., PyLuaRet]
+LuaDecorator: TypeAlias = Callable[[PyLuaFunction], LuaFunction]
 
 
 def lua_function(
