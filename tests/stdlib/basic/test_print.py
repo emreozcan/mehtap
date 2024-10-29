@@ -24,7 +24,7 @@ def test_print_tostring(capsys):
         )
     )
 
-    vm.put_nonlocal(LuaString(b"mystery"), Variable(lua_object))
+    vm.put_nonlocal_ls(LuaString(b"mystery"), Variable(lua_object))
 
     work_chunk("print(mystery)", vm)
     captured = capsys.readouterr()

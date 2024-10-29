@@ -10,7 +10,7 @@ def test_error():
     vm = VirtualMachine()
 
     symbol = LuaTable()
-    vm.put_nonlocal(LuaString(b"symbol"), Variable(symbol))
+    vm.put_nonlocal_ls(LuaString(b"symbol"), Variable(symbol))
 
     with raises(LuaError) as excinfo:
         work_chunk(

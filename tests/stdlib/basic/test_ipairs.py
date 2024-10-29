@@ -28,7 +28,7 @@ def test_ipairs():
         }
     )
     table.put(LuaNumber(7), LuaString(b"g"))
-    vm.put_nonlocal(LuaString(b"t"), Variable(table))
+    vm.put_nonlocal_ls(LuaString(b"t"), Variable(table))
 
     assert (
         work_chunk(

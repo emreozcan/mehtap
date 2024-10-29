@@ -25,7 +25,7 @@ def test_getmetatable_yes_mt():
     source_mt = LuaTable()
     table = LuaTable()
     table.set_metatable(source_mt)
-    vm.put_nonlocal(LuaString(b"example_table"), Variable(table))
+    vm.put_nonlocal_ls(LuaString(b"example_table"), Variable(table))
 
     (recvd_mt,) = work_chunk(
         """
@@ -46,7 +46,7 @@ def test_getmetatable_meta_metatable():
     metatable.put(LuaString(b"__metatable"), source_object)
     table = LuaTable()
     table.set_metatable(metatable)
-    vm.put_nonlocal(LuaString(b"example_table"), Variable(table))
+    vm.put_nonlocal_ls(LuaString(b"example_table"), Variable(table))
 
     (recvd_object,) = work_chunk(
         """

@@ -87,7 +87,7 @@ def _main():
         arg_table.put(LuaNumber(1), str_to_lua_string(args.script))
         for i, arg in enumerate(args.args, start=2):
             arg_table.put(LuaNumber(i), str_to_lua_string(arg))
-        vm.stack_frame.varargs = [
+        vm.root_stack_frame.varargs = [
             str_to_lua_string(arg) for arg in args.args
         ]
     else:
@@ -202,7 +202,7 @@ def work_expr(
 ) -> list[LuaValue]:
     parsed_lua = expr_parser.parse(expr)
     ast = transformer.transform(parsed_lua)
-    r = ast.evaluate(vm)
+    r = ast.evaluate(vm.root_stack_frame)
     if isinstance(r, LuaValue):
         return [r]
     assert isinstance(r, list)
@@ -215,7 +215,7 @@ def work_chunk(
 ) -> list[LuaValue]:
     parsed_lua = chunk_parser.parse(chunk)
     ast = transformer.transform(parsed_lua)
-    r = ast.block.evaluate(vm)
+    r = ast.block.evaluate(vm.root_stack_frame)
     return r
 
 

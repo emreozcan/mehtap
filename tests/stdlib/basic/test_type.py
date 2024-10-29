@@ -38,11 +38,11 @@ def test_type_function():
 
 def test_type_thread():
     vm = VirtualMachine()
-    vm.put_nonlocal(LuaString(b"coro"), Variable(LuaThread()))
+    vm.put_nonlocal_ls(LuaString(b"coro"), Variable(LuaThread()))
     assert work_chunk("return type(coro)", vm) == [LuaString(b"thread")]
 
 
 def test_type_userdata():
     vm = VirtualMachine()
-    vm.put_nonlocal(LuaString(b"ud"), Variable(LuaUserdata()))
+    vm.put_nonlocal_ls(LuaString(b"ud"), Variable(LuaUserdata()))
     assert work_chunk("return type(ud)", vm) == [LuaString(b"userdata")]

@@ -26,8 +26,8 @@ def get_vm(m1: dict | None = None, m2: dict | None = None):
     o2 = LuaTable(m2 if m2 is not None else {})
     o2.set_metatable(mt)
 
-    vm.put_nonlocal(LuaString(b"o1"), Variable(o1))
-    vm.put_nonlocal(LuaString(b"o2"), Variable(o2))
+    vm.put_nonlocal_ls(LuaString(b"o1"), Variable(o1))
+    vm.put_nonlocal_ls(LuaString(b"o2"), Variable(o2))
 
     return vm
 
@@ -64,4 +64,4 @@ def test_rawset():
         "rawset(o1, 1, o2[1])",
         vm,
     )
-    assert vm.get(LuaString(b"o1")).get(LuaNumber(1)) is obj
+    assert vm.get_ls(LuaString(b"o1")).get(LuaNumber(1)) is obj

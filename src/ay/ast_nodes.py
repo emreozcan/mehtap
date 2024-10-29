@@ -18,7 +18,6 @@ from ay.values import (
     MAX_INT64,
     LuaTable,
     LuaFunction,
-    StackFrame,
 )
 from ay.operations import (
     int_overflow_wrap_around,
@@ -31,7 +30,7 @@ from ay.operations import (
 import ay.operations as ay_operations
 
 if TYPE_CHECKING:
-    from ay.vm import VirtualMachine
+    from ay.vm import StackFrame
 
 
 def flatten(v: Iterable[LuaValue | Iterable[LuaValue]]) -> list[LuaValue]:
@@ -72,44 +71,46 @@ class Chunk(NonTerminal):
 @attrs.define(slots=True)
 class Statement(NonTerminal, ABC):
     @abstractmethod
-    def execute(self, vm: VirtualMachine) -> Sequence[LuaValue] | None:
+    def execute(self, frame: StackFrame) -> Sequence[LuaValue] | None:
         pass
 
 
 @attrs.define(slots=True)
 class Expression(NonTerminal, ABC):
     @abstractmethod
-    def evaluate(self, vm: VirtualMachine) -> LuaValue | Sequence[LuaValue]:
+    def evaluate(self, frame: StackFrame) -> LuaValue | Sequence[LuaValue]:
         pass
 
-    def evaluate_single(self, vm: VirtualMachine) -> LuaValue:
-        return adjust_to_one(self.evaluate(vm))
+    def evaluate_single(self, frame: StackFrame) -> LuaValue:
+        return adjust_to_one(self.evaluate(frame))
 
 
 @attrs.define(slots=True)
 class ParenExpression(Expression):
     exp: Expression
 
-    def evaluate(self, vm: VirtualMachine) -> LuaValue | Sequence[LuaValue]:
-        return adjust_to_one(self.exp.evaluate(vm))
+    def evaluate(self, frame: StackFrame) -> LuaValue | Sequence[LuaValue]:
+        return adjust_to_one(self.exp.evaluate(frame))
 
 
 @attrs.define(slots=True)
 class Block(Statement, Expression):
-    def evaluate(self, vm: VirtualMachine) -> list[LuaValue]:
+    def evaluate(self, frame: StackFrame) -> list[LuaValue]:
         r = []
         for stmt in self.statements:
-            r = stmt.execute(vm)
+            r = stmt.execute(frame)
         return (
-            flatten(expr.evaluate(vm) for expr in self.return_statement.values)
+            flatten(
+                expr.evaluate(frame) for expr in self.return_statement.values
+            )
             if self.return_statement
             else r if r else []
         )
 
-    def execute(self, vm: VirtualMachine) -> Sequence[LuaValue] | None:
+    def execute(self, frame: StackFrame) -> Sequence[LuaValue] | None:
         v = None
         for stmt in self.statements:
-            v = stmt.execute(vm)
+            v = stmt.execute(frame)
         return v
 
     statements: Sequence[Statement]
@@ -128,7 +129,7 @@ class NumeralHex(Numeral):
     p_sign: Terminal | None = None
     p_digits: Terminal | None = None
 
-    def evaluate(self, vm: VirtualMachine) -> LuaValue:
+    def evaluate(self, frame: StackFrame) -> LuaValue:
         if self.fract_digits or self.p_digits:
             if not self.p_sign:
                 self.p_sign = Terminal("+")
@@ -151,7 +152,7 @@ class NumeralDec(Numeral):
     e_sign: Terminal | None = None
     e_digits: Terminal | None = None
 
-    def evaluate(self, vm: VirtualMachine) -> LuaValue:
+    def evaluate(self, frame: StackFrame) -> LuaValue:
         if self.fract_digits or self.e_digits:
             if not self.e_sign:
                 self.e_sign = Terminal("+")
@@ -303,7 +304,7 @@ class LiteralString(Expression):
         bytes_io.seek(0)
         return LuaString(bytes_io.read())
 
-    def evaluate(self, vm: VirtualMachine) -> LuaString:
+    def evaluate(self, frame: StackFrame) -> LuaString:
         if self.text.text[0] != "[":
             return self._simple_string()
         return self._long_bracket()
@@ -311,19 +312,19 @@ class LiteralString(Expression):
 
 @attrs.define(slots=True)
 class LiteralFalse(Expression):
-    def evaluate(self, vm: VirtualMachine) -> LuaValue:
+    def evaluate(self, frame: StackFrame) -> LuaValue:
         return ay_values.LuaBool(False)
 
 
 @attrs.define(slots=True)
 class LiteralTrue(Expression):
-    def evaluate(self, vm: VirtualMachine) -> LuaValue:
+    def evaluate(self, frame: StackFrame) -> LuaValue:
         return ay_values.LuaBool(True)
 
 
 @attrs.define(slots=True)
 class LiteralNil(Expression):
-    def evaluate(self, vm: VirtualMachine) -> LuaValue:
+    def evaluate(self, frame: StackFrame) -> LuaValue:
         return ay_values.LuaNil
 
 
@@ -337,9 +338,9 @@ class Name(NonTerminal):
 
 @attrs.define(slots=True)
 class VarArgExpr(Expression):
-    def evaluate(self, vm: VirtualMachine) -> LuaValue | Sequence[LuaValue]:
-        if vm.stack_frame.varargs:
-            return vm.stack_frame.varargs
+    def evaluate(self, frame: StackFrame) -> LuaValue | Sequence[LuaValue]:
+        if frame.varargs:
+            return frame.varargs
         raise NotImplementedError()
 
 
@@ -350,18 +351,18 @@ class Variable(Expression, ABC):
 
 @attrs.define(slots=True)
 class VarName(Variable):
-    def evaluate(self, vm: VirtualMachine) -> LuaValue:
-        return vm.get(str_to_lua_string(self.name.name.text))
+    def evaluate(self, frame: StackFrame) -> LuaValue:
+        return frame.get_ls(str_to_lua_string(self.name.name.text))
 
     name: Name
 
 
 @attrs.define(slots=True)
 class VarIndex(Variable):
-    def evaluate(self, vm: VirtualMachine) -> LuaValue:
-        table = self.base.evaluate(vm)
+    def evaluate(self, frame: StackFrame) -> LuaValue:
+        table = self.base.evaluate(frame)
         assert isinstance(table, LuaTable)
-        return table.get(self.index.evaluate_single(vm))
+        return table.get(self.index.evaluate_single(frame))
 
     base: Expression
     index: Expression
@@ -371,7 +372,7 @@ class VarIndex(Variable):
 class TableConstructor(Expression):
     fields: Sequence[Field]
 
-    def evaluate(self, vm: VirtualMachine) -> LuaValue:
+    def evaluate(self, frame: StackFrame) -> LuaValue:
         table = LuaTable()
         if not self.fields:
             return table
@@ -390,18 +391,18 @@ class TableConstructor(Expression):
                 if isinstance(field.key, Name):
                     key = str_to_lua_string(field.key.name.text)
                 elif isinstance(field.key, Expression):
-                    key = field.key.evaluate_single(vm)
+                    key = field.key.evaluate_single(frame)
                 else:
                     raise NotImplementedError(f"{type(field.key)=}")
-                table.put(key, field.value.evaluate_single(vm))
+                table.put(key, field.value.evaluate_single(frame))
             elif isinstance(field, FieldCounterKey):
                 key = LuaNumber(counter, LuaNumberType.INTEGER)
                 counter += 1
-                table.put(key, field.value.evaluate_single(vm))
+                table.put(key, field.value.evaluate_single(frame))
             else:
                 raise NotImplementedError(f"{type(field)=}")
         if last_field and isinstance(last_field, FieldCounterKey):
-            last_field_value = last_field.value.evaluate(vm)
+            last_field_value = last_field.value.evaluate(frame)
             if isinstance(last_field_value, list):
                 for counter, val in enumerate(last_field_value, start=counter):
                     table.put(
@@ -437,13 +438,13 @@ class FuncBody(Expression):
     body: Block
     vararg: bool = False
 
-    def evaluate(self, vm: VirtualMachine) -> LuaFunction:
+    def evaluate(self, frame: StackFrame) -> LuaFunction:
         return LuaFunction(
             param_names=[p.as_lua_string() for p in self.params],
             variadic=self.vararg,
             block=self.body,
-            parent_stack_frame=vm.stack_frame,
-            interacts_with_the_vm=False,
+            parent_stack_frame=frame,
+            gets_stack_frame=False,
         )
 
 
@@ -451,41 +452,41 @@ class FuncBody(Expression):
 class FuncDef(Expression):
     body: FuncBody
 
-    def evaluate(self, vm: VirtualMachine) -> LuaValue:
-        return self.body.evaluate(vm)
+    def evaluate(self, frame: StackFrame) -> LuaValue:
+        return self.body.evaluate(frame)
 
 
 def _call_function(
-    vm: VirtualMachine,
+    old_frame: StackFrame,
     function: LuaFunction,
     args: list[LuaValue],
 ):
-    new_stack_frame = StackFrame(parent=function.parent_stack_frame)
     if not callable(function.block):
+        new_frame = old_frame.push()
         # Function is implemented in Lua
         if function.variadic:
-            new_stack_frame.varargs = args[len(function.param_names):]
+            new_frame.varargs = args[len(function.param_names):]
         args = adjust(args, len(function.param_names))
-        new_vm = vm.push()
+        new_vm = old_frame.push()
         for param_name, arg in zip(function.param_names, args):
-            new_stack_frame.put_local(param_name, ay_values.Variable(arg))
+            new_frame.put_local_ls(param_name, ay_values.Variable(arg))
         retvals = function.block.evaluate(new_vm)
         if retvals is not None:
             raise ReturnException(retvals)
     else:
         # Function is implemented in Python
         args = adjust_without_requirement(args)
-        if not function.interacts_with_the_vm:
+        if not function.gets_stack_frame:
             function.block(*args)
         else:
-            function.block(vm, *args)
+            function.block(old_frame, *args)
 
 
 def call_function(
-    vm: VirtualMachine, function: LuaFunction, args: list[LuaValue]
+    frame: StackFrame, function: LuaFunction, args: list[LuaValue]
 ) -> list[LuaValue]:
     try:
-        _call_function(vm, function, args)
+        _call_function(frame, function, args)
     except ReturnException as e:
         return e.values if e.values is not None else []
     return []
@@ -493,14 +494,14 @@ def call_function(
 
 @attrs.define(slots=True)
 class FuncCallRegular(Expression, Statement):
-    def evaluate(self, vm: VirtualMachine) -> list[LuaValue]:
-        function = self.name.evaluate(vm)
+    def evaluate(self, frame: StackFrame) -> list[LuaValue]:
+        function = self.name.evaluate(frame)
         assert isinstance(function, LuaFunction)
-        args = [arg.evaluate(vm) for arg in self.args]
-        return call_function(vm, function, args)
+        args = [arg.evaluate(frame) for arg in self.args]
+        return call_function(frame, function, args)
 
-    def execute(self, vm: VirtualMachine) -> None | list[LuaValue]:
-        r = self.evaluate(vm)
+    def execute(self, frame: StackFrame) -> None | list[LuaValue]:
+        r = self.evaluate(frame)
         if r:
             return r
         return None
@@ -511,19 +512,19 @@ class FuncCallRegular(Expression, Statement):
 
 @attrs.define(slots=True)
 class FuncCallMethod(Expression, Statement):
-    def evaluate(self, vm: VirtualMachine) -> Sequence[LuaValue]:
+    def evaluate(self, frame: StackFrame) -> Sequence[LuaValue]:
         # A call v:name(args) is syntactic sugar for v.name(v,args),
         # except that v is evaluated only once.
-        v = self.object.evaluate(vm)
+        v = self.object.evaluate(frame)
         assert isinstance(v, LuaTable)
         function = v.get(str_to_lua_string(self.method.name.text))
         assert isinstance(function, LuaFunction)
-        args = [arg.evaluate(vm) for arg in self.args]
-        return call_function(vm, function, args)
+        args = [arg.evaluate(frame) for arg in self.args]
+        return call_function(frame, function, args)
 
-    def execute(self, vm: VirtualMachine) -> None | list[LuaValue]:
+    def execute(self, frame: StackFrame) -> None | list[LuaValue]:
         try:
-            self.evaluate(vm)
+            self.evaluate(frame)
         except ReturnException as re:
             return re.values
 
@@ -534,8 +535,8 @@ class FuncCallMethod(Expression, Statement):
 
 @attrs.define(slots=True)
 class Unary(Expression):
-    def evaluate(self, vm: VirtualMachine) -> LuaValue:
-        v = self.exp.evaluate(vm)
+    def evaluate(self, frame: StackFrame) -> LuaValue:
+        v = self.exp.evaluate(frame)
         match self.op.text:
             case "-":
                 return ay_operations.arith_unary_minus(v)
@@ -560,9 +561,9 @@ class BinOp(Expression, ABC):
 
 @attrs.define(slots=True)
 class SumOp(BinOp):
-    def evaluate(self, vm: VirtualMachine) -> LuaValue:
-        left = self.lhs.evaluate_single(vm)
-        right = self.rhs.evaluate_single(vm)
+    def evaluate(self, frame: StackFrame) -> LuaValue:
+        left = self.lhs.evaluate_single(frame)
+        right = self.rhs.evaluate_single(frame)
         match self.op:
             case "+":
                 return ay_operations.arith_add(left, right)
@@ -581,24 +582,24 @@ class ReturnStatement(NonTerminal):
 
 @attrs.define(slots=True)
 class EmptyStatement(Statement):
-    def execute(self, vm: VirtualMachine) -> None:
+    def execute(self, frame: StackFrame) -> None:
         pass
 
 
 @attrs.define(slots=True)
 class Assignment(Statement):
-    def execute(self, vm: VirtualMachine) -> list[LuaValue]:
+    def execute(self, frame: StackFrame) -> list[LuaValue]:
         values = adjust(
-            [expr.evaluate(vm) for expr in self.exprs], len(self.names)
+            [expr.evaluate(frame) for expr in self.exprs], len(self.names)
         )
         for variable, value in zip(self.names, values):
             if isinstance(variable, VarName):
                 var_name = str_to_lua_string(variable.name.name.text)
-                vm.put_nonlocal(var_name, ay_values.Variable(value))
+                frame.put_nonlocal_ls(var_name, value)
             elif isinstance(variable, VarIndex):
-                table = variable.base.evaluate(vm)
+                table = variable.base.evaluate(frame)
                 assert isinstance(table, LuaTable)
-                table.put(variable.index.evaluate(vm), value)
+                table.put(variable.index.evaluate(frame), value)
             else:
                 raise NotImplementedError(f"{type(variable)=}")
         return values
@@ -609,7 +610,7 @@ class Assignment(Statement):
 
 @attrs.define(slots=True)
 class Label(Statement):
-    def execute(self, vm: VirtualMachine) -> None:
+    def execute(self, frame: StackFrame) -> None:
         raise NotImplementedError()
 
     name: Name
@@ -617,13 +618,13 @@ class Label(Statement):
 
 @attrs.define(slots=True)
 class Break(Statement):
-    def execute(self, vm: VirtualMachine) -> None:
+    def execute(self, frame: StackFrame) -> None:
         raise BreakException()
 
 
 @attrs.define(slots=True)
 class Goto(Statement):
-    def execute(self, vm: VirtualMachine) -> None:
+    def execute(self, frame: StackFrame) -> None:
         raise GotoException(self.name)
 
     name: Name
@@ -631,18 +632,18 @@ class Goto(Statement):
 
 @attrs.define(slots=True)
 class Do(Statement):
-    def execute(self, vm: VirtualMachine) -> None:
-        self.block.execute(vm)
+    def execute(self, frame: StackFrame) -> None:
+        self.block.execute(frame)
 
     block: Block
 
 
 @attrs.define(slots=True)
 class While(Statement):
-    def execute(self, vm: VirtualMachine) -> None:
-        new_vm = vm.push()
+    def execute(self, frame: StackFrame) -> None:
+        new_vm = frame.push()
         try:
-            while coerce_to_bool(self.condition.evaluate(vm)).true:
+            while coerce_to_bool(self.condition.evaluate(frame)).true:
                 self.block.execute(new_vm)
         except BreakException:
             pass
@@ -653,8 +654,8 @@ class While(Statement):
 
 @attrs.define(slots=True)
 class Repeat(Statement):
-    def execute(self, vm: VirtualMachine) -> None:
-        new_vm = vm.push()
+    def execute(self, frame: StackFrame) -> None:
+        new_vm = frame.push()
         try:
             while True:
                 self.block.execute(new_vm)
@@ -669,13 +670,13 @@ class Repeat(Statement):
 
 @attrs.define(slots=True)
 class If(Statement):
-    def execute(self, vm: VirtualMachine) -> None:
+    def execute(self, frame: StackFrame) -> None:
         for cnd, blk in self.blocks:
-            if coerce_to_bool(cnd.evaluate(vm)).true:
-                blk.execute(vm.push())
+            if coerce_to_bool(cnd.evaluate(frame)).true:
+                blk.execute(frame.push())
                 return
         if self.else_block:
-            self.else_block.execute(vm.push())
+            self.else_block.execute(frame.push())
 
     blocks: Sequence[tuple[Expression, Block]]
     else_block: Block | None = None
@@ -689,13 +690,13 @@ class For(Statement):
     step: Expression | None
     block: Block
 
-    def execute(self, vm: VirtualMachine) -> None:
+    def execute(self, frame: StackFrame) -> None:
         try:
-            self._execute(vm)
+            self._execute(frame)
         except BreakException:
             pass
 
-    def _execute(self, vm: VirtualMachine) -> None:
+    def _execute(self, vm: StackFrame) -> None:
         # This for loop is the "numerical" for loop explained in 3.3.5.
         # The given identifier (Name) defines the control variable,
         # which is a new variable local to the loop body (block).
@@ -753,7 +754,7 @@ class For(Statement):
         control_val = initial_value
         new_vm = vm.push()
         while condition_func(control_val, limit).true:
-            new_vm.put_local(control_varname, ay_values.Variable(control_val))
+            new_vm.put_local_ls(control_varname, ay_values.Variable(control_val))
             self.block.execute(new_vm)
             overflow, control_val = ay_operations.overflow_arith_add(
                 control_val, step
@@ -768,13 +769,13 @@ class ForIn(Statement):
     exprs: Sequence[Expression]
     block: Block
 
-    def execute(self, vm: VirtualMachine) -> None:
+    def execute(self, frame: StackFrame) -> None:
         try:
-            self._execute(vm)
+            self._execute(frame)
         except BreakException:
             pass
 
-    def _execute(self, vm: VirtualMachine) -> None:
+    def _execute(self, outer_frame: StackFrame) -> None:
         # The generic for statement works over functions, called iterators.
         # On each iteration, the iterator function is called to produce a new
         # value, stopping when this new value is nil.
@@ -783,18 +784,17 @@ class ForIn(Statement):
         #      for var_1, ···, var_n in explist do body end
         # works as follows.
         # The names var_i declare loop variables local to the loop body.
-        new_vm = vm.push()
-        body_stack_frame = new_vm.stack_frame
+        inner_stack_frame = outer_frame.push()
         name_count = len(self.names)
         names = [name.as_lua_string() for name in self.names]
         for name in names:
-            body_stack_frame.put_local(
+            inner_stack_frame.put_local_ls(
                 name, ay_values.Variable(ay_values.LuaNil)
             )
         # The first of these variables is the control variable.
         control_variable_name = names[0]
         # The loop starts by evaluating explist to produce four values:
-        exp_vals = adjust([exp.evaluate(vm) for exp in self.exprs], 4)
+        exp_vals = adjust([exp.evaluate(outer_frame) for exp in self.exprs], 4)
         # an iterator function,
         iterator_function = exp_vals[0]
         if not isinstance(iterator_function, LuaFunction):
@@ -803,7 +803,7 @@ class ForIn(Statement):
         state = exp_vals[1]
         # an initial value for the control variable,
         initial_value = exp_vals[2]
-        body_stack_frame.put_local(
+        inner_stack_frame.put_local_ls(
             control_variable_name, ay_values.Variable(initial_value)
         )
         # and a closing value.
@@ -815,22 +815,22 @@ class ForIn(Statement):
             # arguments: the state and the control variable.
             results = adjust(
                 call_function(
-                    vm,
+                    outer_frame,
                     iterator_function,
-                    [state, body_stack_frame.get(control_variable_name)],
+                    [state, inner_stack_frame.get_ls(control_variable_name)],
                 ),
                 name_count,
             )
             # The results from this call are then assigned to the loop
             # variables, following the rules of multiple assignments.
             for name, value in zip(names, results):
-                body_stack_frame.put_local(name, ay_values.Variable(value))
+                inner_stack_frame.put_local_ls(name, ay_values.Variable(value))
             # If the control variable becomes nil, the loop terminates.
             if results[0] is nil:
                 break
             # Otherwise, the body is executed and the loop goes to the next
             # iteration.
-            self.block.execute(new_vm)
+            self.block.execute(inner_stack_frame)
             continue
         if closing_value is not nil:
             # The closing value behaves like a to-be-closed variable,
@@ -850,16 +850,16 @@ class FunctionStatement(Statement):
     name: FuncName
     body: FuncBody
 
-    def execute(self, vm: VirtualMachine) -> list[LuaFunction]:
-        function = self.body.evaluate(vm)
+    def execute(self, frame: StackFrame) -> list[LuaFunction]:
+        function = self.body.evaluate(frame)
         if self.name.method:
             function.param_names.insert(0, LuaString(b"self"))
         if len(self.name.names) == 1:
             name = self.name.names[0].as_lua_string()
             function.name = name
-            vm.put_nonlocal(name, ay_values.Variable(function))
+            frame.put_nonlocal_ls(name, function)
         else:
-            table = vm.get(self.name.names[0].as_lua_string())
+            table = frame.get_ls(self.name.names[0].as_lua_string())
             for name in self.name.names[1:-1]:
                 table = table.get(name.as_lua_string())
                 assert isinstance(table, LuaTable)
@@ -873,7 +873,7 @@ class LocalFunctionStatement(Statement):
     name: Name
     body: FuncBody
 
-    def execute(self, vm: VirtualMachine) -> list[LuaFunction]:
+    def execute(self, frame: StackFrame) -> list[LuaFunction]:
         # The statement
         #      local function f () body end
         # translates to
@@ -883,10 +883,10 @@ class LocalFunctionStatement(Statement):
         # (This only makes a difference
         # when the body of the function contains references to f.)
         name = self.name.as_lua_string()
-        vm.put_local(name, ay_values.Variable(ay_values.LuaNil))
-        function = self.body.evaluate(vm)
+        frame.put_local_ls(name, ay_values.Variable(ay_values.LuaNil))
+        function = self.body.evaluate(frame)
         function.name = name
-        vm.put_local(name, ay_values.Variable(function))
+        frame.put_local_ls(name, ay_values.Variable(function))
         return [function]
 
 
@@ -901,9 +901,9 @@ class LocalAssignment(Statement):
     names: Sequence[AttributeName]
     exprs: Sequence[Expression]
 
-    def execute(self, vm: VirtualMachine) -> list[LuaValue]:
+    def execute(self, frame: StackFrame) -> list[LuaValue]:
         if self.exprs:
-            exp_vals = [exp.evaluate(vm) for exp in self.exprs]
+            exp_vals = [exp.evaluate(frame) for exp in self.exprs]
             exp_vals = adjust(exp_vals, len(self.names))
         else:
             exp_vals = [ay_values.LuaNil] * len(self.names)
@@ -911,18 +911,18 @@ class LocalAssignment(Statement):
         for attname, exp_val in zip(self.names, exp_vals):
             var_name = attname.name.as_lua_string()
             if attname.attrib is None:
-                vm.put_local(var_name, ay_values.Variable(exp_val))
+                frame.put_local_ls(var_name, ay_values.Variable(exp_val))
             else:
                 attrib = attname.attrib.as_lua_string()
                 if attrib.content == b"close":
                     if used_closed:
                         raise NotImplementedError()
                     used_closed = True
-                    vm.put_local(
+                    frame.put_local_ls(
                         var_name, ay_values.Variable(exp_val, to_be_closed=True)
                     )
                 elif attrib.content == b"const":
-                    vm.put_local(
+                    frame.put_local_ls(
                         var_name, ay_values.Variable(exp_val, constant=True)
                     )
                 else:

@@ -22,7 +22,7 @@ def test_tostring_mt_tostring():
     lua_object.set_metatable(mt)
 
     vm = VirtualMachine()
-    vm.put_nonlocal(LuaString(b"o"), Variable(lua_object))
+    vm.put_nonlocal_ls(LuaString(b"o"), Variable(lua_object))
 
     (lua_string,) = work_chunk(
         """
@@ -46,7 +46,7 @@ def test_tostring_mt_name():
     lua_object.set_metatable(mt)
 
     vm = VirtualMachine()
-    vm.put_nonlocal(LuaString(b"o"), Variable(lua_object))
+    vm.put_nonlocal_ls(LuaString(b"o"), Variable(lua_object))
 
     (lua_string,) = work_chunk(
         """

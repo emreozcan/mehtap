@@ -28,11 +28,11 @@ def g():
 
 def new_vm() -> VirtualMachine:
     vm = VirtualMachine()
-    vm.put_nonlocal(LuaString(b"x"), Variable(LuaString(b"marks the spot")))
-    vm.put_local(LuaString(b"w"), Variable(LuaString(b"double u")))
-    vm.put_nonlocal(LuaString(b"f"), Variable(f))
-    vm.put_nonlocal(LuaString(b"g"), Variable(g))
-    vm.stack_frame.varargs = [py_to_lua(x) for x in [-100, -200, -300]]
+    vm.put_nonlocal_ls(LuaString(b"x"), Variable(LuaString(b"marks the spot")))
+    vm.put_local_ls(LuaString(b"w"), Variable(LuaString(b"double u")))
+    vm.put_nonlocal_ls(LuaString(b"f"), Variable(f))
+    vm.put_nonlocal_ls(LuaString(b"g"), Variable(g))
+    vm.root_stack_frame.varargs = [py_to_lua(x) for x in [-100, -200, -300]]
     return vm
 
 
@@ -64,7 +64,7 @@ def test_vararg_localassignment_adjustment():
     # local x = ...      -- x gets the first vararg argument.
     vm = new_vm()
     work_chunk("local x = ...", vm)
-    assert vm.stack_frame.get(LuaString(b"x")) == LuaNumber(-100)
+    assert vm.root_stack_frame.get_ls(LuaString(b"x")) == LuaNumber(-100)
 
 
 def test_vararg_assignment_adjustment_to_small():
@@ -72,8 +72,8 @@ def test_vararg_assignment_adjustment_to_small():
     #                    -- y gets the second vararg argument.
     vm = new_vm()
     work_chunk("x,y = ...", vm)
-    assert vm.get(LuaString(b"x")) == LuaNumber(-100)
-    assert vm.get(LuaString(b"y")) == LuaNumber(-200)
+    assert vm.get_ls(LuaString(b"x")) == LuaNumber(-100)
+    assert vm.get_ls(LuaString(b"y")) == LuaNumber(-200)
 
 
 def test_vararg_assignment_adjustment_and_culling():
@@ -81,9 +81,9 @@ def test_vararg_assignment_adjustment_and_culling():
     #                    -- z gets the second result from f().
     vm = new_vm()
     work_chunk("x,y,z = w, f()", vm)
-    assert vm.get(LuaString(b"x")) == LuaString(b"double u")
-    assert vm.get(LuaString(b"y")) == LuaNumber(100)
-    assert vm.get(LuaString(b"z")) == LuaNumber(200)
+    assert vm.get_ls(LuaString(b"x")) == LuaString(b"double u")
+    assert vm.get_ls(LuaString(b"y")) == LuaNumber(100)
+    assert vm.get_ls(LuaString(b"z")) == LuaNumber(200)
 
 
 def test_vararg_assignment_with_no_adjustment():
@@ -92,9 +92,9 @@ def test_vararg_assignment_with_no_adjustment():
     #                    -- z gets the third result from f().
     vm = new_vm()
     work_chunk("x,y,z = f()", vm)
-    assert vm.get(LuaString(b"x")) == LuaNumber(100)
-    assert vm.get(LuaString(b"y")) == LuaNumber(200)
-    assert vm.get(LuaString(b"z")) == LuaNumber(300)
+    assert vm.get_ls(LuaString(b"x")) == LuaNumber(100)
+    assert vm.get_ls(LuaString(b"y")) == LuaNumber(200)
+    assert vm.get_ls(LuaString(b"z")) == LuaNumber(300)
 
 
 def test_vararg_assignment_with_no_adjustment_and_with_culling():
@@ -103,18 +103,18 @@ def test_vararg_assignment_with_no_adjustment_and_with_culling():
     #                    -- z gets the second result from g().
     vm = new_vm()
     work_chunk("x,y,z = f(), g()", vm)
-    assert vm.get(LuaString(b"x")) == LuaNumber(100)
-    assert vm.get(LuaString(b"y")) == LuaNumber(1000)
-    assert vm.get(LuaString(b"z")) == LuaNumber(2000)
+    assert vm.get_ls(LuaString(b"x")) == LuaNumber(100)
+    assert vm.get_ls(LuaString(b"y")) == LuaNumber(1000)
+    assert vm.get_ls(LuaString(b"z")) == LuaNumber(2000)
 
 
 def test_vararg_assignment_with_paren_culling_and_adjustment_to_more():
     # x,y,z = (f())      -- x gets the first result from f(), y and z get nil.
     vm = new_vm()
     work_chunk("x,y,z = (f())", vm)
-    assert vm.get(LuaString(b"x")) == LuaNumber(100)
-    assert vm.get(LuaString(b"y")) == LuaNil
-    assert vm.get(LuaString(b"z")) == LuaNil
+    assert vm.get_ls(LuaString(b"x")) == LuaNumber(100)
+    assert vm.get_ls(LuaString(b"y")) == LuaNil
+    assert vm.get_ls(LuaString(b"z")) == LuaNil
 
 
 def test_return_multires():
@@ -137,7 +137,7 @@ def test_return_vararg():
 def test_return_vararg_extension():
     # return x,y,f()     -- returns x, y, and all results from f().
     vm = new_vm()
-    vm.put_local(LuaString(b"y"), Variable(LuaString(b"why oh why")))
+    vm.put_local_ls(LuaString(b"y"), Variable(LuaString(b"why oh why")))
     r_val = work_chunk("return x,y,f()", vm)
     assert r_val == [
         LuaString(b"marks the spot"),

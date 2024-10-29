@@ -8,7 +8,7 @@ def test_pcall_false():
     vm = VirtualMachine()
 
     symbol = LuaTable()
-    vm.put_nonlocal(LuaString(b"symbol"), Variable(symbol))
+    vm.put_nonlocal_ls(LuaString(b"symbol"), Variable(symbol))
 
     results = work_chunk(
         """
@@ -25,7 +25,7 @@ def test_pcall_true():
     vm = VirtualMachine()
 
     symbol = LuaTable()
-    vm.put_nonlocal(LuaString(b"symbol"), Variable(symbol))
+    vm.put_nonlocal_ls(LuaString(b"symbol"), Variable(symbol))
 
     @lua_function(vm.globals)
     def succeed(t, /) -> PyLuaRet:

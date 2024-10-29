@@ -40,7 +40,7 @@ def lua_function(
     table: Optional[LuaTable] = None,
     *,
     name: Optional[str] = None,
-    interacts_with_the_vm: bool = False,
+    gets_stack_frame: bool = False,
     wrap_values: bool = False,
 ) -> LuaDecorator:
     def decorator(func: PyLuaFunction) -> LuaFunction:
@@ -69,7 +69,7 @@ def lua_function(
                 continue
             param_names.append(param.name)
 
-        if interacts_with_the_vm:
+        if gets_stack_frame:
             param_names.pop(0)
 
         def new_function(*args: LuaValue) -> None:
@@ -85,7 +85,7 @@ def lua_function(
             variadic=f_variadic,
             parent_stack_frame=None,
             block=new_function,
-            interacts_with_the_vm=interacts_with_the_vm,
+            gets_stack_frame=gets_stack_frame,
             name=func.__name__,
         )
         if table is not None:

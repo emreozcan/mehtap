@@ -3,12 +3,13 @@ from __future__ import annotations
 from abc import ABC
 from collections.abc import Callable
 from enum import Enum
-from typing import NamedTuple, Self, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import attrs
 
 if TYPE_CHECKING:
     from ay.ast_nodes import Block
+    from ay.vm import StackFrame
 
 
 @attrs.define(slots=True, eq=False)
@@ -219,7 +220,7 @@ class LuaFunction(LuaObject):
     variadic: bool
     parent_stack_frame: StackFrame | None
     block: Block | Callable
-    interacts_with_the_vm: bool = False
+    gets_stack_frame: bool = False
     name: str | None = None
 
     def __str__(self):
@@ -237,60 +238,3 @@ class LuaFunction(LuaObject):
             f"function {self.name}({', '.join(map(str, self.param_names))}): "
             f"{hex(id(self))}"
         )
-
-
-class StackExhaustionException(Exception):
-    pass
-
-
-@attrs.define(slots=True, repr=False)
-class StackFrame:
-    parent: StackFrame | None
-    locals: dict[LuaString, Variable] = attrs.field(factory=dict)
-    varargs: list[LuaValue] | None = None
-    protected: bool = False
-
-    def __repr__(self):
-        values = ",".join(f"({k})=({v})" for k, v in self.locals.items())
-        if not self.varargs:
-            return f"<StackFrame locals=[{values}]>"
-        else:
-            varargs = ",".join(str(v) for v in self.varargs)
-            return f"<StackFrame locals=[{values}] varargs=[{varargs}]>"
-
-    def has(self, key: LuaString) -> bool:
-        assert isinstance(key, LuaString)
-        if key in self.locals:
-            return True
-        if self.parent is not None:
-            return self.parent.has(key)
-        return False
-
-    def get(self, key: LuaString) -> LuaValue:
-        assert isinstance(key, LuaString)
-        if key in self.locals:
-            return self.locals[key].value
-        if self.parent is not None:
-            return self.parent.get(key)
-        return LuaNil
-
-    def put_local(self, key: LuaString, variable: Variable):
-        assert isinstance(key, LuaString)
-        if not isinstance(variable, Variable):
-            raise TypeError(f"Expected Variable, got {type(variable)}")
-
-        if key in self.locals and self.locals[key].constant:
-            raise NotImplementedError()
-        self.locals[key] = variable
-
-    def put_nonlocal(self, key: LuaString, variable: Variable):
-        assert isinstance(key, LuaString)
-        if not isinstance(variable, Variable):
-            raise TypeError(f"Expected Variable, got {type(variable)}")
-
-        if key in self.locals:
-            self.put_local(key, variable)
-            return
-        if self.parent is None:
-            raise StackExhaustionException()
-        self.parent.put_nonlocal(key, variable)

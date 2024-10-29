@@ -8,7 +8,7 @@ def test_xpcall_false():
     vm = VirtualMachine()
 
     initial_symbol = LuaTable()
-    vm.put_nonlocal(LuaString(b"symbol"), Variable(initial_symbol))
+    vm.put_nonlocal_ls(LuaString(b"symbol"), Variable(initial_symbol))
 
     handled_symbol = LuaTable()
 
@@ -36,7 +36,7 @@ def test_xpcall_true():
         return [t]
 
     initial_symbol = LuaTable()
-    vm.put_nonlocal(LuaString(b"symbol"), Variable(initial_symbol))
+    vm.put_nonlocal_ls(LuaString(b"symbol"), Variable(initial_symbol))
 
     handled_symbol = LuaTable()
 
