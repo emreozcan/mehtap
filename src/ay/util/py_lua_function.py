@@ -5,6 +5,7 @@ from inspect import signature
 from typing import Optional, Callable, TypeAlias, Any, Mapping, Iterable
 
 from ay.control_structures import ReturnException
+from ay.operations import str_to_lua_string
 from ay.values import LuaValue, LuaFunction, LuaTable, LuaString, LuaNil, \
     LuaBool, LuaNumber
 
@@ -80,8 +81,8 @@ def lua_function(
             raise ReturnException(return_values)
 
         lf = LuaFunction(
-            param_names=[],
-            variadic=True,
+            param_names=[str_to_lua_string(x) for x in param_names],
+            variadic=f_variadic,
             parent_stack_frame=None,
             block=new_function,
             interacts_with_the_vm=interacts_with_the_vm,
