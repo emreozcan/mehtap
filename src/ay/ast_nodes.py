@@ -97,6 +97,12 @@ class ParenExpression(Expression):
 @attrs.define(slots=True)
 class Block(Statement, Expression):
     def evaluate(self, frame: StackFrame) -> list[LuaValue]:
+        return self.evaluate_without_inner_frame(frame.push())
+
+    def execute(self, frame: StackFrame) -> Sequence[LuaValue] | None:
+        return self.execute_without_inner_frame(frame.push())
+
+    def evaluate_without_inner_frame(self, frame: StackFrame) -> list[LuaValue]:
         r = []
         for stmt in self.statements:
             r = stmt.execute(frame)
@@ -108,7 +114,8 @@ class Block(Statement, Expression):
             else r if r else []
         )
 
-    def execute(self, frame: StackFrame) -> Sequence[LuaValue] | None:
+    def execute_without_inner_frame(self, frame: StackFrame) \
+            -> Sequence[LuaValue] | None:
         v = None
         for stmt in self.statements:
             v = stmt.execute(frame)
@@ -340,8 +347,9 @@ class Name(NonTerminal):
 @attrs.define(slots=True)
 class VarArgExpr(Expression):
     def evaluate(self, frame: StackFrame) -> LuaValue | Sequence[LuaValue]:
-        if frame.varargs is not None:
-            return frame.varargs
+        v = frame.get_varargs()
+        if v is not None:
+            return v
         raise NotImplementedError()
 
 
@@ -478,7 +486,7 @@ def _call_function(
         args = adjust(args, len(function.param_names))
         for param_name, arg in zip(function.param_names, args):
             new_frame.put_local_ls(param_name, ay_values.Variable(arg))
-        retvals = function.block.evaluate(new_frame)
+        retvals = function.block.evaluate_without_inner_frame(new_frame)
         if retvals is not None:
             raise ReturnException(retvals)
     else:
@@ -724,7 +732,7 @@ class While(Statement):
         new_vm = frame.push()
         try:
             while coerce_to_bool(self.condition.evaluate(frame)).true:
-                self.block.execute(new_vm)
+                self.block.execute_without_inner_frame(new_vm)
         except BreakException:
             pass
 
@@ -738,7 +746,7 @@ class Repeat(Statement):
         new_vm = frame.push()
         try:
             while True:
-                self.block.execute(new_vm)
+                self.block.execute_without_inner_frame(new_vm)
                 if coerce_to_bool(self.condition.evaluate(new_vm)).true:
                     break
         except BreakException:
@@ -753,10 +761,10 @@ class If(Statement):
     def execute(self, frame: StackFrame) -> None:
         for cnd, blk in self.blocks:
             if coerce_to_bool(cnd.evaluate(frame)).true:
-                blk.execute(frame.push())
+                blk.execute(frame)
                 return
         if self.else_block:
-            self.else_block.execute(frame.push())
+            self.else_block.execute(frame)
 
     blocks: Sequence[tuple[Expression, Block]]
     else_block: Block | None = None
@@ -776,7 +784,7 @@ class For(Statement):
         except BreakException:
             pass
 
-    def _execute(self, vm: StackFrame) -> None:
+    def _execute(self, frame: StackFrame) -> None:
         # This for loop is the "numerical" for loop explained in 3.3.5.
         # The given identifier (Name) defines the control variable,
         # which is a new variable local to the loop body (block).
@@ -784,25 +792,25 @@ class For(Statement):
         # The loop starts by evaluating once the three control expressions.
         # Their values are called respectively
         # the initial value,
-        initial_value: LuaNumber = self.start.evaluate(vm)
+        initial_value = adjust_to_one(self.start.evaluate(frame))
         assert isinstance(initial_value, LuaNumber)
         # the limit,
-        limit: LuaNumber = self.stop.evaluate(vm)
+        limit = adjust_to_one(self.stop.evaluate(frame))
         assert isinstance(limit, LuaNumber)
         # and the step. If the step is absent, it defaults to 1.
         if self.step:
-            step = self.step.evaluate(vm)
+            step = adjust_to_one(self.step.evaluate(frame))
             assert isinstance(step, LuaNumber)
         else:
             step = LuaNumber(1, LuaNumberType.INTEGER)
         # If both the initial value and the step are integers,
         # the loop is done with integers;
         # note that the limit may not be an integer.
-        integer_loop = (
+        is_integer_loop = (
             initial_value.type == LuaNumberType.INTEGER
             and step.type == LuaNumberType.INTEGER
         )
-        if not integer_loop:
+        if not is_integer_loop:
             # Otherwise, the three values are converted to floats
             # and the loop is done with floats.
             initial_value = ay_operations.coerce_int_to_float(initial_value)
@@ -821,9 +829,9 @@ class For(Statement):
         # If the initial value is already greater than the limit
         # (or less than, if the step is negative),
         # the body is not executed.
-        step_negative = step.value < 0
+        is_step_negative = step.value < 0
         condition_func = (
-            ay_operations.rel_ge if step_negative else ay_operations.rel_le
+            ay_operations.rel_ge if is_step_negative else ay_operations.rel_le
         )
         # For integer loops, the control variable never wraps around; instead,
         # the loop ends in case of an overflow.
@@ -832,14 +840,17 @@ class For(Statement):
         # If you need its value after the loop, assign it to another variable
         # before exiting the loop.
         control_val = initial_value
-        new_vm = vm.push()
+        inner_frame = frame.push()
         while condition_func(control_val, limit).true:
-            new_vm.put_local_ls(control_varname, ay_values.Variable(control_val))
-            self.block.execute(new_vm)
+            inner_frame.put_local_ls(
+                control_varname,
+                ay_values.Variable(control_val)
+            )
+            self.block.execute_without_inner_frame(inner_frame)
             overflow, control_val = ay_operations.overflow_arith_add(
                 control_val, step
             )
-            if overflow and integer_loop:
+            if overflow and is_integer_loop:
                 break
 
 
@@ -864,11 +875,11 @@ class ForIn(Statement):
         #      for var_1, ···, var_n in explist do body end
         # works as follows.
         # The names var_i declare loop variables local to the loop body.
-        inner_stack_frame = outer_frame.push()
+        body_frame = outer_frame.push()
         name_count = len(self.names)
         names = [name.as_lua_string() for name in self.names]
         for name in names:
-            inner_stack_frame.put_local_ls(
+            body_frame.put_local_ls(
                 name, ay_values.Variable(ay_values.LuaNil)
             )
         # The first of these variables is the control variable.
@@ -883,7 +894,7 @@ class ForIn(Statement):
         state = exp_vals[1]
         # an initial value for the control variable,
         initial_value = exp_vals[2]
-        inner_stack_frame.put_local_ls(
+        body_frame.put_local_ls(
             control_variable_name, ay_values.Variable(initial_value)
         )
         # and a closing value.
@@ -897,20 +908,20 @@ class ForIn(Statement):
                 call_function(
                     outer_frame,
                     iterator_function,
-                    [state, inner_stack_frame.get_ls(control_variable_name)],
+                    [state, body_frame.get_ls(control_variable_name)],
                 ),
                 name_count,
             )
             # The results from this call are then assigned to the loop
             # variables, following the rules of multiple assignments.
             for name, value in zip(names, results):
-                inner_stack_frame.put_local_ls(name, ay_values.Variable(value))
+                body_frame.put_local_ls(name, ay_values.Variable(value))
             # If the control variable becomes nil, the loop terminates.
             if results[0] is nil:
                 break
             # Otherwise, the body is executed and the loop goes to the next
             # iteration.
-            self.block.execute(inner_stack_frame)
+            self.block.execute_without_inner_frame(body_frame)
             continue
         if closing_value is not nil:
             # The closing value behaves like a to-be-closed variable,

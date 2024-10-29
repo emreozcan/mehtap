@@ -215,7 +215,7 @@ def work_chunk(
 ) -> list[LuaValue]:
     parsed_lua = chunk_parser.parse(chunk)
     ast = transformer.transform(parsed_lua)
-    r = ast.block.evaluate(vm.root_stack_frame)
+    r = ast.block.evaluate_without_inner_frame(vm.root_stack_frame)
     return r
 
 

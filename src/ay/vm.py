@@ -65,7 +65,16 @@ class StackFrame:
             return f"<StackFrame locals=[{values}]>"
         else:
             varargs = ",".join(str(v) for v in self.varargs)
-            return f"<StackFrame locals=[{values}] varargs=[{varargs}]>"
+            return f"<StackFrame locals=[{values}], local varargs=[{varargs}]>"
+
+    def get_varargs(self) -> list[LuaValue] | None:
+        # TODO: Figure this out.
+        #       Do function closures include varargs?
+        if self.varargs is not None:
+            return self.varargs
+        if self.parent is None:
+            return None
+        return self.parent.get_varargs()
 
     def has_ls(self, key: LuaString) -> bool:
         assert isinstance(key, LuaString)
