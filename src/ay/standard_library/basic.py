@@ -209,6 +209,8 @@ def provide(table: LuaTable) -> None:
         # returns the first three results from the call.
         metamethod = t.get_metamethod(SYMBOL_PAIRS)
         if metamethod is not None:
+            if not isinstance(metamethod, LuaFunction):
+                raise NotImplementedError()
             return call_function(vm, metamethod, [t])
         # Otherwise, returns three values: the next function, the table t, and
         # nil, so that the construction
@@ -451,6 +453,8 @@ def provide(table: LuaTable) -> None:
         tostring_field = v.get_metamethod(SYMBOL_TOSTRING)
         if tostring_field is not None:
             # then tostring calls the corresponding value with v as argument,
+            if not isinstance(tostring_field, LuaFunction):
+                raise NotImplementedError()
             call_result = call_function(vm, tostring_field, [v])
             # and uses the result of the call as its result.
             return call_result

@@ -768,6 +768,8 @@ class ForIn(Statement):
         exp_vals = adjust([exp.evaluate(vm) for exp in self.exprs], 4)
         # an iterator function,
         iterator_function = exp_vals[0]
+        if not isinstance(iterator_function, LuaFunction):
+            raise NotImplementedError()
         # a state,
         state = exp_vals[1]
         # an initial value for the control variable,
