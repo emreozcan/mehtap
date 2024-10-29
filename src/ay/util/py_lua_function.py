@@ -63,7 +63,12 @@ def py_to_lua(value) -> LuaValue:
     raise NotImplementedError(f"can't yet convert {value!r} to LuaValue")
 
 
+Py2LuaAccepts: TypeAlias = (bool | int | float
+                            | str
+                            | Mapping | Iterable
+                            | Callable)
 PyLuaRet: TypeAlias = list[LuaValue] | None
+PyLuaWrapRet: TypeAlias = list[Py2LuaAccepts] | None
 PyLuaFunction: TypeAlias = Callable[..., PyLuaRet]
 LuaDecorator: TypeAlias = Callable[[PyLuaFunction], LuaFunction]
 
