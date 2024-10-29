@@ -318,7 +318,7 @@ class LuaTransformer(lark.Transformer):
             vararg=False,
         )
 
-    def parlist_vararg(self, namelist, VARARG: nodes.Terminal) -> nodes.Parlist:
+    def parlist_vararg(self, namelist) -> nodes.Parlist:
         return nodes.Parlist(
             names=namelist,
             vararg=True,
