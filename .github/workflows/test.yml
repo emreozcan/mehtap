@@ -33,12 +33,17 @@ jobs:
                 run: pipenv run pytest
 
             -   name: Upload coverage report to Codecov
-                if: always()
+                if: ${{ !cancelled() }}
                 uses: codecov/codecov-action@v4.0.1
                 with:
                     token: ${{ secrets.CODECOV_TOKEN }}
+            -   name: Upload test results to Codecov
+                if: ${{ !cancelled() }}
+                uses: codecov/test-results-action@v1
+                with:
+                    token: ${{ secrets.CODECOV_TOKEN }}
             -   name: Upload coverage report to Codacy
-                if: always()
+                if: ${{ !cancelled() }}
                 run: bash <(curl -Ls https://coverage.codacy.com/get.sh) report -r coverage.xml
                 env:
                     CODACY_PROJECT_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}
