@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from abc import abstractmethod, ABC
 from inspect import signature
-from typing import Optional, Callable, TypeAlias, Any, Mapping, Iterable
+from typing import Optional, Callable, TypeAlias, Any, Mapping, Iterable, \
+    overload
 
 from ay.control_structures import ReturnException
 from ay.operations import str_to_lua_string
@@ -10,7 +11,35 @@ from ay.values import LuaValue, LuaFunction, LuaTable, LuaString, LuaNil, \
     LuaBool, LuaNumber, LuaUserdata
 
 
-def py_to_lua(value: Any) -> LuaValue:
+@overload
+def py_to_lua(value: None) -> LuaNil: ...
+
+
+@overload
+def py_to_lua(value: bool) -> LuaBool: ...
+
+
+@overload
+def py_to_lua(value: int | float) -> LuaNumber: ...
+
+
+@overload
+def py_to_lua(value: str) -> LuaString: ...
+
+
+@overload
+def py_to_lua(value: Mapping) -> LuaTable: ...
+
+
+@overload
+def py_to_lua(value: Iterable) -> LuaTable: ...
+
+
+@overload
+def py_to_lua(value: Callable) -> LuaFunction: ...
+
+
+def py_to_lua(value) -> LuaValue:
     if value is None:
         return LuaNil
     if isinstance(value, bool):
