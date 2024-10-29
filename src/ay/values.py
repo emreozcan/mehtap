@@ -249,12 +249,16 @@ class LuaFunction(LuaObject):
                     return "[, ...]"
                 return "[...]"
             return ""
-        if index == 0:
-            return f"{self.param_names[index]}{self._py_param_str(index+1)}"
+        my_name = self.param_names[index]
+        next_name = self._py_param_str(index + 1)
         if index < self.min_req:
-            return f", {self.param_names[index]}{self._py_param_str(index+1)}"
+            if index == 0:
+                return f"{my_name}{next_name}"
+            return f", {my_name}{next_name}"
         if index >= self.min_req:
-            return f"[, {self.param_names[index]}{self._py_param_str(index+1)}]"
+            if index == 0:
+                return f"[{my_name}{next_name}]"
+            return f"[, {my_name}{next_name}]"
 
     def _stringify_params(self):
         if self.param_names is None:
