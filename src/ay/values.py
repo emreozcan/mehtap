@@ -152,8 +152,8 @@ class LuaTable(LuaObject):
     def __repr__(self):
         values = ",".join(f"({k})=({v})" for k, v in self.map.items())
         if not self._metatable:
-            return f"<StackFrame [{values}]>"
-        return f"<StackFrame [{values}] metatable={self._metatable}>"
+            return f"<LuaTable [{values}]>"
+        return f"<LuaTable [{values}] metatable={self._metatable}>"
 
     def get_metatable(self):
         return self._metatable
