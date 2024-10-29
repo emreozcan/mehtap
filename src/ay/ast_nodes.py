@@ -5,6 +5,7 @@ import string
 from abc import ABC, abstractmethod
 from collections.abc import Sequence, Iterable
 from typing import Literal, TYPE_CHECKING
+from typing import Literal, TYPE_CHECKING, Sequence
 
 import attrs
 
@@ -430,6 +431,12 @@ class FieldWithKey(Field):
 @attrs.define(slots=True)
 class FieldCounterKey(Field):
     pass
+
+
+@attrs.define(slots=True)
+class Parlist(NonTerminal):
+    names: Sequence[Name]
+    vararg: bool = False
 
 
 @attrs.define(slots=True)
@@ -929,3 +936,17 @@ class LocalAssignment(Statement):
                     # TODO: Create an error
                     raise NotImplementedError()
         return exp_vals
+
+
+@attrs.define(slots=True)
+class ParsedLiteralLuaStringExpr(Expression):
+    """
+    Not included in the Lua grammar.
+    Used when a part of an expression which results in a LuaString is parsed.
+    For example, the "b" in `a.b = 1`.
+    (Which is transformed to be equivalent to `a["b"] = 1`.)
+    """
+    value: LuaString
+
+    def evaluate(self, frame: StackFrame) -> LuaValue | Sequence[LuaValue]:
+        return self.value

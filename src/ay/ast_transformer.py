@@ -4,14 +4,8 @@ import ay.ast_nodes as nodes
 
 import lark
 
-
-def to_string_literal(
-    i: nodes.Name,
-    /,
-) -> nodes.LiteralString:
-    if isinstance(i, nodes.Name):
-        return nodes.LiteralString(text=nodes.Terminal(text=i.name.text))
-    raise TypeError(f"Can't turn {i=} to a string literal")
+from ay.ast_nodes import ParsedLiteralLuaStringExpr, BinaryOperator, \
+    UnaryOperator
 
 
 @lark.v_args(inline=True)
@@ -38,7 +32,10 @@ class LuaTransformer(lark.Transformer):
         index: nodes.Expression | nodes.Name,
     ) -> nodes.VarIndex:
         if isinstance(index, nodes.Name):
-            return nodes.VarIndex(base=base, index=to_string_literal(index))
+            return nodes.VarIndex(
+                base=base,
+                index=ParsedLiteralLuaStringExpr(index.as_lua_string())
+            )
         return nodes.VarIndex(base=base, index=index)
 
     @staticmethod
@@ -175,15 +172,49 @@ class LuaTransformer(lark.Transformer):
     def retstat(_, values: Sequence[nodes.Expression]) -> nodes.ReturnStatement:
         return nodes.ReturnStatement(values=values)
 
+    def parlist(self, namelist) -> nodes.Parlist:
+        return nodes.Parlist(
+            names=namelist,
+            vararg=False,
+        )
+
+    def parlist_vararg(self, namelist, VARARG: nodes.Terminal) -> nodes.Parlist:
+        return nodes.Parlist(
+            names=namelist,
+            vararg=True,
+        )
+
     @staticmethod
     def funcbody(parlist, block, END):
         if parlist is None:
             return nodes.FuncBody(params=tuple(), body=block)
-        raise NotImplementedError()
+        return nodes.FuncBody(
+            params=parlist.names,
+            body=block,
+            vararg=parlist.vararg,
+        )
 
     @staticmethod
     def exp_functiondef(funcbody: nodes.FuncBody) -> nodes.FuncDef:
         return nodes.FuncDef(body=funcbody)
+
+    @staticmethod
+    def funcname(*names) -> nodes.FuncName:
+        method = names[-1]
+        if method is not None:
+            return nodes.FuncName(
+                names=[*names[:-1], method],
+                method=True,
+            )
+        return nodes.FuncName(names=names[:-1], method=False)
+
+    @staticmethod
+    def stat_function(
+        FUNCTION,
+        funcname: nodes.FuncName,
+        funcbody: nodes.FuncBody,
+    ):
+        return nodes.FunctionStatement(name=funcname, body=funcbody)
 
     @staticmethod
     def stat_for(FOR, name, start, stop, step, DO, block, END):
