@@ -42,6 +42,10 @@ class LuaTransformer(lark.Transformer):
         return nodes.VarIndex(base=base, index=index)
 
     @staticmethod
+    def exp_vararg() -> nodes.VarArgExpr:
+        return nodes.VarArgExpr()
+
+    @staticmethod
     def varlist(*args: nodes.Variable) -> Sequence[nodes.Variable]:
         return args
 

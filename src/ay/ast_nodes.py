@@ -334,6 +334,14 @@ class Name(NonTerminal):
 
 
 @attrs.define(slots=True)
+class VarArgExpr(Expression):
+    def evaluate(self, vm: VirtualMachine) -> LuaValue | Sequence[LuaValue]:
+        if vm.stack_frame.varargs:
+            return vm.stack_frame.varargs
+        raise NotImplementedError()
+
+
+@attrs.define(slots=True)
 class Variable(Expression, ABC):
     pass
 
