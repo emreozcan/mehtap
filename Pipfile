@@ -14,7 +14,6 @@ flit = "*"
 mypy = "*"
 pytest = "*"
 pytest-cov = "*"
-flake8 = "*"
 
 [requires]
 python_version = "3.13"

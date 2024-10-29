@@ -15,7 +15,7 @@ requires-python = "<4.0,>=3.13"
 ay = "ay.__main__:main"
 
 [tool.pytest.ini_options]
-addopts = "--import-mode=importlib --cov=ay --cov-report html --cov-report xml"
+addopts = "--import-mode=importlib --cov=ay --cov-report html --cov-report xml --junitxml=junit.xml -o junit_family=legacy"
 pythonpath = "src"
 testpaths = "tests"
 
