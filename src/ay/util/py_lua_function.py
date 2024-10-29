@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 from abc import abstractmethod, ABC
-from typing import Callable, TypeAlias
 from inspect import signature
+from typing import Optional, Callable, TypeAlias
 
 from ay.control_structures import ReturnException
 from ay.values import LuaValue, LuaFunction, LuaTable, LuaString

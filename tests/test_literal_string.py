@@ -6,7 +6,9 @@ vm = VirtualMachine()
 
 
 def parse(expr):
-    return work_expr(expr, vm)
+    r = work_expr(expr, vm)
+    assert len(r) == 1
+    return r[0]
 
 
 def test_alo():

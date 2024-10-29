@@ -32,19 +32,29 @@ def get_vm(m1: dict | None = None, m2: dict | None = None):
     return vm
 
 
+def expr_value(t, vm):
+    r = work_expr(t, vm)
+    assert len(r) == 1
+    return r[0]
+
+
 def test_rawequal():
-    assert work_expr("rawequal(o1, o2)", get_vm())
+    v = expr_value("rawequal(o1, o2)", get_vm())
+    assert isinstance(v, LuaBool)
+    assert v.true
 
 
 def test_rawget():
-    obj = LuaObject()
-    assert work_expr("rawget(o1, 1)", get_vm({LuaNumber(1): obj}))[0] is obj
+    src = LuaTable()
+    dest = expr_value("rawget(o1, 1)", get_vm({LuaNumber(1): src}))
+    assert dest is src
 
 
 def test_rawlen():
-    assert work_expr("rawlen(o1)", get_vm({LuaNumber(1): LuaObject()})) == [
-        LuaNumber(1)
-    ]
+    assert expr_value(
+        "rawlen(o1)",
+        get_vm({LuaNumber(1): LuaTable()})
+    ) == LuaNumber(1)
 
 
 def test_rawset():

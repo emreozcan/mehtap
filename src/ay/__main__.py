@@ -123,7 +123,7 @@ def enter_interactive(vm: VirtualMachine) -> None:
             collected_line += line
         except EOFError:
             break
-        r = None
+        r: list[LuaValue] | None = None
         try:
             r = work_chunk(collected_line, vm)
         except lark.exceptions.UnexpectedEOF:
@@ -152,10 +152,13 @@ def display_object(val: LuaValue | list[LuaValue]) -> str | None:
 def work_expr(
     expr: str,
     vm: VirtualMachine,
-) -> LuaValue | list[LuaValue]:
+) -> list[LuaValue]:
     parsed_lua = expr_parser.parse(expr)
     ast = transformer.transform(parsed_lua)
     r = ast.evaluate(vm)
+    if isinstance(r, LuaValue):
+        return [r]
+    assert isinstance(r, list)
     return r
 
 
