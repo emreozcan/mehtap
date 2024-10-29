@@ -375,6 +375,10 @@ class LuaTransformer(lark.Transformer):
         )
 
     @staticmethod
+    def stat_do(DO, block, END) -> nodes.Do:
+        return nodes.Do(block=block)
+
+    @staticmethod
     def namelist(*names: nodes.Name) -> Sequence[nodes.Name]:
         return names
 
