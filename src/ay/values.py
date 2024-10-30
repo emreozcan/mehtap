@@ -282,10 +282,8 @@ class LuaFunction(LuaObject):
     def call(
         self,
         args: list[LuaValue | list[LuaValue]],
-        scope: Scope | None = None,
+        scope: Scope,
     ) -> list[LuaValue]:
-        if not scope and not self.parent_scope:
-            raise ValueError("No scope to call function in")
         from ay.control_structures import ReturnException
         try:
             self._call(args, scope or self.parent_scope)

@@ -54,11 +54,11 @@ def provide(table: LuaTable) -> None:
         return [v, message, *a]
 
     @lua_function(table, gets_scope=True)
-    def collectgarbage(vm: Scope, opt=None, arg=None, /) -> PyLuaRet:
+    def collectgarbage(scope: Scope, opt=None, arg=None, /) -> PyLuaRet:
         """collectgarbage ([opt [, arg]])"""
         warn.call(
             [py2lua("collectgarbage(): ay doesn't have garbage collection")],
-            vm
+            scope
         )
         return [LuaNil]
 
