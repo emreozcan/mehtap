@@ -9,8 +9,9 @@ import time as py_time
 import datetime
 
 from ay.operations import str_to_lua_string
-from ay.util.py_lua_function import LibraryProvider, lua_function, \
+from ay.py_to_lua import lua_function, \
     PyLuaWrapRet, py_to_lua, PyLuaRet
+from ay.library.provider_abc import LibraryProvider
 from ay.values import LuaTable, LuaString, LuaNil, LuaNumber, \
     LuaBool, LuaValue
 

@@ -4,10 +4,11 @@ import sys
 from typing import TYPE_CHECKING
 
 from ay import operations
-from ay.ast_nodes import call_function, UnaryOperation, Terminal, UnaryOperator
+from ay.ast_nodes import call_function, UnaryOperation, UnaryOperator
 from ay.ast_transformer import transformer
-from ay.util.py_lua_function import LibraryProvider, PyLuaRet
-from ay.util.py_lua_function import lua_function
+from ay.py_to_lua import PyLuaRet
+from ay.library.provider_abc import LibraryProvider
+from ay.py_to_lua import lua_function
 from ay.values import (
     LuaTable,
     LuaValue,
@@ -24,7 +25,7 @@ from ay.parser import chunk_parser, numeral_parser
 from ay.operations import rel_eq, length
 
 if TYPE_CHECKING:
-    from ay.vm import StackFrame
+    from ay.vm import Scope
     from ay.values import LuaNilType
 
 
@@ -52,7 +53,7 @@ def provide(table: LuaTable) -> None:
         #  otherwise, returns all its arguments.
         return [v, message, *a]
 
-    @lua_function(table, gets_stack_frame=True)
+    @lua_function(table, gets_scope=True)
     def collectgarbage(vm, opt=None, arg=None, /) -> PyLuaRet:
         """collectgarbage ([opt [, arg]])"""
         call_function(
@@ -66,9 +67,9 @@ def provide(table: LuaTable) -> None:
         )
         return [LuaNil]
 
-    @lua_function(table, gets_stack_frame=True)
+    @lua_function(table, gets_scope=True)
     def dofile(
-        frame: StackFrame,
+        scope: Scope,
         filename: LuaString | None = None,
         /,
     ) -> PyLuaRet:
@@ -89,12 +90,12 @@ def provide(table: LuaTable) -> None:
         chunk_node = transformer.transform(parsed_chunk)
         # TODO: Figure this out.
         #       Chunks are normally compiled as vararg functions in Lua.
-        r = chunk_node.block.evaluate(frame)
+        r = chunk_node.block.evaluate(scope)
         return r
 
-    @lua_function(table, gets_stack_frame=True)
+    @lua_function(table, gets_scope=True)
     def error(
-        frame: StackFrame,
+        scope: Scope,
         message: LuaValue = LuaNil,
         level: LuaNumber = LuaNumber(1, LuaNumberType.INTEGER),
         /,
@@ -204,8 +205,8 @@ def provide(table: LuaTable) -> None:
         # In particular, you may set existing fields to nil.
         raise NotImplementedError()  # todo.
 
-    @lua_function(table, gets_stack_frame=True)
-    def pairs(frame: StackFrame, t: LuaTable, /) -> list[LuaValue] | None:
+    @lua_function(table, gets_scope=True)
+    def pairs(scope: Scope, t: LuaTable, /) -> list[LuaValue] | None:
         """pairs (t)"""
         # If t has a metamethod __pairs, calls it with t as argument and
         # returns the first three results from the call.
@@ -213,7 +214,7 @@ def provide(table: LuaTable) -> None:
         if metamethod is not None:
             if not isinstance(metamethod, LuaFunction):
                 raise NotImplementedError()
-            return call_function(frame, metamethod, [t])
+            return call_function(scope, metamethod, [t])
         # Otherwise, returns three values: the next function, the table t, and
         # nil, so that the construction
         #      for k,v in pairs(t) do body end
@@ -235,9 +236,9 @@ def provide(table: LuaTable) -> None:
             LuaNil,
         ]
 
-    @lua_function(table, gets_stack_frame=True)
+    @lua_function(table, gets_scope=True)
     def pcall(
-        frame: StackFrame,
+        scope: Scope,
         f: LuaFunction,
         /,
         *args: LuaValue,
@@ -253,14 +254,14 @@ def provide(table: LuaTable) -> None:
         #  In case of any error, pcall returns false plus the error object.
         #  Note that errors caught by pcall do not call a message handler.
         try:
-            return_vals = call_function(frame, f, list(args))
+            return_vals = call_function(scope, f, list(args))
         except LuaError as lua_error:
             return [LuaBool(False), lua_error.message]
         else:
             return [LuaBool(True), *return_vals]
 
-    @lua_function(table, name="print", gets_stack_frame=True)
-    def print_(frame: StackFrame, /, *args: LuaValue) -> PyLuaRet:
+    @lua_function(table, name="print", gets_scope=True)
+    def print_(scope: Scope, /, *args: LuaValue) -> PyLuaRet:
         """print (···)"""
         # Receives any number of arguments and prints their values to stdout,
         # converting each argument to a string following the same rules of
@@ -269,7 +270,7 @@ def provide(table: LuaTable) -> None:
         # The function print is not intended for formatted output, but only as a
         # quick way to show a value, for instance for debugging.
         # For complete control over the output, use string.format and io.write.
-        string_lists = (call_function(frame, tostring, [arg]) for arg in args)
+        string_lists = (call_function(scope, tostring, [arg]) for arg in args)
         x = "\t".join(
             ",".join(string.content.decode("utf-8") for string in string_list)
             for string_list in string_lists
@@ -371,8 +372,8 @@ def provide(table: LuaTable) -> None:
         # To change the metatable of other types from Lua code, you must use the
         # debug library (§6.10).
 
-    @lua_function(table, gets_stack_frame=True)
-    def tonumber(frame: StackFrame, e, base=None, /) -> PyLuaRet:
+    @lua_function(table, gets_scope=True)
+    def tonumber(scope: Scope, e, base=None, /) -> PyLuaRet:
         """tonumber (e [, base])"""
         # When called with no base, tonumber tries to convert its argument to a
         # number.
@@ -395,7 +396,7 @@ def provide(table: LuaTable) -> None:
                                 exp=transformer.transform(
                                     numeral_parser.parse(e_str[1:])
                                 ),
-                            ).evaluate(frame)
+                            ).evaluate(scope)
                         ]
 
                     if e_str[0] == "+":
@@ -403,7 +404,7 @@ def provide(table: LuaTable) -> None:
                     return [
                         transformer.transform(
                             numeral_parser.parse(e_str)
-                        ).evaluate(frame)
+                        ).evaluate(scope)
                     ]
                 except Exception:
                     return [FAIL]
@@ -445,8 +446,8 @@ def provide(table: LuaTable) -> None:
             number.value = -number.value
         return [number]
 
-    @lua_function(table, gets_stack_frame=True)
-    def tostring(frame: StackFrame, v: LuaValue, /) -> PyLuaRet:
+    @lua_function(table, gets_scope=True)
+    def tostring(scope: Scope, v: LuaValue, /) -> PyLuaRet:
         """tostring (v)"""
         # Receives a value of any type and converts it to a string in a
         # human-readable format.
@@ -457,7 +458,7 @@ def provide(table: LuaTable) -> None:
             # then tostring calls the corresponding value with v as argument,
             if not isinstance(tostring_field, LuaFunction):
                 raise NotImplementedError()
-            call_result = call_function(frame, tostring_field, [v])
+            call_result = call_function(scope, tostring_field, [v])
             # and uses the result of the call as its result.
             return call_result
         # Otherwise, if the metatable of v has a __name field with a string
@@ -491,8 +492,8 @@ def provide(table: LuaTable) -> None:
         LuaString(f"ay {__ay_version__}".encode("utf-8")),
     )
 
-    @lua_function(table, gets_stack_frame=True)
-    def warn(frame: StackFrame, msg1: LuaString, /, *a: LuaString) -> PyLuaRet:
+    @lua_function(table, gets_scope=True)
+    def warn(scope: Scope, msg1: LuaString, /, *a: LuaString) -> PyLuaRet:
         """warn (msg1, ···)"""
         # Emits a warning with a message composed by the concatenation of all
         # its arguments (which should be strings).
@@ -510,19 +511,19 @@ def provide(table: LuaTable) -> None:
             # control messages
             if msg1.content == b"@off":
                 # "@off", to stop the emission of warnings,
-                frame.vm.emitting_warnings = False
+                scope.vm.emitting_warnings = False
             elif msg1.content == b"@on":
                 # and "@on", to (re)start the emission;
-                frame.vm.emitting_warnings = True
+                scope.vm.emitting_warnings = True
             # it ignores unknown control messages.
             return None
-        if not frame.vm.emitting_warnings:
+        if not scope.vm.emitting_warnings:
             return None
-        frame.vm.get_warning(msg1, *a)
+        scope.vm.get_warning(msg1, *a)
 
-    @lua_function(table, gets_stack_frame=True)
+    @lua_function(table, gets_scope=True)
     def xpcall(
-        frame: StackFrame,
+        scope: Scope,
         f: LuaFunction,
         msgh: LuaFunction,
         /,
@@ -531,7 +532,7 @@ def provide(table: LuaTable) -> None:
         #  This function is similar to pcall, except that it sets a new message
         #  handler msgh.
         try:
-            return_vals = call_function(frame, f, list(args))
+            return_vals = call_function(scope, f, list(args))
         except LuaError as lua_error:
             # Any error inside f is not propagated;
             # instead, xpcall catches the error,
@@ -541,7 +542,7 @@ def provide(table: LuaTable) -> None:
                 # In case of any error, xpcall returns false
                 LuaBool(False),
                 # plus the result from msgh.
-                *call_function(frame, msgh, [lua_error.message]),
+                *call_function(scope, msgh, [lua_error.message]),
             ]
         else:
             return [

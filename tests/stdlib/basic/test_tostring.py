@@ -1,5 +1,4 @@
-from ay.__main__ import work_chunk
-from ay.util.py_lua_function import lua_function
+from ay.py_to_lua import lua_function
 from ay.values import LuaTable, LuaString, Variable, LuaValue
 from ay.vm import VirtualMachine
 
@@ -24,11 +23,10 @@ def test_tostring_mt_tostring():
     vm = VirtualMachine()
     vm.put_nonlocal_ls(LuaString(b"o"), Variable(lua_object))
 
-    (lua_string,) = work_chunk(
+    (lua_string,) = vm.exec(
         """
-        return tostring(o)
-    """,
-        vm,
+            return tostring(o)
+        """,
     )
 
     assert lua_string == LuaString(b"yay :D")
@@ -48,11 +46,10 @@ def test_tostring_mt_name():
     vm = VirtualMachine()
     vm.put_nonlocal_ls(LuaString(b"o"), Variable(lua_object))
 
-    (lua_string,) = work_chunk(
+    (lua_string,) = vm.exec(
         """
-        return tostring(o)
-    """,
-        vm,
+            return tostring(o)
+        """,
     )
 
     assert b"my_object" in lua_string.content

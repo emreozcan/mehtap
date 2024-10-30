@@ -1,11 +1,10 @@
-from ay.__main__ import work_chunk
 from ay.values import LuaTable, LuaNumber, LuaString
 from ay.vm import VirtualMachine
 
 
 def execute(program):
     vm = VirtualMachine()
-    return work_chunk(program, vm)
+    return vm.exec(program)
 
 
 def test_global():

@@ -1,11 +1,9 @@
 from collections.abc import Sequence
 
-import ay.ast_nodes as nodes
-
 import lark
 
-from ay.ast_nodes import ParsedLiteralLuaStringExpr, BinaryOperator, \
-    UnaryOperator
+import ay.ast_nodes as nodes
+from ay.ast_nodes import BinaryOperator
 
 
 @lark.v_args(inline=True)
@@ -34,7 +32,7 @@ class LuaTransformer(lark.Transformer):
         if isinstance(index, nodes.Name):
             return nodes.VarIndex(
                 base=base,
-                index=ParsedLiteralLuaStringExpr(index.as_lua_string())
+                index=nodes.ParsedLiteralLuaStringExpr(index.as_lua_string())
             )
         return nodes.VarIndex(base=base, index=index)
 
@@ -289,7 +287,7 @@ class LuaTransformer(lark.Transformer):
         operand: nodes.Expression
     ):
         return nodes.UnaryOperation(
-            op=UnaryOperator(operation.text),
+            op=nodes.UnaryOperator(operation.text),
             exp=operand,
         )
 

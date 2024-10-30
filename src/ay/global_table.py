@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from ay.standard_library.os_library import OSLibrary
+from ay.library.stdlib.os_library import OSLibrary
+from ay.library.stdlib.basic_library import BasicLibrary
 from ay.values import LuaTable
-from ay.standard_library.basic_library import BasicLibrary
 
 
 def create_global_table() -> LuaTable:

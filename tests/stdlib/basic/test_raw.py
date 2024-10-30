@@ -1,5 +1,4 @@
-from ay.__main__ import work_expr
-from ay.util.py_lua_function import lua_function
+from ay.py_to_lua import lua_function
 from ay.values import LuaTable, LuaString, Variable, LuaNumber, LuaBool
 from ay.vm import VirtualMachine
 
@@ -33,7 +32,7 @@ def get_vm(m1: dict | None = None, m2: dict | None = None):
 
 
 def expr_value(t, vm):
-    r = work_expr(t, vm)
+    r = vm.eval(t)
     assert len(r) == 1
     return r[0]
 
@@ -60,8 +59,5 @@ def test_rawlen():
 def test_rawset():
     obj = LuaTable()
     vm = get_vm(m2={LuaNumber(1): obj})
-    work_expr(
-        "rawset(o1, 1, o2[1])",
-        vm,
-    )
+    vm.eval("rawset(o1, 1, o2[1])")
     assert vm.get_ls(LuaString(b"o1")).get(LuaNumber(1)) is obj

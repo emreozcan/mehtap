@@ -9,7 +9,7 @@ import attrs
 
 if TYPE_CHECKING:
     from ay.ast_nodes import Block
-    from ay.vm import StackFrame
+    from ay.vm import Scope
 
 
 @attrs.define(slots=True, eq=False)
@@ -236,9 +236,9 @@ class Variable:
 class LuaFunction(LuaObject):
     param_names: list[LuaString] | None
     variadic: bool
-    parent_stack_frame: StackFrame | None
+    parent_scope: Scope | None
     block: Block | Callable
-    gets_stack_frame: bool = False
+    gets_scope: bool = False
     name: str | None = None
     min_req: int | None = None
 

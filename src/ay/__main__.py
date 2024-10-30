@@ -1,15 +1,15 @@
 import argparse
 import os
 import sys
+from warnings import deprecated
 
 import lark.exceptions
 
 from ay import __version__ as __ay_version__
 from ay.ast_nodes import call_function
-from ay.ast_transformer import transformer
 from ay.control_structures import LuaError
+from ay.library.stdlib import basic_library
 from ay.operations import str_to_lua_string
-from ay.parser import chunk_parser, expr_parser
 from ay.vm import VirtualMachine
 from ay.values import LuaValue, LuaTable, LuaNumber, LuaString
 
@@ -86,7 +86,7 @@ def _main():
         arg_table.put(LuaNumber(1), str_to_lua_string(args.script))
         for i, arg in enumerate(args.args, start=2):
             arg_table.put(LuaNumber(i), str_to_lua_string(arg))
-        vm.root_stack_frame.varargs = [
+        vm.root_scope.varargs = [
             str_to_lua_string(arg) for arg in args.args
         ]
     else:
@@ -104,9 +104,9 @@ def _main():
         for env_var in env_vars:
             if env_var in os.environ:
                 if env_var[0] == "@":
-                    work_file_chunk(os.environ[env_var][1:], vm)
+                    vm.exec_file(os.environ[env_var][1:])
                 else:
-                    work_chunk(os.environ[env_var], vm)
+                    vm.exec_file(os.environ[env_var])
                 break
 
     if args.show_version:
@@ -123,16 +123,16 @@ def _main():
             else:
                 name = mod = lib_spec
             # TODO: Replace this to not depend on the function 'require'
-            work_chunk(f"{name} = require('{mod}')", vm)
+            vm.exec(f"{name} = require('{mod}')")
 
     if args.execute_string:
-        work_chunk(args.execute_string, vm)
+        vm.exec(args.execute_string)
 
     if args.script:
         if args.script != "-":
-            work_file_chunk(args.script, vm)
+            vm.exec_file(args.script)
         else:
-            work_chunk(sys.stdin.read(), vm)
+            vm.exec(sys.stdin.read())
 
     no_execution = not args.script and not args.execute_string
     if args.enter_interactive or no_execution:
@@ -153,10 +153,10 @@ def enter_interactive(vm: VirtualMachine) -> None:
             break
         r: list[LuaValue] | None = None
         try:
-            r = work_chunk(collected_line, vm)
+            r = vm.exec(collected_line)
         except lark.exceptions.UnexpectedEOF as e:
             try:
-                r = work_expr(collected_line, vm)
+                r = vm.eval(collected_line)
             except lark.exceptions.UnexpectedEOF:
                 continue
         except lark.exceptions.UnexpectedInput as e:
@@ -173,8 +173,8 @@ def enter_interactive(vm: VirtualMachine) -> None:
                 sys.stdout = sys.stderr
                 try:
                     call_function(
-                        vm,
-                        basic.library_table.print_,
+                        vm.root_scope,
+                        basic_library.library_table.print_,
                         [lua_error.message],
                     )
                 finally:
@@ -193,39 +193,6 @@ def display_object(val: list[LuaValue]) -> str | None:
     if not val:
         return None
     return ", ".join([str(v) for v in val])
-
-
-def work_expr(
-    expr: str,
-    vm: VirtualMachine,
-) -> list[LuaValue]:
-    parsed_lua = expr_parser.parse(expr)
-    ast = transformer.transform(parsed_lua)
-    r = ast.evaluate(vm.root_stack_frame)
-    if isinstance(r, LuaValue):
-        return [r]
-    assert isinstance(r, list)
-    return r
-
-
-def work_chunk(
-    chunk: str,
-    vm: VirtualMachine,
-) -> list[LuaValue]:
-    parsed_lua = chunk_parser.parse(chunk)
-    ast = transformer.transform(parsed_lua)
-    r = ast.block.evaluate_without_inner_frame(vm.root_stack_frame)
-    return r
-
-
-def work_file_chunk(
-    file_path: str,
-    vm: VirtualMachine,
-) -> list[LuaValue]:
-    with open(file_path, "r", encoding="utf-8") as f:
-        if f.read(1) == "#":
-            f.readline()
-        return work_chunk(f.read(), vm)
 
 
 if __name__ == "__main__":

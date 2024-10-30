@@ -1,6 +1,5 @@
 from pytest import raises
 
-from ay.__main__ import work_chunk
 from ay.control_structures import LuaError
 from ay.operations import str_to_lua_string
 from ay.values import LuaBool, LuaNil, LuaNumber
@@ -9,7 +8,7 @@ from ay.vm import VirtualMachine
 
 def execute(program):
     vm = VirtualMachine()
-    return work_chunk(program, vm)
+    return vm.exec(program)
 
 
 def test_assert_fail_simple():

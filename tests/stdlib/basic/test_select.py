@@ -1,6 +1,5 @@
 from _pytest.python_api import raises
 
-from ay.__main__ import work_chunk
 from ay.control_structures import LuaError
 from ay.values import LuaNumber
 from ay.vm import VirtualMachine
@@ -8,7 +7,7 @@ from ay.vm import VirtualMachine
 
 def execute(chunk):
     vm = VirtualMachine()
-    return work_chunk(chunk, vm)
+    return vm.exec(chunk)
 
 
 def test_select_positive():

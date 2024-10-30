@@ -1,14 +1,13 @@
 from __future__ import annotations
 
-from abc import abstractmethod, ABC
 from inspect import signature
-from typing import Optional, Callable, TypeAlias, Any, Mapping, Iterable, \
+from typing import Optional, Callable, TypeAlias, Mapping, Iterable, \
     overload
 
 from ay.control_structures import ReturnException
 from ay.operations import str_to_lua_string
 from ay.values import LuaValue, LuaFunction, LuaTable, LuaString, LuaNil, \
-    LuaBool, LuaNumber, LuaUserdata
+    LuaBool, LuaNumber
 
 
 @overload
@@ -40,27 +39,35 @@ def py_to_lua(value: Callable) -> LuaFunction: ...
 
 
 def py_to_lua(value) -> LuaValue:
-    if value is None:
+    return _py_to_lua(value, {})
+
+
+def _py_to_lua(py_val, obj_map):
+    if id(py_val) in obj_map:
+        return obj_map[id(py_val)]
+    if py_val is None:
         return LuaNil
-    if isinstance(value, bool):
-        return LuaBool(value)
-    if isinstance(value, (int, float)):
-        return LuaNumber(value)
-    if isinstance(value, str):
-        return LuaString(str(value).encode("utf-8"))
-    if isinstance(value, Mapping):
+    if isinstance(py_val, bool):
+        return LuaBool(py_val)
+    if isinstance(py_val, (int, float)):
+        return LuaNumber(py_val)
+    if isinstance(py_val, str):
+        return LuaString(str(py_val).encode("utf-8"))
+    if isinstance(py_val, Mapping):
         m = LuaTable()
-        for k, v in value.items():
-            m.put(py_to_lua(k), py_to_lua(v))
+        obj_map[id(py_val)] = m
+        for k, v in py_val.items():
+            m.put(_py_to_lua(k, obj_map), _py_to_lua(v, obj_map))
         return m
-    if isinstance(value, Iterable):
+    if isinstance(py_val, Iterable):
         m = LuaTable()
-        for i, v in enumerate(value, start=1):
-            m.put(LuaNumber(i), py_to_lua(v))
+        obj_map[id(py_val)] = m
+        for i, v in enumerate(py_val, start=1):
+            m.put(LuaNumber(i), _py_to_lua(v, obj_map))
         return m
-    if callable(value):
-        return lua_function(wrap_values=True)(value)
-    raise NotImplementedError(f"can't yet convert {value!r} to LuaValue")
+    if callable(py_val):
+        return lua_function(wrap_values=True)(py_val)
+    raise NotImplementedError(f"can't yet convert {py_val!r} to LuaValue")
 
 
 Py2LuaAccepts: TypeAlias = (bool | int | float
@@ -77,7 +84,7 @@ def lua_function(
     table: Optional[LuaTable] = None,
     *,
     name: Optional[str] = None,
-    gets_stack_frame: bool = False,
+    gets_scope: bool = False,
     wrap_values: bool = False,
 ) -> LuaDecorator:
     def decorator(func: PyLuaFunction) -> LuaFunction:
@@ -88,10 +95,10 @@ def lua_function(
         param_names = []
         minimum_required = 0
         f_variadic = False
-        stack_frame_skipped = False
+        scope_skipped = False
         for param in f_signature.parameters.values():
-            if gets_stack_frame and not stack_frame_skipped:
-                stack_frame_skipped = True
+            if gets_scope and not scope_skipped:
+                scope_skipped = True
                 continue
             if f_variadic:
                 raise ValueError(
@@ -122,9 +129,9 @@ def lua_function(
         lf = LuaFunction(
             param_names=[str_to_lua_string(x) for x in param_names],
             variadic=f_variadic,
-            parent_stack_frame=None,
+            parent_scope=None,
             block=new_function,
-            gets_stack_frame=gets_stack_frame,
+            gets_scope=gets_scope,
             name=func.__name__,
             min_req=minimum_required,
         )
@@ -133,9 +140,3 @@ def lua_function(
         return lf
 
     return decorator
-
-
-class LibraryProvider(ABC):
-    @abstractmethod
-    def provide(self, table: LuaTable) -> None:
-        pass

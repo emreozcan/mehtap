@@ -1,6 +1,5 @@
-from ay.__main__ import work_expr
 from ay.operations import str_to_lua_string
-from ay.util.py_lua_function import py_to_lua
+from ay.py_to_lua import py_to_lua
 from ay.values import LuaTable, LuaFunction
 from ay.vm import VirtualMachine
 
@@ -17,11 +16,11 @@ def test_nested_variable_read():
         })
     )
 
-    a, = work_expr("a", vm)
+    a, = vm.eval("a")
     assert isinstance(a, LuaTable)
 
-    b, = work_expr("a.b", vm)
+    b, = vm.eval("a.b")
     assert isinstance(b, LuaTable)
 
-    c, = work_expr("a.b.c", vm)
+    c, = vm.eval("a.b.c")
     assert isinstance(c, LuaFunction)

@@ -1,11 +1,10 @@
-from ay.__main__ import work_chunk
 from ay.values import LuaString, LuaThread, Variable, LuaUserdata
 from ay.vm import VirtualMachine
 
 
 def execute(program):
     vm = VirtualMachine()
-    return work_chunk(program, vm)
+    return vm.exec(program)
 
 
 def test_type_nil():
@@ -39,10 +38,10 @@ def test_type_function():
 def test_type_thread():
     vm = VirtualMachine()
     vm.put_nonlocal_ls(LuaString(b"coro"), Variable(LuaThread()))
-    assert work_chunk("return type(coro)", vm) == [LuaString(b"thread")]
+    assert vm.exec("return type(coro)") == [LuaString(b"thread")]
 
 
 def test_type_userdata():
     vm = VirtualMachine()
     vm.put_nonlocal_ls(LuaString(b"ud"), Variable(LuaUserdata()))
-    assert work_chunk("return type(ud)", vm) == [LuaString(b"userdata")]
+    assert vm.exec("return type(ud)") == [LuaString(b"userdata")]

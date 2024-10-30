@@ -1,5 +1,4 @@
-from ay.__main__ import work_chunk
-from ay.util.py_lua_function import lua_function
+from ay.py_to_lua import lua_function
 from ay.values import (
     LuaString,
     Variable,
@@ -60,13 +59,12 @@ def test_ipairs():
     vm.put_nonlocal_ls(LuaString(b"t"), Variable(table))
 
     assert (
-        work_chunk(
+        vm.exec(
             """
-        for k, v in pairs(t) do
-            f(k, v)
-        end
-    """,
-            vm,
+                for k, v in pairs(t) do
+                    f(k, v)
+                end
+            """,
         )
         == []
     )

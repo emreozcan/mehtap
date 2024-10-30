@@ -1,4 +1,3 @@
-from ay.__main__ import work_expr
 from ay.vm import VirtualMachine
 from ay.values import LuaNumber
 
@@ -7,7 +6,7 @@ vm = VirtualMachine()
 
 
 def parse(expr):
-    r = work_expr(expr, vm)
+    r = vm.eval(expr)
     assert len(r) == 1
     return r[0]
 

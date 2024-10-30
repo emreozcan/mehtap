@@ -1,10 +1,14 @@
 from __future__ import annotations
 
 import sys
+from os import PathLike
+from typing import TypeAlias, TypeVar
 
 import attrs
 
+from ay.ast_transformer import transformer
 from ay.global_table import create_global_table
+from ay.parser import expr_parser, chunk_parser
 from ay.values import (
     LuaTable,
     LuaString,
@@ -13,30 +17,42 @@ from ay.values import (
 )
 
 
+AnyPath = TypeVar("AnyPath", int, str, bytes, PathLike[str], PathLike[bytes])
+
+
 @attrs.define(slots=True, repr=False, init=False)
 class VirtualMachine:
     globals: LuaTable
-    root_stack_frame: StackFrame
+    root_scope: Scope
     emitting_warnings: bool = False
 
     def __init__(self):
         self.globals = create_global_table()
-        self.root_stack_frame = StackFrame(self, None)
+        self.root_scope = Scope(self, None)
+
+    def eval(self, expr: str):
+        return self.root_scope.eval(expr)
+
+    def exec(self, chunk: str) -> list[LuaValue]:
+        return self.root_scope.exec(chunk)
+
+    def exec_file(self, file_path: AnyPath) -> list[LuaValue]:
+        return self.root_scope.exec_file(file_path)
 
     def has_ls(self, key: LuaString):
         assert isinstance(key, LuaString)
-        return self.root_stack_frame.has_ls(key) or self.globals.has(key)
+        return self.root_scope.has_ls(key) or self.globals.has(key)
 
     def get_ls(self, key: LuaString):
         assert isinstance(key, LuaString)
-        if self.root_stack_frame.has_ls(key):
-            return self.root_stack_frame.get_ls(key)
+        if self.root_scope.has_ls(key):
+            return self.root_scope.get_ls(key)
         return self.globals.get(key)
 
     def put_local_ls(self, key: LuaString, variable: Variable):
         assert isinstance(key, LuaString)
         assert isinstance(variable, Variable)
-        self.root_stack_frame.put_local_ls(key, variable)
+        self.root_scope.put_local_ls(key, variable)
 
     def put_nonlocal_ls(self, key: LuaString, variable: Variable | LuaValue):
         assert isinstance(key, LuaString)
@@ -56,22 +72,44 @@ class VirtualMachine:
 
 
 @attrs.define(slots=True, repr=False)
-class StackFrame:
+class Scope:
     vm: VirtualMachine
-    parent: StackFrame | None
+    parent: Scope | None
     locals: dict[LuaString, Variable] = attrs.field(factory=dict)
     varargs: list[LuaValue] | None = None
 
-    def push(self) -> StackFrame:
-        return StackFrame(self.vm, self)
+    def push(self) -> Scope:
+        return Scope(self.vm, self)
+
+    def eval(self, expr: str):
+        parsed_lua = expr_parser.parse(expr)
+        ast = transformer.transform(parsed_lua)
+        r = ast.evaluate(self)
+        if isinstance(r, LuaValue):
+            return [r]
+        assert isinstance(r, list)
+        return r
+
+    def exec(self, chunk: str) -> list[LuaValue]:
+        parsed_lua = chunk_parser.parse(chunk)
+        ast = transformer.transform(parsed_lua)
+        r = ast.block.evaluate_without_inner_scope(self)
+        return r
+
+    def exec_file(self, file_path: AnyPath) -> list[LuaValue]:
+        with open(file_path, "r", encoding="utf-8") as f:
+            if f.read(1) == "#":
+                f.readline()
+            return self.exec(f.read())
 
     def __repr__(self):
+        cls_name = self.__class__.__name__
         values = ",".join(f"({k})=({v})" for k, v in self.locals.items())
         if not self.varargs:
-            return f"<StackFrame locals=[{values}]>"
+            return f"<{cls_name} locals=[{values}]>"
         else:
             varargs = ",".join(str(v) for v in self.varargs)
-            return f"<StackFrame locals=[{values}], local varargs=[{varargs}]>"
+            return f"<{cls_name} locals=[{values}], varargs=[{varargs}]>"
 
     def get_varargs(self) -> list[LuaValue] | None:
         # TODO: Figure this out.

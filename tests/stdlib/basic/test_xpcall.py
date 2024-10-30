@@ -1,5 +1,4 @@
-from ay.__main__ import work_chunk
-from ay.util.py_lua_function import lua_function, PyLuaRet
+from ay.py_to_lua import lua_function, PyLuaRet
 from ay.values import LuaString, Variable, LuaBool, LuaTable
 from ay.vm import VirtualMachine
 
@@ -17,12 +16,7 @@ def test_xpcall_false():
         assert s is initial_symbol
         return [handled_symbol]
 
-    results = work_chunk(
-        """
-        return xpcall(error, handler, symbol)
-    """,
-        vm,
-    )
+    results = vm.exec("return xpcall(error, handler, symbol)")
 
     assert results[0] == LuaBool(False)
     assert results[1] is handled_symbol
@@ -45,12 +39,7 @@ def test_xpcall_true():
         assert s is initial_symbol
         return [handled_symbol]
 
-    results = work_chunk(
-        """
-        return xpcall(succeed, handler, symbol)
-    """,
-        vm,
-    )
+    results = vm.exec("return xpcall(succeed, handler, symbol)")
 
     assert results[0] == LuaBool(True)
     assert results[1] is initial_symbol

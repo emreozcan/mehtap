@@ -1,6 +1,5 @@
 from _pytest.python_api import raises
 
-from ay.__main__ import work_chunk
 from ay.control_structures import LuaError
 from ay.values import LuaNumber, LuaNil
 from ay.vm import VirtualMachine
@@ -8,7 +7,7 @@ from ay.vm import VirtualMachine
 
 def execute(program):
     vm = VirtualMachine()
-    return work_chunk(program, vm)
+    return vm.exec(program)
 
 
 def test_no_base():

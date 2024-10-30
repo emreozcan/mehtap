@@ -1,11 +1,14 @@
-from ay.__main__ import work_chunk
-from ay.util.py_lua_function import py_to_lua
+from ay.py_to_lua import py_to_lua
 from ay.vm import VirtualMachine
+
+
+def run_chunk(chunk, vm):
+    return vm.exec(chunk)
 
 
 def test_simple_function():
     vm = VirtualMachine()
-    assert work_chunk("""
+    assert run_chunk("""
         function foo()
             return "foo"
         end
@@ -16,7 +19,7 @@ def test_simple_function():
 
 def test_nested_function():
     vm = VirtualMachine()
-    assert work_chunk("""
+    assert run_chunk("""
         a = {b = {}}
         function a.b.c()
             return "foo"
@@ -28,7 +31,7 @@ def test_nested_function():
 
 def test_function_argument():
     vm = VirtualMachine()
-    assert work_chunk("""
+    assert run_chunk("""
         function double(x)
             return x * 2
         end
@@ -39,7 +42,7 @@ def test_function_argument():
 
 def test_function_vararg_reference_manual(capsys):
     vm = VirtualMachine()
-    work_chunk("""
+    run_chunk("""
         function f(a, b)
             print("a", a)
             print("b", b)
@@ -67,31 +70,31 @@ def test_function_vararg_reference_manual(capsys):
     # g(3, 4, 5, 8)    a=3, b=4,   ... -->  5  8
     # g(5, r())        a=5, b=1,   ... -->  2  3
 
-    work_chunk("f(3)", vm)
+    run_chunk("f(3)", vm)
     assert capsys.readouterr().out == "a\t3\nb\tnil\n"
-    work_chunk("f(3, 4)", vm)
+    run_chunk("f(3, 4)", vm)
     assert capsys.readouterr().out == "a\t3\nb\t4\n"
-    work_chunk("f(3, 4, 5)", vm)
+    run_chunk("f(3, 4, 5)", vm)
     assert capsys.readouterr().out == "a\t3\nb\t4\n"
-    work_chunk("f(r(), 10)", vm)
+    run_chunk("f(r(), 10)", vm)
     assert capsys.readouterr().out == "a\t1\nb\t10\n"
-    work_chunk("f(r())", vm)
+    run_chunk("f(r())", vm)
     assert capsys.readouterr().out == "a\t1\nb\t2\n"
 
-    work_chunk("g(3)", vm)
+    run_chunk("g(3)", vm)
     assert capsys.readouterr().out == "a\t3\nb\tnil\n...\n"
-    work_chunk("g(3, 4)", vm)
+    run_chunk("g(3, 4)", vm)
     assert capsys.readouterr().out == "a\t3\nb\t4\n...\n"
-    work_chunk("g(3, 4, 5, 8)", vm)
+    run_chunk("g(3, 4, 5, 8)", vm)
     assert capsys.readouterr().out == "a\t3\nb\t4\n...\t5\t8\n"
-    work_chunk("g(5, r())", vm)
+    run_chunk("g(5, r())", vm)
     assert capsys.readouterr().out == "a\t5\nb\t1\n...\t2\t3\n"
 
 
 
 def test_method():
     vm = VirtualMachine()
-    assert work_chunk("""
+    assert run_chunk("""
         human = {}
         human.name = "Emre"
         function human:get_name()

@@ -4,11 +4,11 @@ from typing import TYPE_CHECKING
 
 import attrs
 
-from ay.values import LuaValue
 from ay.operations import str_to_lua_string
 
 if TYPE_CHECKING:
     from ay.ast_nodes import Name
+    from ay.values import LuaValue
 
 
 class LuaError(Exception):
@@ -18,11 +18,8 @@ class LuaError(Exception):
     level: int
 
     def __init__(self, message: LuaValue | str, level: int = 1):
-        if not isinstance(message, LuaValue):
-            if isinstance(message, str):
-                message = str_to_lua_string(message)
-            else:
-                raise TypeError(f"Expected LuaValue, got {type(message)}")
+        if isinstance(message, str):
+            message = str_to_lua_string(message)
         self.message = message
         self.level = level
         super().__init__(message, level)

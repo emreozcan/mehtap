@@ -1,4 +1,4 @@
-from ay.util.py_lua_function import py_to_lua
+from ay.py_to_lua import py_to_lua
 from ay.values import LuaTable
 
 

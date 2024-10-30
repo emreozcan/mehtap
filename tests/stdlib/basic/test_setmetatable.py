@@ -1,6 +1,5 @@
 from pytest import raises
 
-from ay.__main__ import work_chunk
 from ay.control_structures import LuaError
 from ay.values import LuaString, LuaNil
 from ay.vm import VirtualMachine
@@ -8,71 +7,65 @@ from ay.vm import VirtualMachine
 
 def execute(program):
     vm = VirtualMachine()
-    return work_chunk(program, vm)
+    return vm.exec(program)
 
 
 def test_setmetatable_protected():
     vm = VirtualMachine()
-    work_chunk(
+    vm.exec(
         """
-        mt = {__metatable = "hello"}
-        t = {}
-        setmetatable(t, mt)
-    """,
-        vm,
+            mt = {__metatable = "hello"}
+            t = {}
+            setmetatable(t, mt)
+        """,
     )
 
     with raises(LuaError) as excinfo:
-        work_chunk(
+        vm.exec(
             """
-            setmetatable(t, mt)
-        """,
-            vm,
+                setmetatable(t, mt)
+            """,
         )
     assert "protected metatable" in str(excinfo.value.message)
 
 
 def test_setmetatable_clear():
     vm = VirtualMachine()
-    (t,) = work_chunk(
+    (t,) = vm.exec(
         """
-        mt = {hello = "hello"}
-        t = {}
-        return setmetatable(t, mt)
-    """,
-        vm,
+            mt = {hello = "hello"}
+            t = {}
+            return setmetatable(t, mt)
+        """,
     )
 
     assert t.get_metamethod(LuaString(b"hello")) == LuaString(b"hello")
 
-    (t,) = work_chunk(
+    (t,) = vm.exec(
         """
-        return setmetatable(t, nil)
-    """,
-        vm,
+            return setmetatable(t, nil)
+        """,
     )
     assert t.get_metatable() is LuaNil
 
 
 def test_setmetatable_clear_protected():
     vm = VirtualMachine()
-    (t,) = work_chunk(
+    (t,) = vm.exec(
         """
-        mt = {__metatable = "hello"}
-        t = {}
-        return setmetatable(t, mt)
-    """,
-        vm,
+            mt = {__metatable = "hello"}
+            t = {}
+            return setmetatable(t, mt)
+        """,
     )
 
     assert t.get_metatable() is not LuaNil
 
     with raises(LuaError) as excinfo:
-        work_chunk(
+        vm.exec(
             """
-            return setmetatable(t, nil)
-        """,
-            vm,
+                return setmetatable(t, nil)
+            """,
         )
     assert "protected metatable" in str(excinfo.value.message)
     assert t.get_metatable() is not LuaNil
