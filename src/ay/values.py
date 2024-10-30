@@ -243,7 +243,10 @@ class LuaFunction(LuaObject):
     min_req: int | None = None
 
     def _py_param_str(self, index):
-        if index == len(self.param_names):
+        if (
+            not self.param_names
+            or index == len(self.param_names)
+        ):
             if self.variadic:
                 if self.param_names:
                     return "[, ...]"
@@ -261,8 +264,6 @@ class LuaFunction(LuaObject):
             return f"[, {my_name}{next_name}]"
 
     def _stringify_params(self):
-        if self.param_names is None:
-            return ""
         if self.min_req is not None:
             return f"({self._py_param_str(0)})"
         param_names = [str(name) for name in self.param_names]
