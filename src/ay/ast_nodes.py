@@ -31,7 +31,7 @@ from ay.operations import (
 import ay.operations as ay_operations
 
 if TYPE_CHECKING:
-    from ay.vm import Scope
+    from ay.scope import Scope
 
 
 def flatten(v: Iterable[LuaValue | Iterable[LuaValue]]) -> list[LuaValue]:

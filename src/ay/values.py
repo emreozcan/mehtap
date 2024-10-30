@@ -9,7 +9,7 @@ import attrs
 
 if TYPE_CHECKING:
     from ay.ast_nodes import Block
-    from ay.vm import Scope
+    from ay.scope import Scope
 
 
 @attrs.define(slots=True, eq=False)

@@ -25,7 +25,7 @@ from ay.parser import chunk_parser, numeral_parser
 from ay.operations import rel_eq, length
 
 if TYPE_CHECKING:
-    from ay.vm import Scope
+    from ay.scope import Scope
     from ay.values import LuaNilType
 
 
