@@ -86,13 +86,11 @@ def lua_function(
     name: Optional[str] = None,
     gets_scope: bool = False,
     wrap_values: bool = False,
+    rename_args: Optional[list[str]] = None,
 ) -> LuaDecorator:
-    def decorator(func: PyLuaFunction) -> LuaFunction:
-        if name:
-            func.__name__ = name
-
+    def decorator(func: Callable) -> LuaFunction:
         f_signature = signature(func)
-        param_names = []
+        callable_argnames = []
         minimum_required = 0
         f_variadic = False
         scope_skipped = False
@@ -102,7 +100,7 @@ def lua_function(
                 continue
             if f_variadic:
                 raise ValueError(
-                    f"Function {func.__name__} has a parameter after a "
+                    f"Function {func.__qualname__} has a parameter after a "
                     f"variadic parameter ({param.name})"
                 )
             if param.kind == param.POSITIONAL_ONLY:
@@ -113,10 +111,10 @@ def lua_function(
                 continue
             else:
                 raise ValueError(
-                    f"Function {func.__name__} has a parameter that is not "
+                    f"Function {func.__qualname__} has a parameter that is not "
                     f"positional or variadic"
                 )
-            param_names.append(param.name)
+            callable_argnames.append(param.name)
 
         def new_function(*args: LuaValue) -> None:
             return_values: list[LuaValue] | None = func(*args)
@@ -126,17 +124,36 @@ def lua_function(
                 ])
             raise ReturnException(return_values)
 
+        if rename_args is None:
+            lua_param_names = [str_to_lua_string(x) for x in callable_argnames]
+        else:
+            callable_arg_count = len(callable_argnames)
+            rename_arg_count = len(rename_args)
+            if callable_arg_count != rename_arg_count:
+                scope_warning = (
+                    "(not counting the scope parameter,) "
+                    if gets_scope else ""
+                )
+                raise ValueError(
+                    f"Callable has {callable_arg_count} parameters "
+                    f"{scope_warning}but "
+                    f"{len(rename_args)} names were supplied"
+                )
+            lua_param_names = [str_to_lua_string(x) for x in rename_args]
+
+        used_name = name if name is not None else func.__name__
+
         lf = LuaFunction(
-            param_names=[str_to_lua_string(x) for x in param_names],
+            param_names=lua_param_names,
             variadic=f_variadic,
             parent_scope=None,
             block=new_function,
             gets_scope=gets_scope,
-            name=func.__name__,
+            name=used_name,
             min_req=minimum_required,
         )
         if table is not None:
-            table.put(LuaString(func.__name__.encode("utf-8")), lf)
+            table.put(py2lua(used_name), lf)
         return lf
 
     return decorator
