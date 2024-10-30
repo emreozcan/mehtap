@@ -47,6 +47,8 @@ def _py2lua(py_val, obj_map):
         return obj_map[id(py_val)]
     if py_val is None:
         return LuaNil
+    if hasattr(py_val, "__lua__"):
+        return py_val.__lua__()
     if isinstance(py_val, bool):
         return LuaBool(py_val)
     if isinstance(py_val, (int, float)):
