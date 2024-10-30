@@ -278,3 +278,47 @@ class LuaFunction(LuaObject):
         return (
             f"function {self.name}{self._stringify_params()}: {hex(id(self))}"
         )
+
+    def call(
+        self,
+        args: list[LuaValue | list[LuaValue]],
+        scope: Scope | None = None,
+    ) -> list[LuaValue]:
+        if not scope and not self.parent_scope:
+            raise ValueError("No scope to call function in")
+        from ay.control_structures import ReturnException
+        try:
+            self._call(args, scope or self.parent_scope)
+        except ReturnException as e:
+            return e.values if e.values is not None else []
+        return []
+
+    def _call(
+        self,
+        args: list[LuaValue | list[LuaValue]],
+        scope: Scope,
+    ):
+        if not callable(self.block):
+            new_scope = scope.push()
+            # Function is implemented in Lua
+            if self.variadic:
+                from ay.operations import adjust_without_requirement
+                args = adjust_without_requirement(args)
+                new_scope.varargs = args[len(self.param_names):]
+                args = args[:len(self.param_names)]
+            from ay.operations import adjust
+            args = adjust(args, len(self.param_names))
+            for param_name, arg in zip(self.param_names, args):
+                new_scope.put_local_ls(param_name, Variable(arg))
+            retvals = self.block.evaluate_without_inner_scope(new_scope)
+            if retvals is not None:
+                from ay.control_structures import ReturnException
+                raise ReturnException(retvals)
+        else:
+            # Function is implemented in Python
+            from ay.operations import adjust_without_requirement
+            args = adjust_without_requirement(args)
+            if not self.gets_scope:
+                self.block(*args)
+            else:
+                self.block(scope, *args)

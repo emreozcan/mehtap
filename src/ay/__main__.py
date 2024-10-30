@@ -6,7 +6,6 @@ from warnings import deprecated
 import lark.exceptions
 
 from ay import __version__ as __ay_version__
-from ay.ast_nodes import call_function
 from ay.control_structures import LuaError
 from ay.library.stdlib import basic_library
 from ay.operations import str_to_lua_string
@@ -172,10 +171,9 @@ def enter_interactive(vm: VirtualMachine) -> None:
                 save = sys.stdout
                 sys.stdout = sys.stderr
                 try:
-                    call_function(
-                        vm.root_scope,
-                        basic_library.library_table.print_,
+                    basic_library.library_table.get(LuaString(b"print")).call(
                         [lua_error.message],
+                        vm.root_scope,
                     )
                 finally:
                     sys.stdout = save

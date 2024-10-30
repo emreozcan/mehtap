@@ -472,50 +472,13 @@ class FuncDef(Expression):
         return self.body.evaluate(scope)
 
 
-def _call_function(
-    old_scope: Scope,
-    function: LuaFunction,
-    args: list[LuaValue | list[LuaValue]],
-):
-    if not callable(function.block):
-        new_scope = old_scope.push()
-        # Function is implemented in Lua
-        if function.variadic:
-            args = adjust_without_requirement(args)
-            new_scope.varargs = args[len(function.param_names):]
-            args = args[:len(function.param_names)]
-        args = adjust(args, len(function.param_names))
-        for param_name, arg in zip(function.param_names, args):
-            new_scope.put_local_ls(param_name, ay_values.Variable(arg))
-        retvals = function.block.evaluate_without_inner_scope(new_scope)
-        if retvals is not None:
-            raise ReturnException(retvals)
-    else:
-        # Function is implemented in Python
-        args = adjust_without_requirement(args)
-        if not function.gets_scope:
-            function.block(*args)
-        else:
-            function.block(old_scope, *args)
-
-
-def call_function(
-    scope: Scope, function: LuaFunction, args: list[LuaValue]
-) -> list[LuaValue]:
-    try:
-        _call_function(scope, function, args)
-    except ReturnException as e:
-        return e.values if e.values is not None else []
-    return []
-
-
 @attrs.define(slots=True)
 class FuncCallRegular(Expression, Statement):
     def evaluate(self, scope: Scope) -> list[LuaValue]:
         function = self.name.evaluate(scope)
         assert isinstance(function, LuaFunction)
         args = [arg.evaluate(scope) for arg in self.args]
-        return call_function(scope, function, args)
+        return function.call(args, scope)
 
     def execute(self, scope: Scope) -> None | list[LuaValue]:
         r = self.evaluate(scope)
@@ -537,7 +500,7 @@ class FuncCallMethod(Expression, Statement):
         function = v.get(str_to_lua_string(self.method.name.text))
         assert isinstance(function, LuaFunction)
         args = [arg.evaluate(scope) for arg in self.args]
-        return call_function(scope, function, args)
+        return function.call(args, scope)
 
     def execute(self, scope: Scope) -> None | list[LuaValue]:
         try:
@@ -906,10 +869,9 @@ class ForIn(Statement):
             # Then, at each iteration, Lua calls the iterator function with two
             # arguments: the state and the control variable.
             results = adjust(
-                call_function(
-                    outer_scope,
-                    iterator_function,
+                iterator_function.call(
                     [state, body_scope.get_ls(control_variable_name)],
+                    outer_scope
                 ),
                 name_count,
             )

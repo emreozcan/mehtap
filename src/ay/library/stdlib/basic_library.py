@@ -4,9 +4,9 @@ import sys
 from typing import TYPE_CHECKING
 
 from ay import operations
-from ay.ast_nodes import call_function, UnaryOperation, UnaryOperator
+from ay.ast_nodes import UnaryOperation, UnaryOperator
 from ay.ast_transformer import transformer
-from ay.py2lua import PyLuaRet
+from ay.py2lua import PyLuaRet, py2lua
 from ay.library.provider_abc import LibraryProvider
 from ay.py2lua import lua_function
 from ay.values import (
@@ -54,16 +54,11 @@ def provide(table: LuaTable) -> None:
         return [v, message, *a]
 
     @lua_function(table, gets_scope=True)
-    def collectgarbage(vm, opt=None, arg=None, /) -> PyLuaRet:
+    def collectgarbage(vm: Scope, opt=None, arg=None, /) -> PyLuaRet:
         """collectgarbage ([opt [, arg]])"""
-        call_function(
-            vm,
-            warn,
-            [
-                LuaString(
-                    b"collectgarbage(): ay doesn't have garbage collection."
-                )
-            ],
+        warn.call(
+            [py2lua("collectgarbage(): ay doesn't have garbage collection")],
+            vm
         )
         return [LuaNil]
 
@@ -214,7 +209,7 @@ def provide(table: LuaTable) -> None:
         if metamethod is not None:
             if not isinstance(metamethod, LuaFunction):
                 raise NotImplementedError()
-            return call_function(scope, metamethod, [t])
+            return metamethod.call([t], scope)
         # Otherwise, returns three values: the next function, the table t, and
         # nil, so that the construction
         #      for k,v in pairs(t) do body end
@@ -254,7 +249,7 @@ def provide(table: LuaTable) -> None:
         #  In case of any error, pcall returns false plus the error object.
         #  Note that errors caught by pcall do not call a message handler.
         try:
-            return_vals = call_function(scope, f, list(args))
+            return_vals = f.call(list(args), scope)
         except LuaError as lua_error:
             return [LuaBool(False), lua_error.message]
         else:
@@ -270,7 +265,7 @@ def provide(table: LuaTable) -> None:
         # The function print is not intended for formatted output, but only as a
         # quick way to show a value, for instance for debugging.
         # For complete control over the output, use string.format and io.write.
-        string_lists = (call_function(scope, tostring, [arg]) for arg in args)
+        string_lists = (tostring.call([arg], scope) for arg in args)
         x = "\t".join(
             ",".join(string.content.decode("utf-8") for string in string_list)
             for string_list in string_lists
@@ -456,11 +451,10 @@ def provide(table: LuaTable) -> None:
         tostring_field = v.get_metamethod(SYMBOL_TOSTRING)
         if tostring_field is not None:
             # then tostring calls the corresponding value with v as argument,
+            # and uses the result of the call as its result.
             if not isinstance(tostring_field, LuaFunction):
                 raise NotImplementedError()
-            call_result = call_function(scope, tostring_field, [v])
-            # and uses the result of the call as its result.
-            return call_result
+            return tostring_field.call([v], scope)
         # Otherwise, if the metatable of v has a __name field with a string
         # value,
         name_field = v.get_metamethod(SYMBOL_NAME)
@@ -532,7 +526,7 @@ def provide(table: LuaTable) -> None:
         #  This function is similar to pcall, except that it sets a new message
         #  handler msgh.
         try:
-            return_vals = call_function(scope, f, list(args))
+            return_vals = f.call(list(args), scope)
         except LuaError as lua_error:
             # Any error inside f is not propagated;
             # instead, xpcall catches the error,
@@ -542,7 +536,7 @@ def provide(table: LuaTable) -> None:
                 # In case of any error, xpcall returns false
                 LuaBool(False),
                 # plus the result from msgh.
-                *call_function(scope, msgh, [lua_error.message]),
+                *msgh.call([lua_error.message], scope),
             ]
         else:
             return [

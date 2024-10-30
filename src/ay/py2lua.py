@@ -54,7 +54,7 @@ def _py2lua(py_val, obj_map):
     if isinstance(py_val, (int, float)):
         return LuaNumber(py_val)
     if isinstance(py_val, str):
-        return LuaString(str(py_val).encode("utf-8"))
+        return LuaString(py_val.encode("utf-8"))
     if isinstance(py_val, Mapping):
         m = LuaTable()
         obj_map[id(py_val)] = m
@@ -69,7 +69,7 @@ def _py2lua(py_val, obj_map):
         return m
     if callable(py_val):
         return lua_function(wrap_values=True)(py_val)
-    raise NotImplementedError(f"can't yet convert {py_val!r} to LuaValue")
+    raise TypeError(f"can't convert {py_val!r} to LuaValue")
 
 
 Py2LuaAccepts: TypeAlias = (bool | int | float
