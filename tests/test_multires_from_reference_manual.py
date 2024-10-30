@@ -1,4 +1,4 @@
-from ay.py_to_lua import lua_function, py_to_lua
+from ay.py2lua import lua_function, py2lua
 from ay.values import LuaString, Variable, LuaNumber, LuaNil
 from ay.vm import VirtualMachine
 
@@ -35,7 +35,7 @@ def new_vm() -> VirtualMachine:
     vm.put_local_ls(LuaString(b"w"), Variable(LuaString(b"double u")))
     vm.put_nonlocal_ls(LuaString(b"f"), Variable(f))
     vm.put_nonlocal_ls(LuaString(b"g"), Variable(g))
-    vm.root_scope.varargs = [py_to_lua(x) for x in [-100, -200, -300]]
+    vm.root_scope.varargs = [py2lua(x) for x in [-100, -200, -300]]
     return vm
 
 
@@ -154,16 +154,16 @@ def test_return_vararg_extension():
 def test_tableconstructor_extension():
     # {f()}              -- creates a list with all results from f().
     t, = run_chunk("return {f()}", new_vm())
-    assert t.map.items() == py_to_lua([100, 200, 300]).map.items()
+    assert t.map.items() == py2lua([100, 200, 300]).map.items()
 
 
 def test_tableconstructor_vararg():
     # {...}              -- creates a list with all vararg arguments.
     t, = run_chunk("return {...}", new_vm())
-    assert t.map.items() == py_to_lua([-100, -200, -300]).map.items()
+    assert t.map.items() == py2lua([-100, -200, -300]).map.items()
 
 
 def test_tableconstructor_culling():
     # {f(), 5}           -- creates a list with the first result from f() and 5.
     t, = run_chunk("return {f(), 5}", new_vm())
-    assert t.map.items() == py_to_lua([100, 5]).map.items()
+    assert t.map.items() == py2lua([100, 5]).map.items()

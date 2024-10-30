@@ -1,4 +1,4 @@
-from ay.py_to_lua import py_to_lua
+from ay.py2lua import py2lua
 from ay.vm import VirtualMachine
 
 
@@ -14,7 +14,7 @@ def test_simple_function():
         end
 
         return foo()
-    """, vm) == [py_to_lua("foo")]
+    """, vm) == [py2lua("foo")]
 
 
 def test_nested_function():
@@ -26,7 +26,7 @@ def test_nested_function():
         end
 
         return a.b.c()
-    """, vm) == [py_to_lua("foo")]
+    """, vm) == [py2lua("foo")]
 
 
 def test_function_argument():
@@ -37,7 +37,7 @@ def test_function_argument():
         end
 
         return double(5)
-    """, vm) == [py_to_lua(10)]
+    """, vm) == [py2lua(10)]
 
 
 def test_function_vararg_reference_manual(capsys):
@@ -102,4 +102,4 @@ def test_method():
         end
 
         return human.get_name(human)
-    """, vm) == [py_to_lua("Emre")]
+    """, vm) == [py2lua("Emre")]

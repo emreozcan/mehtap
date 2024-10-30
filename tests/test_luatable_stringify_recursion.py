@@ -1,10 +1,10 @@
-from ay.py_to_lua import py_to_lua
+from ay.py2lua import py2lua
 from ay.values import LuaTable
 
 
 def get_infinite_luatable():
     turtle = LuaTable()
-    turtle.put(py_to_lua("turtle"), turtle)
+    turtle.put(py2lua("turtle"), turtle)
     return turtle
 
 

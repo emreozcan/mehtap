@@ -6,9 +6,9 @@ from typing import TYPE_CHECKING
 from ay import operations
 from ay.ast_nodes import call_function, UnaryOperation, UnaryOperator
 from ay.ast_transformer import transformer
-from ay.py_to_lua import PyLuaRet
+from ay.py2lua import PyLuaRet
 from ay.library.provider_abc import LibraryProvider
-from ay.py_to_lua import lua_function
+from ay.py2lua import lua_function
 from ay.values import (
     LuaTable,
     LuaValue,

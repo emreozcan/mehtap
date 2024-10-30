@@ -1,4 +1,4 @@
-from ay.py_to_lua import lua_function, PyLuaRet
+from ay.py2lua import lua_function, PyLuaRet
 from ay.values import LuaString, Variable, LuaBool, LuaTable
 from ay.vm import VirtualMachine
 

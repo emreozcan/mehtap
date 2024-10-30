@@ -1,4 +1,4 @@
-from ay.py_to_lua import lua_function
+from ay.py2lua import lua_function
 from ay.values import LuaTable, LuaString, Variable, LuaNumber, LuaBool
 from ay.vm import VirtualMachine
 

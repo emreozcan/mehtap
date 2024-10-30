@@ -11,38 +11,38 @@ from ay.values import LuaValue, LuaFunction, LuaTable, LuaString, LuaNil, \
 
 
 @overload
-def py_to_lua(value: None) -> LuaNil: ...
+def py2lua(value: None) -> LuaNil: ...
 
 
 @overload
-def py_to_lua(value: bool) -> LuaBool: ...
+def py2lua(value: bool) -> LuaBool: ...
 
 
 @overload
-def py_to_lua(value: int | float) -> LuaNumber: ...
+def py2lua(value: int | float) -> LuaNumber: ...
 
 
 @overload
-def py_to_lua(value: str) -> LuaString: ...
+def py2lua(value: str) -> LuaString: ...
 
 
 @overload
-def py_to_lua(value: Mapping) -> LuaTable: ...
+def py2lua(value: Mapping) -> LuaTable: ...
 
 
 @overload
-def py_to_lua(value: Iterable) -> LuaTable: ...
+def py2lua(value: Iterable) -> LuaTable: ...
 
 
 @overload
-def py_to_lua(value: Callable) -> LuaFunction: ...
+def py2lua(value: Callable) -> LuaFunction: ...
 
 
-def py_to_lua(value) -> LuaValue:
-    return _py_to_lua(value, {})
+def py2lua(value) -> LuaValue:
+    return _py2lua(value, {})
 
 
-def _py_to_lua(py_val, obj_map):
+def _py2lua(py_val, obj_map):
     if id(py_val) in obj_map:
         return obj_map[id(py_val)]
     if py_val is None:
@@ -57,13 +57,13 @@ def _py_to_lua(py_val, obj_map):
         m = LuaTable()
         obj_map[id(py_val)] = m
         for k, v in py_val.items():
-            m.put(_py_to_lua(k, obj_map), _py_to_lua(v, obj_map))
+            m.put(_py2lua(k, obj_map), _py2lua(v, obj_map))
         return m
     if isinstance(py_val, Iterable):
         m = LuaTable()
         obj_map[id(py_val)] = m
         for i, v in enumerate(py_val, start=1):
-            m.put(LuaNumber(i), _py_to_lua(v, obj_map))
+            m.put(LuaNumber(i), _py2lua(v, obj_map))
         return m
     if callable(py_val):
         return lua_function(wrap_values=True)(py_val)
@@ -122,7 +122,7 @@ def lua_function(
             return_values: list[LuaValue] | None = func(*args)
             if wrap_values and return_values:
                 raise ReturnException([
-                    py_to_lua(v) for v in return_values
+                    py2lua(v) for v in return_values
                 ])
             raise ReturnException(return_values)
 

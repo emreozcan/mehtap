@@ -9,8 +9,8 @@ import time as py_time
 import datetime
 
 from ay.operations import str_to_lua_string
-from ay.py_to_lua import lua_function, \
-    PyLuaWrapRet, py_to_lua, PyLuaRet
+from ay.py2lua import lua_function, \
+    PyLuaWrapRet, py2lua, PyLuaRet
 from ay.library.provider_abc import LibraryProvider
 from ay.values import LuaTable, LuaString, LuaNil, LuaNumber, \
     LuaBool, LuaValue
@@ -174,8 +174,8 @@ def os_table_generator() -> LuaTable:
         if locale is LuaNil:
             current_lc = lc.getlocale(category)
             return [
-                py_to_lua(current_lc[0]),
-                py_to_lua(current_lc[1]),
+                py2lua(current_lc[0]),
+                py2lua(current_lc[1]),
             ]
 
         # Sets the current locale of the program.
