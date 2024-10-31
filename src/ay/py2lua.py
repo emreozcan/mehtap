@@ -4,7 +4,6 @@ from inspect import signature
 from typing import Optional, Callable, TypeAlias, Mapping, Iterable, \
     overload
 
-from ay.control_structures import ReturnException
 from ay.operations import str_to_lua_string
 from ay.values import LuaValue, LuaFunction, LuaTable, LuaString, LuaNil, \
     LuaBool, LuaNumber
@@ -90,6 +89,8 @@ def lua_function(
     wrap_values: bool = False,
     rename_args: Optional[list[str]] = None,
 ) -> LuaDecorator:
+    from ay.control_structures import ReturnException
+
     def decorator(func: Callable) -> LuaFunction:
         f_signature = signature(func)
         callable_argnames = []
@@ -118,13 +119,16 @@ def lua_function(
                 )
             callable_argnames.append(param.name)
 
-        def new_function(*args: LuaValue) -> None:
-            return_values: list[LuaValue] | None = func(*args)
-            if wrap_values and return_values:
-                raise ReturnException([
-                    py2lua(v) for v in return_values
-                ])
-            raise ReturnException(return_values)
+        if wrap_values:
+            def new_function(*args: LuaValue) -> None:
+                from ay.lua2py import lua2py
+                return_values = func(*(lua2py(v) for v in args))
+                if isinstance(return_values, (list, tuple)):
+                    raise ReturnException([py2lua(v) for v in return_values])
+                raise ReturnException([py2lua(return_values)])
+        else:
+            def new_function(*args: LuaValue) -> None:
+                raise ReturnException(func(*args))
 
         if rename_args is None:
             lua_param_names = [str_to_lua_string(x) for x in callable_argnames]
