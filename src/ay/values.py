@@ -123,7 +123,9 @@ class LuaBool(LuaValue):
 
 
 class LuaNumberType(Enum):
-    """Enumeration of the types of numbers in Lua."""
+    """LuaNumberType(value)
+    Enumeration of the types of numbers in Lua.
+    """
     INTEGER = 1
     """Number type that represents 64-bit signed integers."""
     FLOAT = 2
