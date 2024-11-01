@@ -475,7 +475,7 @@ def provide(table: LuaTable) -> None:
         #  "userdata".
         return [operations.type_(v)]
 
-    from ay import __ay_version__
+    from ay import __version__
 
     # _VERSION
     #  A global variable (not a function) that holds a string containing the
@@ -483,7 +483,7 @@ def provide(table: LuaTable) -> None:
     #  The current value of this variable is "Lua 5.4".
     table.put(
         LuaString(b"_VERSION"),
-        LuaString(f"ay {__ay_version__}".encode("utf-8")),
+        LuaString(f"ay {__version__}".encode("utf-8")),
     )
 
     @lua_function(table, gets_scope=True)

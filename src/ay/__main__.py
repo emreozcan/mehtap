@@ -5,14 +5,14 @@ from typing import Optional
 
 import lark.exceptions
 
-from ay import __version__ as __ay_version__
+from ay import __version__ as __version__
 from ay.control_structures import LuaError
 from ay.library.stdlib import basic_library
 from ay.operations import str_to_lua_string
 from ay.vm import VirtualMachine
 from ay.values import LuaValue, LuaTable, LuaNumber, LuaString
 
-COPYRIGHT_TEXT = f"ay {__ay_version__} Copyright (c) 2024 Emre Özcan"
+COPYRIGHT_TEXT = f"ay {__version__} Copyright (c) 2024 Emre Özcan"
 
 
 def main():
@@ -95,7 +95,7 @@ def _main():
 
     if not args.ignore_environment:
         env_vars = [
-            "AY_INIT_" + "_".join(__ay_version__.split(".")),
+            "AY_INIT_" + "_".join(__version__.split(".")),
             "AY_INIT",
             "LUA_INIT_5_4",
             "LUA_INIT"
