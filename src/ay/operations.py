@@ -19,6 +19,10 @@ from ay.values import (
 
 
 def rel_eq[T: LuaValue](a: T, b: T, *, raw: bool = False) -> LuaBool:
+    """
+    :param raw: Whether to bypass the ``__eq`` metamethod.
+    :return: The result of ``a == b`` in Lua.
+    """
     # Equality (==) first compares the type of its operands.
     # If the types are different, then the result is false.
     if type(a) is not type(b):
@@ -40,15 +44,24 @@ def rel_eq[T: LuaValue](a: T, b: T, *, raw: bool = False) -> LuaBool:
         return LuaBool(True)
     # You can change the way that Lua compares tables and userdata by using the
     # __eq metamethod (see §2.4).
+    if not raw:
+        raise NotImplementedError()
     return LuaBool(a is b)  # TODO.
 
 
-def rel_ne(a: LuaValue, b: LuaValue) -> LuaBool:
+def rel_ne(a: LuaValue, b: LuaValue, *, raw: bool = False) -> LuaBool:
+    """
+    :param raw: Whether to bypass the ``__eq`` metamethod.
+    :return: The result of ``a ~= b`` in Lua.
+    """
     # The operator ~= is exactly the negation of equality (==).
-    return LuaBool(not rel_eq(a, b).true)
+    return LuaBool(not rel_eq(a, b, raw=raw).true)
 
 
 def rel_lt(a: LuaValue, b: LuaValue) -> LuaBool:
+    """
+    :return: The result of ``a < b`` in Lua.
+    """
     # The order operators work as follows.
     # If both arguments are numbers,
     if isinstance(a, LuaNumber) and isinstance(b, LuaNumber):
@@ -62,11 +75,17 @@ def rel_lt(a: LuaValue, b: LuaValue) -> LuaBool:
 
 
 def rel_gt(a: LuaValue, b: LuaValue) -> LuaBool:
+    """
+    :return: The result of ``a > b`` in Lua.
+    """
     # a > b is translated to b < a
     return rel_lt(b, a)
 
 
 def rel_le(a: LuaValue, b: LuaValue) -> LuaBool:
+    """
+    :return: The result of ``a <= b`` in Lua.
+    """
     # The order operators work as follows.
     # If both arguments are numbers,
     if isinstance(a, LuaNumber) and isinstance(b, LuaNumber):
@@ -80,11 +99,18 @@ def rel_le(a: LuaValue, b: LuaValue) -> LuaBool:
 
 
 def rel_ge(a: LuaValue, b: LuaValue) -> LuaBool:
+    """
+    :return: The result of ``a >= b`` in Lua.
+    """
     # a >= b is translated to b <= a
     return rel_le(b, a)
 
 
 def int_overflow_wrap_around(value: int) -> LuaNumber:
+    """Wrap around an integer value to the range of a signed 64-bit integer.
+
+    The value is used as-is if it can already fit in a signed 64-bit integer.
+    """
     if MIN_INT64 < value < MAX_INT64:
         return LuaNumber(value, LuaNumberType.INTEGER)
     whole_val, sign = divmod(value, MAX_INT64)
@@ -94,6 +120,10 @@ def int_overflow_wrap_around(value: int) -> LuaNumber:
 
 
 def coerce_float_to_int(value: LuaNumber) -> LuaNumber:
+    """Coerce a number to an integer :class:`LuaNumber` if possible.
+
+    :raises NotImplementedError: If the conversion fails.
+    """
     if value.type is LuaNumberType.INTEGER:
         return value
     # The conversion from float to integer checks whether the float has an exact
@@ -109,6 +139,10 @@ def coerce_float_to_int(value: LuaNumber) -> LuaNumber:
 
 
 def coerce_int_to_float(value: LuaNumber) -> LuaNumber:
+    """Coerce a number to a float :class:`LuaNumber`.
+
+    This kind of conversion never fails.
+    """
     if value.type is LuaNumberType.FLOAT:
         return value
     #  In a conversion from integer to float,
@@ -121,6 +155,10 @@ def coerce_int_to_float(value: LuaNumber) -> LuaNumber:
 
 
 def arith_add(a, b):
+    """
+    :return: The result of ``a + b`` in Lua.
+    :raises NotImplementedError: If ``a`` or ``b`` isn't a :class:`LuaNumber`.
+    """
     if not isinstance(a, LuaNumber) or not isinstance(b, LuaNumber):
         raise NotImplementedError()  # TODO.
     # If both operands are integers,
@@ -139,6 +177,11 @@ def arith_add(a, b):
 
 
 def overflow_arith_add(a, b) -> tuple[bool, LuaNumber]:
+    """
+    :return: a tuple *(o, r)* where *o* is a boolean indicating whether the
+             addition overflows and *r* is the result of ``a + b`` in Lua.
+    :raises NotImplementedError: If ``a`` or ``b`` isn't a :class:`LuaNumber`.
+    """
     if not isinstance(a, LuaNumber) or not isinstance(b, LuaNumber):
         raise NotImplementedError()  # TODO.
     if a.type == LuaNumberType.INTEGER and b.type == LuaNumberType.INTEGER:
@@ -152,6 +195,10 @@ def overflow_arith_add(a, b) -> tuple[bool, LuaNumber]:
 
 
 def arith_sub(a, b):
+    """
+    :return: The result of ``a - b`` in Lua.
+    :raises NotImplementedError: If ``a`` or ``b`` isn't a :class:`LuaNumber`.
+    """
     if not isinstance(a, LuaNumber) or not isinstance(b, LuaNumber):
         raise NotImplementedError()  # TODO.
     if a.type == LuaNumberType.INTEGER and b.type == LuaNumberType.INTEGER:
@@ -163,6 +210,10 @@ def arith_sub(a, b):
 
 
 def arith_mul(a, b):
+    """
+    :return: The result of ``a * b`` in Lua.
+    :raises NotImplementedError: If ``a`` or ``b`` isn't a :class:`LuaNumber`.
+    """
     if not isinstance(a, LuaNumber) or not isinstance(b, LuaNumber):
         raise NotImplementedError()  # TODO.
     if a.type == LuaNumberType.INTEGER and b.type == LuaNumberType.INTEGER:
@@ -174,6 +225,10 @@ def arith_mul(a, b):
 
 
 def arith_float_div(a, b):
+    """
+    :return: The result of ``a / b`` in Lua, which is always a float.
+    :raises NotImplementedError: If ``a`` or ``b`` isn't a :class:`LuaNumber`.
+    """
     if not isinstance(a, LuaNumber) or not isinstance(b, LuaNumber):
         raise NotImplementedError()  # TODO.
     # Exponentiation and float division (/) always convert their operands to
@@ -185,6 +240,14 @@ def arith_float_div(a, b):
 
 
 def arith_floor_div(a, b):
+    """
+    :return: The result of ``a // b`` in Lua.
+
+             The result of floor division of *a* by *b* is defined as the result
+             of the division of *a* by *b*
+             rounded towards minus infinity.
+    :raises NotImplementedError: If ``a`` or ``b`` isn't a :class:`LuaNumber`.
+    """
     if not isinstance(a, LuaNumber) or not isinstance(b, LuaNumber):
         raise NotImplementedError()  # TODO.
     # Floor division (//) is a division that rounds the quotient towards minus
@@ -198,6 +261,13 @@ def arith_floor_div(a, b):
 
 
 def arith_mod(a, b):
+    """
+    :return: The result of ``a % b`` in Lua.
+
+             The result of modulo is defined as the remainder of a division that
+             rounds the quotient towards minus infinity (floor division).
+    :raises NotImplementedError: If ``a`` or ``b`` isn't a :class:`LuaNumber`.
+    """
     if not isinstance(a, LuaNumber) or not isinstance(b, LuaNumber):
         raise NotImplementedError()  # TODO.
     # Modulo is defined as the remainder of a division that rounds the quotient
@@ -211,6 +281,9 @@ def arith_mod(a, b):
 
 
 def arith_exp(a, b):
+    """
+    :return: The result of ``a ^ b`` in Lua, which is always a float.
+    """
     # Exponentiation and float division (/) always convert their operands to
     # floats and the result is always a float.
     # Exponentiation uses the ISO C function pow,
@@ -222,12 +295,22 @@ def arith_exp(a, b):
 
 
 def arith_unary_minus(a):
+    """
+    :return: The result of ``-a`` in Lua.
+    """
     if not isinstance(a, LuaNumber):
         raise NotImplementedError()  # TODO.
     return LuaNumber(-a.value, a.type)
 
 
 def _python_int_to_int64_luanumber(x: int) -> LuaNumber:
+    """Convert a Python :class:`int` to a :class:`LuaNumber`.
+
+    The input value, ``x``, is treated as an int64.
+    If the value is greater than :data:`MAX_INT64`,
+        * Bit value 1<<63 is interpreted as the sign bit.
+        * Bit values greater than 1<<64 are ignored.
+    """
     x = x & ALL_SET
     if x & SIGN_BIT:
         return LuaNumber(-x + MAX_INT64, LuaNumberType.INTEGER)
@@ -235,6 +318,9 @@ def _python_int_to_int64_luanumber(x: int) -> LuaNumber:
 
 
 def bitwise_or(a, b) -> LuaNumber:
+    """
+    :return: The result of ``a | b`` in Lua.
+    """
     #  All bitwise operations convert its operands to integers (see §3.4.3),
     #  operate on all bits of those integers,
     #  and result in an integer.
@@ -244,18 +330,27 @@ def bitwise_or(a, b) -> LuaNumber:
 
 
 def bitwise_xor(a, b) -> LuaNumber:
+    """
+    :return: The result of ``a ~ b`` in Lua.
+    """
     a = coerce_float_to_int(a)
     b = coerce_float_to_int(b)
     return _python_int_to_int64_luanumber(a.value ^ b.value)
 
 
 def bitwise_and(a, b) -> LuaNumber:
+    """
+    :return: The result of ``a & b`` in Lua.
+    """
     a = coerce_float_to_int(a)
     b = coerce_float_to_int(b)
     return _python_int_to_int64_luanumber(a.value & b.value)
 
 
 def bitwise_shift_left(a, b) -> LuaNumber:
+    """
+    :return: The result of ``a << b`` in Lua.
+    """
     a = coerce_float_to_int(a)
     b = coerce_float_to_int(b)
     # Both right and left shifts fill the vacant bits with zeros.
@@ -270,6 +365,9 @@ def bitwise_shift_left(a, b) -> LuaNumber:
 
 
 def bitwise_shift_right(a, b) -> LuaNumber:
+    """
+    :return: The result of ``a >> b`` in Lua.
+    """
     a = coerce_float_to_int(a)
     b = coerce_float_to_int(b)
     if b.value < 0:
@@ -280,11 +378,18 @@ def bitwise_shift_right(a, b) -> LuaNumber:
 
 
 def bitwise_unary_not(a) -> LuaNumber:
+    """
+    :return: The result of ``~a`` in Lua.
+    """
     a = coerce_float_to_int(a)
     return _python_int_to_int64_luanumber(~a.value)
 
 
 def coerce_to_bool(a: LuaValue) -> LuaBool:
+    """Coerce a value to a boolean.
+
+    ``false`` and ``nil`` are ``false``; everything else is ``true``.
+    """
     # Like the control structures (see §3.3.4),
     # all logical operators consider both false and nil as false
     # and anything else as true.
@@ -296,11 +401,18 @@ def coerce_to_bool(a: LuaValue) -> LuaBool:
 
 
 def logical_unary_not(a: LuaValue) -> LuaBool:
+    """
+    :return: The result of ``not a`` in Lua.
+    """
     # The negation operator not always returns false or true.
     return LuaBool(not coerce_to_bool(a).true)
 
 
 def is_false_or_nil(a: LuaValue) -> bool:
+    """
+    :return: :data:`True` if ``a`` is ``false`` or ``nil``, :data:`False`
+             otherwise.
+    """
     if a is LuaNil:
         return True
     if isinstance(a, LuaBool):
@@ -309,10 +421,17 @@ def is_false_or_nil(a: LuaValue) -> bool:
 
 
 def str_to_lua_string(s: str) -> LuaString:
+    """Convert a Python string to a Lua string.
+
+    The Python string is encoded in ASCII.
+    """
     return LuaString(s.encode("ascii"))
 
 
 def concat(a: LuaValue, b: LuaValue) -> LuaString:
+    """
+    :return: The result of ``a .. b`` in Lua.
+    """
     # If both operands are strings or numbers,
     types = (LuaString, LuaNumber)
     if isinstance(a, types) and isinstance(b, types):
@@ -329,6 +448,9 @@ def concat(a: LuaValue, b: LuaValue) -> LuaString:
 
 # TODO: Change the default value of raw to False.
 def length(a: LuaValue, *, raw: bool = True) -> LuaNumber:
+    """
+    :return: The result of ``#a`` in Lua.
+    """
     # The length of a string is its number of bytes.
     if isinstance(a, LuaString):
         return LuaNumber(len(a.content), LuaNumberType.INTEGER)
@@ -354,9 +476,22 @@ def length(a: LuaValue, *, raw: bool = True) -> LuaNumber:
 
 
 Multires = list[LuaValue | Self]
+"""
+A list where each element is either a :class:`LuaValue` or
+:data:`Multires`.
+"""
 
 
 def adjust(multires: Multires, needed: int) -> list[LuaValue]:
+    """
+    :param multires: The multires of input values.
+    :param needed: The amount of values needed.
+    :return: Values adjusted to the amount of values needed according to
+             `the rules on adjustment of Lua`_.
+
+    .. _the rules on adjustment of Lua:
+       https://lua.org/manual/5.4/manual.html#3.4.12
+    """
     # When the list of expressions ends with a multires expression,
     # all results from that expression
     # enter the list of values before the adjustment.
@@ -385,6 +520,11 @@ def adjust(multires: Multires, needed: int) -> list[LuaValue]:
 
 
 def adjust_without_requirement(multires: Multires) -> list[LuaValue]:
+    """
+    :return: The input multires where each element is adjusted to one value
+             except for the last, which is extended to the list of previous
+             values.
+    """
     multires = multires.copy()
     if multires and isinstance(multires[-1], list):
         multires.extend(multires.pop())
@@ -395,32 +535,44 @@ def adjust_without_requirement(multires: Multires) -> list[LuaValue]:
 
 
 def adjust_to_one(multires_or_value: Multires | LuaValue) -> LuaValue:
+    """Adjusts a multires or a single Lua value to one value.
+
+    If the input is a multires, it adjusts the multires to one value.
+    If the input is a single Lua value, it returns the value as is.
+
+    :param multires_or_value: The multires or single Lua value to adjust.
+    :return: A single Lua value.
+    """
     if isinstance(multires_or_value, list):
         return adjust(multires_or_value, 1)[0]
     return multires_or_value
 
 
-def type_(v: LuaValue) -> LuaString:
-    """type (v)"""
+def type_(a: LuaValue) -> LuaString:
+    """
+    :return: The result of ``type(a)`` in Lua.
+
+    This is not an operation but it is included here for ease of access.
+    """
     #  Returns the type of its only argument, coded as a string.
     #  The possible results of this function are "nil"
     #  (a string, not the value nil),
     #  "number", "string", "boolean", "table", "function", "thread", and
     #  "userdata".
-    if v is LuaNil:
+    if a is LuaNil:
         return LuaString(b"nil")
-    if isinstance(v, LuaNumber):
+    if isinstance(a, LuaNumber):
         return LuaString(b"number")
-    if isinstance(v, LuaString):
+    if isinstance(a, LuaString):
         return LuaString(b"string")
-    if isinstance(v, LuaBool):
+    if isinstance(a, LuaBool):
         return LuaString(b"boolean")
-    if isinstance(v, LuaTable):
+    if isinstance(a, LuaTable):
         return LuaString(b"table")
-    if isinstance(v, LuaFunction):
+    if isinstance(a, LuaFunction):
         return LuaString(b"function")
-    if isinstance(v, LuaThread):
+    if isinstance(a, LuaThread):
         return LuaString(b"thread")
-    if isinstance(v, LuaUserdata):
+    if isinstance(a, LuaUserdata):
         return LuaString(b"userdata")
-    raise TypeError(f"Unexpected type: {type(v)}")
+    raise TypeError(f"Unexpected type: {type(a)}")
