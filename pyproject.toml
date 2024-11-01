@@ -1,18 +1,27 @@
-[project]
+[tool.poetry]
 name = "ay"
+version = "0.0.1"
 description = "Lua programming language written in Python"
-authors = [
-    {name = "Emre Özcan", email = "emre@emreis.com"},
-]
-maintainers = [
-    {name = "Emre Özcan", email = "emre@emreis.com"},
-]
+authors = ["Emre Özcan <emre@emreis.com>"]
 readme = "README.md"
-dynamic = ["version"]
-requires-python = "<4.0,>=3.13"
 
-[project.scripts]
-ay = "ay.__main__:main"
+[tool.poetry.dependencies]
+python = "^3.12"
+lark = "^1.2.2"
+attrs = "^24.2.0"
+
+[tool.poetry.group.dev.dependencies]
+black = "^24.10.0"
+coverage = "^7.6.4"
+mypy = "^1.13.0"
+pytest = "^8.3.3"
+pytest-cov = "^6.0.0"
+Sphinx = "^8.1.3"
+furo = "^2024.8.6"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
 
 [tool.pytest.ini_options]
 addopts = "--import-mode=importlib --cov=ay --cov-report html --cov-report xml --junitxml=junit.xml -o junit_family=legacy"
@@ -23,15 +32,4 @@ testpaths = "tests"
 line-length = 80
 
 [tool.mypy]
-python_version = "3.13"
-
-[project.urls]
-Repository = "https://github.com/emreozcan/ay"
-Issues = "https://github.com/emreozcan/ay/issues"
-
-[build-system]
-requires = ["flit_core ~=3.2"]
-build-backend = "flit_core.buildapi"
-
-[tool.flit.sdist]
-include = ["src/"]
+python_version = "3.12"

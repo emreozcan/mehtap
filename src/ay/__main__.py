@@ -1,7 +1,6 @@
 import argparse
 import os
 import sys
-from warnings import deprecated
 
 import lark.exceptions
 
