@@ -14,6 +14,8 @@ flit = "*"
 mypy = "*"
 pytest = "*"
 pytest-cov = "*"
+sphinx = "*"
+furo = "*"
 
 [requires]
 python_version = "3.13"
