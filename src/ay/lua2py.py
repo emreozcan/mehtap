@@ -1,7 +1,7 @@
 from typing import Any, overload, Callable
 
 from ay.values import LuaNil, LuaBool, LuaNumber, LuaString, LuaTable, \
-    LuaFunction
+    LuaFunction, LuaValue
 from ay.vm import VirtualMachine
 
 
@@ -35,7 +35,28 @@ def lua2py(value: LuaFunction) -> Callable:
     pass
 
 
+@overload
+def lua2py(value: LuaValue) -> Any:
+    pass
+
+
 def lua2py(value: Any) -> Any:
+    """Convert a :class:`LuaValue` to a plain Python value.
+
+    If the value has a ``__py`` metamethod,
+    the converter will call it and convert its return value instead.
+
+    Sequence tables are not converted to lists, they are also converted to
+    dicts having keys *1, 2, ..., n*.
+
+    Functions are converted using a wrapper function,
+    which converts all arguments into LuaValues,
+    calls the function using them,
+    and then converts the return value back to a Python value.
+
+    This function is implemented using an expansion stack, so it can
+    convert recursive data structures.
+    """
     return _lua2py(value, {})
 
 
@@ -58,26 +79,24 @@ def _lua2py(lua_val, obj_map):
         if mt is not LuaNil:
             metamethod = mt.get(PY_SYMBOL)
             if metamethod is not LuaNil:
-                if isinstance(metamethod, LuaFunction):
-                    if metamethod.parent_scope or not metamethod.gets_scope:
-                        m = _lua2py(
-                            metamethod.call(
-                                [lua_val],
-                                metamethod.parent_scope,
-                            ),
-                            obj_map,
-                        )
-                    else:
-                        vm = VirtualMachine()
-                        m = _lua2py(
-                            metamethod.call(
-                                [lua_val],
-                                vm.root_scope,
-                            ),
-                            obj_map,
-                        )
+                assert isinstance(metamethod, LuaFunction)
+                if metamethod.parent_scope or not metamethod.gets_scope:
+                    m = _lua2py(
+                        metamethod.call(
+                            [lua_val],
+                            metamethod.parent_scope,
+                        ),
+                        obj_map,
+                    )
                 else:
-                    m = _lua2py(metamethod, obj_map)
+                    vm = VirtualMachine()
+                    m = _lua2py(
+                        metamethod.call(
+                            [lua_val],
+                            vm.root_scope,
+                        ),
+                        obj_map,
+                    )
                 obj_map[id(lua_val)] = m
                 return m
         m = {}
@@ -91,7 +110,7 @@ def _lua2py(lua_val, obj_map):
         from ay.py2lua import py2lua
 
         def func(*args):
-            return lua2py(lua_val(*[py2lua(x) for x in args]))
+            return lua2py(lua_val.call(*[py2lua(x) for x in args], None))
         if lua_val.name is not None:
             func.__name__ = func.__qualname__ = lua_val.name
         else:

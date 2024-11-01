@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 from inspect import signature
-from typing import Optional, Callable, TypeAlias, Mapping, Iterable, \
-    overload
+from collections.abc import Mapping, Iterable, Callable
+from typing import Optional, overload, Any
 
 from ay.operations import str_to_lua_string
 from ay.values import LuaValue, LuaFunction, LuaTable, LuaString, LuaNil, \
@@ -37,7 +37,25 @@ def py2lua(value: Iterable) -> LuaTable: ...
 def py2lua(value: Callable) -> LuaFunction: ...
 
 
+@overload
+def py2lua(value: Any) -> LuaValue: ...
+
+
 def py2lua(value) -> LuaValue:
+    """Convert a plain Python value to a :class:`LuaValue`.
+
+    If the value (or a member of the value) has a ``__lua__`` dunder method,
+    the converter will call it and convert its return value instead.
+
+    Iterables will be converted to sequence tables starting from the index 1.
+
+    Functions are converted using ``lua_function(wrap_values=True)``.
+
+    This function is implemented using an expansion stack, so it can
+    convert recursive data structures.
+
+    :raises TypeError: if the value can't be converted
+    """
     return _py2lua(value, {})
 
 
@@ -71,14 +89,14 @@ def _py2lua(py_val, obj_map):
     raise TypeError(f"can't convert {py_val!r} to LuaValue")
 
 
-Py2LuaAccepts: TypeAlias = (bool | int | float
-                            | str
-                            | Mapping | Iterable
-                            | Callable)
-PyLuaRet: TypeAlias = list[LuaValue] | None
-PyLuaWrapRet: TypeAlias = list[Py2LuaAccepts] | None
-PyLuaFunction: TypeAlias = Callable[..., PyLuaRet]
-LuaDecorator: TypeAlias = Callable[[PyLuaFunction], LuaFunction]
+Py2LuaAccepts = (bool | int | float
+                 | str
+                 | Mapping | Iterable
+                 | Callable)
+PyLuaRet = list[LuaValue] | None
+PyLuaWrapRet = list[Py2LuaAccepts] | None
+PyLuaFunction = Callable[..., PyLuaRet]
+LuaDecorator = Callable[[PyLuaFunction], LuaFunction]
 
 
 def lua_function(
@@ -89,6 +107,50 @@ def lua_function(
     wrap_values: bool = False,
     rename_args: Optional[list[str]] = None,
 ) -> LuaDecorator:
+    """Turns Python functions to :class:`LuaFunction` instances.
+
+    :param table: If provided, the newly created :class:`LuaFunction` will be
+                  put into the table with the proper name.
+    :param name: Allows to rename the function.
+    :param gets_scope: Whether the function requires a :class:`Scope` as its
+                       first argument.
+    :param wrap_values: Whether the values should be converted to/from
+                        Lua/Python
+                        when passing them to/from the function.
+    :param rename_args: Allows to rename the arguments of the function.
+    :return: A decorator that turns Python functions to :class:`LuaFunction`
+             instances.
+
+    The arguments of the decorated function must be positional-only.
+    The function may have a variadic parameter as the last one.
+    For example, "``def f(a, b, c, /): ...``" or
+    "``def f(a, b, /, *args): ...``".
+
+    If the function throws an exception, it will be caught and a similar error
+    will be re-raised in Lua.
+
+    If *gets_scope* is set to True, the function will receive a scope as its
+    first argument.
+
+    When *wrap_values* is set to True, the function will receive and return
+    Python values.
+    If the function returns a list or tuple, it will be
+    returned in Lua as a multires.
+    If it returns a single value, it will be
+    returned as a single value.
+
+    When *wrap_values* is set to False, the function's arguments will be
+    instances of :class:`LuaValue` and the function will return a list of
+    :class:`LuaValue` instances.
+    Note that since function calls in Lua are multires expressions, functions
+    always return a list of values. Returning :data:`None` is equivalent to
+    returning an empty list.
+
+    If *rename_args* is provided, it should be a list of strings with the same
+    length as the number of arguments of the function.
+    This change is only cosmetic since only parameter order is used to bind
+    arguments to the function.
+    """
     from ay.control_structures import ReturnException
 
     def decorator(func: Callable) -> LuaFunction:
@@ -148,6 +210,8 @@ def lua_function(
             lua_param_names = [str_to_lua_string(x) for x in rename_args]
 
         used_name = name if name is not None else func.__name__
+        if not used_name:
+            used_name = "<native function>"
 
         lf = LuaFunction(
             param_names=lua_param_names,
