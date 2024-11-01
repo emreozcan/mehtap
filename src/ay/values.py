@@ -12,6 +12,24 @@ if TYPE_CHECKING:
     from ay.scope import Scope
 
 
+@attrs.define(slots=True, eq=True, repr=False)
+class Variable:
+    """Tuple of a Lua value and its properties describing a local variable."""
+    value: LuaValue
+    """The value of the variable."""
+    constant: bool = False
+    """Whether the local is a constant."""
+    to_be_closed: bool = False
+    """Whether the local is a to-be-closed variable."""
+
+    def __repr__(self):
+        if self.constant:
+            return f"<Variable const {self.value}>"
+        if self.to_be_closed:
+            return f"<Variable close {self.value}>"
+        return f"<Variable var {self.value}>"
+
+
 @attrs.define(slots=True, eq=False)
 class LuaValue(ABC):
     """Base class that all Lua values inherit from."""
@@ -83,8 +101,8 @@ class LuaNilType(LuaValue):
 LuaNil = LuaNilType()
 """Value that is different from all other LuaValues.
 
-Represents the value of the *nil* base type in Lua.
-Sole object of the `LuaNilType` class.
+Represents the value of the *nil* basic type in Lua.
+Sole object of the ``LuaNilType`` class.
 """
 if not TYPE_CHECKING:
     del LuaNilType
@@ -92,10 +110,10 @@ if not TYPE_CHECKING:
 
 @attrs.define(slots=True, eq=False)
 class LuaBool(LuaValue):
-    """Class representing values of the *boolean* base type in Lua."""
+    """Class representing values of the *boolean* basic type in Lua."""
 
     true: bool
-    """Whether this value is `true` or `false`."""
+    """Whether this value is ``true`` or ``false``."""
 
     def __str__(self) -> str:
         return "true" if self.true else "false"
@@ -120,7 +138,7 @@ ALL_SET = 2**64 - 1
 
 @attrs.define(slots=True, init=False, eq=False)
 class LuaNumber(LuaValue):
-    """Class representing values of the *number* base type in Lua.
+    """Class representing values of the *number* basic type in Lua.
 
     .. automethod:: LuaNumber.__init__
     """
@@ -139,7 +157,7 @@ class LuaNumber(LuaValue):
 
         :param value: The underlying value of this number value.
         :param type: The type of this number value.
-                     If provided, must match the type of `value`.
+                     If provided, must match the type of ``value``.
         """
         super().__init__()
         self.value = value
@@ -164,7 +182,7 @@ class LuaNumber(LuaValue):
 
 @attrs.define(slots=True, eq=False, frozen=True)
 class LuaString(LuaValue):
-    """Class representing values of the *string* base type in Lua."""
+    """Class representing values of the *string* basic type in Lua."""
 
     content: bytes
     """Sequence of the bytes of the string."""
@@ -196,119 +214,8 @@ class LuaObject(LuaValue, ABC):
 
 
 @attrs.define(slots=True, eq=False)
-class LuaUserdata(LuaObject):
-    """Class representing values of the *userdata* base type in Lua."""
-    pass
-
-
-@attrs.define(slots=True, eq=False)
-class LuaThread(LuaObject):
-    """Class representing values of the *thread* base type in Lua."""
-    pass
-
-
-@attrs.define(slots=True, eq=False, repr=False)
-class LuaTable(LuaObject):
-    """Class representing values of the *table* base type in Lua."""
-    map: dict[LuaValue, LuaValue] = attrs.field(factory=dict)
-    """The key-value pairs of the table."""
-    _metatable: LuaTable = LuaNil
-    """The metatable of the table."""
-
-    def __repr__(self):
-        if not self._metatable:
-            return f"<LuaTable {self!s}>"
-        return f"<LuaTable {self!s} metatable={self._metatable}>"
-
-    def __str__(self):
-        return self._recursive_detecting_str(set())
-
-    def _recursive_detecting_str(
-        self,
-        seen_objects: set[int],
-    ) -> str:
-        i = id(self)
-        if i in seen_objects:
-            return "{<...>}"
-        seen_objects.add(i)
-        pair_list = []
-        for key, value in self.map.items():
-            if not isinstance(key, LuaTable):
-                key_str = str(key)
-            else:
-                key_str = key._recursive_detecting_str(seen_objects)
-            if not isinstance(value, LuaTable):
-                value_str = str(value)
-            else:
-                value_str = value._recursive_detecting_str(seen_objects)
-            pair_list.append((key_str, value_str))
-        return "{" + ", ".join(f"({k})=({v})" for k, v in pair_list) + "}"
-
-    # TODO: Change raw's default value to False.
-    def put(self, key: LuaValue, value: LuaValue, *, raw: bool = True):
-        """Put a key-value pair into the table.
-
-        :param raw: Whether to follow the rules of `rawset()`.
-        """
-        if not raw:
-            raise NotImplementedError()  # todo. (__newindex metavalue)
-
-        if key is LuaNil:
-            raise NotImplementedError()
-        if isinstance(key, LuaNumber):
-            if key.type == LuaNumberType.FLOAT:
-                if key.value == float("nan"):
-                    raise NotImplementedError()
-                if key.value.is_integer():
-                    key = LuaNumber(int(key.value), LuaNumberType.INTEGER)
-
-        # Note: Do not optimize by deleting keys that are assigned LuaNil,
-        # as Lua allows you to set existing fields in a table to nil while
-        # traversing it by using next().
-        self.map[key] = value
-
-    # TODO: Change raw's default value to False.
-    def get(self, key: LuaValue, *, raw: bool = True) -> LuaValue:
-        """Get the associated value of a key from the table.
-
-        :param raw: Whether to follow the rules of `rawget()`.
-        :returns: The value associated with the key, or :data:`LuaNil`.
-        """
-
-        if not raw:
-            raise NotImplementedError()  # todo. (__index metavalue)
-        if key in self.map:
-            return self.map[key]
-        return LuaNil
-
-    def get_with_fallback[T](self, key: LuaValue, fallback: T) -> LuaValue | T:
-        return self.map.get(key, fallback)
-
-    def has(self, key: LuaValue) -> bool:
-        return key in self.map
-
-
-@attrs.define(slots=True, eq=True, repr=False)
-class Variable:
-    """Tuple of a Lua value and its properties describing a local variable."""
-    value: LuaValue
-    """The value of the variable."""
-    constant: bool = False
-    """Whether the local is a constant."""
-    to_be_closed: bool = False
-    """Whether the local is a to-be-closed variable."""
-
-    def __repr__(self):
-        if self.constant:
-            return f"<Variable const {self.value}>"
-        if self.to_be_closed:
-            return f"<Variable close {self.value}>"
-        return f"<Variable var {self.value}>"
-
-
-@attrs.define(slots=True, eq=False)
 class LuaFunction(LuaObject):
-    """Class representing values of the *function* base type in Lua."""
+    """Class representing values of the *function* basic type in Lua."""
     param_names: list[LuaString] | None
     """The names of the parameters of the function.
 
@@ -319,7 +226,7 @@ class LuaFunction(LuaObject):
     """Whether the function is a *variadic function*.
 
     That is, a function that accepts a variable number of arguments, binding
-    the excess arguments to the expression "`...`".
+    the excess arguments to the expression "``...``".
     """
     parent_scope: Scope | None
     """The scope the function was defined in.
@@ -444,3 +351,96 @@ class LuaFunction(LuaObject):
                 self.block(*args)
             else:
                 self.block(scope, *args)
+
+
+@attrs.define(slots=True, eq=False)
+class LuaUserdata(LuaObject):
+    """Class representing values of the *userdata* basic type in Lua."""
+    pass
+
+
+@attrs.define(slots=True, eq=False)
+class LuaThread(LuaObject):
+    """Class representing values of the *thread* basic type in Lua."""
+    pass
+
+
+@attrs.define(slots=True, eq=False, repr=False)
+class LuaTable(LuaObject):
+    """Class representing values of the *table* basic type in Lua."""
+    map: dict[LuaValue, LuaValue] = attrs.field(factory=dict)
+    """The key-value pairs of the table."""
+    _metatable: LuaTable = LuaNil
+    """The metatable of the table."""
+
+    def __repr__(self):
+        if not self._metatable:
+            return f"<LuaTable {self!s}>"
+        return f"<LuaTable {self!s} metatable={self._metatable}>"
+
+    def __str__(self):
+        return self._recursive_detecting_str(set())
+
+    def _recursive_detecting_str(
+        self,
+        seen_objects: set[int],
+    ) -> str:
+        i = id(self)
+        if i in seen_objects:
+            return "{<...>}"
+        seen_objects.add(i)
+        pair_list = []
+        for key, value in self.map.items():
+            if not isinstance(key, LuaTable):
+                key_str = str(key)
+            else:
+                key_str = key._recursive_detecting_str(seen_objects)
+            if not isinstance(value, LuaTable):
+                value_str = str(value)
+            else:
+                value_str = value._recursive_detecting_str(seen_objects)
+            pair_list.append((key_str, value_str))
+        return "{" + ", ".join(f"({k})=({v})" for k, v in pair_list) + "}"
+
+    # TODO: Change raw's default value to False.
+    def put(self, key: LuaValue, value: LuaValue, *, raw: bool = True):
+        """Put a key-value pair into the table.
+
+        :param raw: Whether to follow the rules of ``rawset()``.
+        """
+        if not raw:
+            raise NotImplementedError()  # todo. (__newindex metavalue)
+
+        if key is LuaNil:
+            raise NotImplementedError()
+        if isinstance(key, LuaNumber):
+            if key.type == LuaNumberType.FLOAT:
+                if key.value == float("nan"):
+                    raise NotImplementedError()
+                if key.value.is_integer():
+                    key = LuaNumber(int(key.value), LuaNumberType.INTEGER)
+
+        # Note: Do not optimize by deleting keys that are assigned LuaNil,
+        # as Lua allows you to set existing fields in a table to nil while
+        # traversing it by using next().
+        self.map[key] = value
+
+    # TODO: Change raw's default value to False.
+    def get(self, key: LuaValue, *, raw: bool = True) -> LuaValue:
+        """Get the associated value of a key from the table.
+
+        :param raw: Whether to follow the rules of ``rawget()``.
+        :returns: The value associated with the key, or :data:`LuaNil`.
+        """
+
+        if not raw:
+            raise NotImplementedError()  # todo. (__index metavalue)
+        if key in self.map:
+            return self.map[key]
+        return LuaNil
+
+    def get_with_fallback[T](self, key: LuaValue, fallback: T) -> LuaValue | T:
+        return self.map.get(key, fallback)
+
+    def has(self, key: LuaValue) -> bool:
+        return key in self.map

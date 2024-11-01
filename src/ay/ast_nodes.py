@@ -990,8 +990,8 @@ class ParsedLiteralLuaStringExpr(Expression):
     """
     Not included in the Lua grammar.
     Used when a part of an expression which results in a LuaString is parsed.
-    For example, the "b" in `a.b = 1`.
-    (Which is transformed to be equivalent to `a["b"] = 1`.)
+    For example, the "b" in ``a.b = 1``.
+    (Which is transformed to be equivalent to ``a["b"] = 1``.)
     """
     value: LuaString
 
