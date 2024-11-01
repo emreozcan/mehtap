@@ -1,4 +1,6 @@
-from typing import Self
+from __future__ import annotations
+
+from typing import TypeAlias
 
 from ay.values import (
     LuaBool,
@@ -18,7 +20,7 @@ from ay.values import (
 )
 
 
-def rel_eq[T: LuaValue](a: T, b: T, *, raw: bool = False) -> LuaBool:
+def rel_eq(a: LuaValue, b: LuaValue, *, raw: bool = False) -> LuaBool:
     """
     :param raw: Whether to bypass the ``__eq`` metamethod.
     :return: The result of ``a == b`` in Lua.
@@ -475,7 +477,7 @@ def length(a: LuaValue, *, raw: bool = True) -> LuaNumber:
     raise NotImplementedError()  # TODO.
 
 
-Multires = list[LuaValue | Self]
+Multires: TypeAlias = "list[LuaValue | Multires]"
 """
 A list where each element is either a :class:`LuaValue` or
 :data:`Multires`.
