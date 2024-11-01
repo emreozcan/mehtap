@@ -143,9 +143,10 @@ ALL_SET = 2**64 - 1
 class LuaNumber(LuaValue):
     """Class representing values of the *number* basic type in Lua.
 
-    .. automethod:: LuaNumber.__init__
+        :param value: The underlying value of this number value.
+        :param type: The type of this number value.
+                     If provided, must match the type of ``value``.
     """
-
     value: int | float
     """The underlying value of this number value."""
     type: LuaNumberType | None
@@ -156,12 +157,6 @@ class LuaNumber(LuaValue):
         value: int | float,
         type: LuaNumberType | None = None,
     ) -> None:
-        """Initialize a new LuaNumber object.
-
-        :param value: The underlying value of this number value.
-        :param type: The type of this number value.
-                     If provided, must match the type of ``value``.
-        """
         super().__init__()
         self.value = value
         if type is None:
