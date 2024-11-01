@@ -102,6 +102,8 @@ def _lua2py(lua_val, obj_map):
         m = {}
         obj_map[id(lua_val)] = m
         for k, v in lua_val.map.items():
+            if v is LuaNil:
+                continue
             py_v = _lua2py(v, obj_map)
             py_k = _lua2py(k, obj_map)
             m[py_k] = py_v
