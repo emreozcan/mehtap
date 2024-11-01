@@ -3,7 +3,7 @@ from __future__ import annotations
 from abc import ABC
 from collections.abc import Callable
 from enum import Enum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypeVar
 
 import attrs
 
@@ -442,7 +442,8 @@ class LuaTable(LuaObject):
             return self.map[key]
         return LuaNil
 
-    def get_with_fallback[T](self, key: LuaValue, fallback: T) -> LuaValue | T:
+    T = TypeVar("T")
+    def get_with_fallback(self, key: LuaValue, fallback: T) -> LuaValue | T:
         return self.map.get(key, fallback)
 
     def has(self, key: LuaValue) -> bool:

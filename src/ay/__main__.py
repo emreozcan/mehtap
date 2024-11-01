@@ -1,6 +1,7 @@
 import argparse
 import os
 import sys
+from typing import Optional
 
 import lark.exceptions
 
@@ -149,7 +150,7 @@ def enter_interactive(vm: VirtualMachine) -> None:
             collected_line += line
         except EOFError:
             break
-        r: list[LuaValue] | None = None
+        r: Optional[list[LuaValue]] = None
         try:
             r = vm.exec(collected_line)
         except lark.exceptions.UnexpectedEOF as e:
@@ -186,7 +187,7 @@ def enter_interactive(vm: VirtualMachine) -> None:
         collected_line = ""
 
 
-def display_object(val: list[LuaValue]) -> str | None:
+def display_object(val: list[LuaValue]) -> Optional[str]:
     if not val:
         return None
     return ", ".join([str(v) for v in val])

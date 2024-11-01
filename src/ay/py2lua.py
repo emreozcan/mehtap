@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from inspect import signature
 from collections.abc import Mapping, Iterable, Callable
-from typing import Optional, overload, Any
+from typing import Optional, overload, Any, Union
 
 from ay.operations import str_to_lua_string
 from ay.values import LuaValue, LuaFunction, LuaTable, LuaString, LuaNil, \
@@ -89,12 +89,9 @@ def _py2lua(py_val, obj_map):
     raise TypeError(f"can't convert {py_val!r} to LuaValue")
 
 
-Py2LuaAccepts = (bool | int | float
-                 | str
-                 | Mapping | Iterable
-                 | Callable)
-PyLuaRet = list[LuaValue] | None
-PyLuaWrapRet = list[Py2LuaAccepts] | None
+Py2LuaAccepts = Union[bool, int, float, str, Mapping, Iterable, Callable]
+PyLuaRet = Optional[list[LuaValue]]
+PyLuaWrapRet = Optional[list[Py2LuaAccepts]]
 PyLuaFunction = Callable[..., PyLuaRet]
 LuaDecorator = Callable[[PyLuaFunction], LuaFunction]
 

@@ -1,4 +1,4 @@
-from typing import Any, overload, Callable
+from typing import Any, overload, Callable, Union
 
 from ay.values import LuaNil, LuaBool, LuaNumber, LuaString, LuaTable, \
     LuaFunction, LuaValue
@@ -16,7 +16,7 @@ def lua2py(value: LuaBool) -> bool:
 
 
 @overload
-def lua2py(value: LuaNumber) -> int | float:
+def lua2py(value: LuaNumber) -> Union[int, float]:
     pass
 
 
