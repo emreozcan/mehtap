@@ -10,6 +10,7 @@ import attrs
 if TYPE_CHECKING:
     from ay.ast_nodes import Block
     from ay.scope import Scope
+    from ay.operations import Multires
 
 
 @attrs.define(slots=True, eq=True, repr=False)
@@ -297,18 +298,19 @@ class LuaFunction(LuaObject):
 
     def call(
         self,
-        args: list[LuaValue | list[LuaValue]],
+        args: Multires,
         scope: Scope | None,
     ) -> list[LuaValue]:
         """Call the function.
 
         :param args: The arguments to pass to the function.
-                     The number of arguments will be suitably adjusted to the
-                     number of the function's arguments according to
-                     `the rules on adjustment of Lua`_.
-                     Can contain multires expressions.
         :param scope: The scope of the caller.
         :return: A multires list of the return values of the function.
+
+        The number of arguments will be suitably adjusted to the
+        number of the function's arguments according to
+        `the rules on adjustment of Lua`_.
+        Can contain multires expressions.
 
         .. _the rules on adjustment of Lua:
            https://lua.org/manual/5.4/manual.html#3.4.12
@@ -333,8 +335,8 @@ class LuaFunction(LuaObject):
             new_scope = scope.push()
             # Function is implemented in Lua
             if self.variadic:
-                from ay.operations import adjust_without_requirement
-                args = adjust_without_requirement(args)
+                from ay.operations import adjust_flatten
+                args = adjust_flatten(args)
                 new_scope.varargs = args[len(self.param_names):]
                 args = args[:len(self.param_names)]
             from ay.operations import adjust
@@ -347,12 +349,16 @@ class LuaFunction(LuaObject):
                 raise ReturnException(retvals)
         else:
             # Function is implemented in Python
-            from ay.operations import adjust_without_requirement
-            args = adjust_without_requirement(args)
-            if not self.gets_scope:
-                self.block(*args)
-            else:
-                self.block(scope, *args)
+            from ay.operations import adjust_flatten
+            args = adjust_flatten(args)
+            try:
+                if not self.gets_scope:
+                    self.block(*args)
+                else:
+                    self.block(scope, *args)
+            except Exception as e:
+                from ay.control_structures import LuaError
+                raise LuaError(LuaString(f"{self!s}: {e!s}".encode("utf-8")))
 
 
 @attrs.define(slots=True, eq=False)

@@ -108,7 +108,7 @@ def rel_ge(a: LuaValue, b: LuaValue) -> LuaBool:
     return rel_le(b, a)
 
 
-def int_overflow_wrap_around(value: int) -> LuaNumber:
+def int_wrap_overflow(value: int) -> LuaNumber:
     """Wrap around an integer value to the range of a signed 64-bit integer.
 
     The value is used as-is if it can already fit in a signed 64-bit integer.
@@ -124,7 +124,7 @@ def int_overflow_wrap_around(value: int) -> LuaNumber:
 def coerce_float_to_int(value: LuaNumber) -> LuaNumber:
     """Coerce a number to an integer :class:`LuaNumber` if possible.
 
-    :raises NotImplementedError: If the conversion fails.
+    :raises NotImplementedError: if the conversion fails.
     """
     if value.type is LuaNumberType.INTEGER:
         return value
@@ -159,14 +159,14 @@ def coerce_int_to_float(value: LuaNumber) -> LuaNumber:
 def arith_add(a, b):
     """
     :return: The result of ``a + b`` in Lua.
-    :raises NotImplementedError: If ``a`` or ``b`` isn't a :class:`LuaNumber`.
+    :raises NotImplementedError: if ``a`` or ``b`` isn't a :class:`LuaNumber`.
     """
     if not isinstance(a, LuaNumber) or not isinstance(b, LuaNumber):
         raise NotImplementedError()  # TODO.
     # If both operands are integers,
     if a.type == LuaNumberType.INTEGER and b.type == LuaNumberType.INTEGER:
         # the operation is performed over integers and the result is an integer.
-        return int_overflow_wrap_around(a.value + b.value)
+        return int_wrap_overflow(a.value + b.value)
     # Otherwise, if both operands are numbers,
     # then they are converted to floats,
     # the operation is performed following the machine's rules for
@@ -182,13 +182,13 @@ def overflow_arith_add(a, b) -> tuple[bool, LuaNumber]:
     """
     :return: a tuple *(o, r)* where *o* is a boolean indicating whether the
              addition overflows and *r* is the result of ``a + b`` in Lua.
-    :raises NotImplementedError: If ``a`` or ``b`` isn't a :class:`LuaNumber`.
+    :raises NotImplementedError: if ``a`` or ``b`` isn't a :class:`LuaNumber`.
     """
     if not isinstance(a, LuaNumber) or not isinstance(b, LuaNumber):
         raise NotImplementedError()  # TODO.
     if a.type == LuaNumberType.INTEGER and b.type == LuaNumberType.INTEGER:
         summed = a.value + b.value
-        wrapped = int_overflow_wrap_around(summed)
+        wrapped = int_wrap_overflow(summed)
         return wrapped.value != summed, wrapped
     return False, LuaNumber(
         coerce_int_to_float(a).value + coerce_int_to_float(b).value,
@@ -199,12 +199,12 @@ def overflow_arith_add(a, b) -> tuple[bool, LuaNumber]:
 def arith_sub(a, b):
     """
     :return: The result of ``a - b`` in Lua.
-    :raises NotImplementedError: If ``a`` or ``b`` isn't a :class:`LuaNumber`.
+    :raises NotImplementedError: if ``a`` or ``b`` isn't a :class:`LuaNumber`.
     """
     if not isinstance(a, LuaNumber) or not isinstance(b, LuaNumber):
         raise NotImplementedError()  # TODO.
     if a.type == LuaNumberType.INTEGER and b.type == LuaNumberType.INTEGER:
-        return int_overflow_wrap_around(a.value - b.value)
+        return int_wrap_overflow(a.value - b.value)
     return LuaNumber(
         coerce_int_to_float(a).value - coerce_int_to_float(b).value,
         LuaNumberType.FLOAT,
@@ -214,12 +214,12 @@ def arith_sub(a, b):
 def arith_mul(a, b):
     """
     :return: The result of ``a * b`` in Lua.
-    :raises NotImplementedError: If ``a`` or ``b`` isn't a :class:`LuaNumber`.
+    :raises NotImplementedError: if ``a`` or ``b`` isn't a :class:`LuaNumber`.
     """
     if not isinstance(a, LuaNumber) or not isinstance(b, LuaNumber):
         raise NotImplementedError()  # TODO.
     if a.type == LuaNumberType.INTEGER and b.type == LuaNumberType.INTEGER:
-        return int_overflow_wrap_around(a.value * b.value)
+        return int_wrap_overflow(a.value * b.value)
     return LuaNumber(
         coerce_int_to_float(a).value * coerce_int_to_float(b).value,
         LuaNumberType.FLOAT,
@@ -229,7 +229,7 @@ def arith_mul(a, b):
 def arith_float_div(a, b):
     """
     :return: The result of ``a / b`` in Lua, which is always a float.
-    :raises NotImplementedError: If ``a`` or ``b`` isn't a :class:`LuaNumber`.
+    :raises NotImplementedError: if ``a`` or ``b`` isn't a :class:`LuaNumber`.
     """
     if not isinstance(a, LuaNumber) or not isinstance(b, LuaNumber):
         raise NotImplementedError()  # TODO.
@@ -248,14 +248,14 @@ def arith_floor_div(a, b):
              The result of floor division of *a* by *b* is defined as the result
              of the division of *a* by *b*
              rounded towards minus infinity.
-    :raises NotImplementedError: If ``a`` or ``b`` isn't a :class:`LuaNumber`.
+    :raises NotImplementedError: if ``a`` or ``b`` isn't a :class:`LuaNumber`.
     """
     if not isinstance(a, LuaNumber) or not isinstance(b, LuaNumber):
         raise NotImplementedError()  # TODO.
     # Floor division (//) is a division that rounds the quotient towards minus
     # infinity, resulting in the floor of the division of its operands.
     if a.type == LuaNumberType.INTEGER and b.type == LuaNumberType.INTEGER:
-        return int_overflow_wrap_around(a.value // b.value)
+        return int_wrap_overflow(a.value // b.value)
     return LuaNumber(
         coerce_int_to_float(a).value // coerce_int_to_float(b).value,
         LuaNumberType.INTEGER,
@@ -268,14 +268,14 @@ def arith_mod(a, b):
 
              The result of modulo is defined as the remainder of a division that
              rounds the quotient towards minus infinity (floor division).
-    :raises NotImplementedError: If ``a`` or ``b`` isn't a :class:`LuaNumber`.
+    :raises NotImplementedError: if ``a`` or ``b`` isn't a :class:`LuaNumber`.
     """
     if not isinstance(a, LuaNumber) or not isinstance(b, LuaNumber):
         raise NotImplementedError()  # TODO.
     # Modulo is defined as the remainder of a division that rounds the quotient
     # towards minus infinity (floor division).
     if a.type == LuaNumberType.INTEGER and b.type == LuaNumberType.INTEGER:
-        return int_overflow_wrap_around(a.value % b.value)
+        return int_wrap_overflow(a.value % b.value)
     return LuaNumber(
         coerce_int_to_float(a).value % coerce_int_to_float(b).value,
         LuaNumberType.INTEGER,
@@ -521,7 +521,7 @@ def adjust(multires: Multires, needed: int) -> list[LuaValue]:
     return multires
 
 
-def adjust_without_requirement(multires: Multires) -> list[LuaValue]:
+def adjust_flatten(multires: Multires) -> list[LuaValue]:
     """
     :return: The input multires where each element is adjusted to one value
              except for the last, which is extended to the list of previous

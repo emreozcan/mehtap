@@ -21,12 +21,12 @@ from ay.values import (
     LuaFunction,
 )
 from ay.operations import (
-    int_overflow_wrap_around,
+    int_wrap_overflow,
     str_to_lua_string,
     adjust,
     coerce_to_bool,
     adjust_to_one,
-    adjust_without_requirement,
+    adjust_flatten,
 )
 import ay.operations as ay_operations
 
@@ -150,7 +150,7 @@ class NumeralHex(Numeral):
             exp_val = 2 ** int(self.p_sign.text + self.p_digits.text)
             return LuaNumber(frac_val * exp_val, LuaNumberType.FLOAT)
         # if the value overflows, it wraps around to fit into a valid integer.
-        return int_overflow_wrap_around(int(self.digits.text, 16))
+        return int_wrap_overflow(int(self.digits.text, 16))
 
 
 @attrs.define(slots=True)
