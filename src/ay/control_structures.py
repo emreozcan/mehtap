@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from ay.values import LuaValue
 
 
-class LuaError(Exception):
+class LuaError(BaseException):
     __slots__ = ["message", "level"]
 
     message: LuaValue
@@ -26,7 +26,7 @@ class LuaError(Exception):
 
 
 @attrs.define(slots=True)
-class FlowControlException(Exception):
+class FlowControlException(BaseException):
     pass
 
 
