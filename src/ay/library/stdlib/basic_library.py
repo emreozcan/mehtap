@@ -338,7 +338,7 @@ def basic_print(scope: Scope, /, *args: LuaValue) -> PyLuaRet:
     # The function print is not intended for formatted output, but only as a
     # quick way to show a value, for instance for debugging.
     # For complete control over the output, use string.format and io.write.
-    string_lists = (lf_tostring.call([arg], scope) for arg in args)
+    string_lists = (basic_tostring(scope, v) for v in args)
     x = "\t".join(
         ",".join(string.content.decode("utf-8") for string in string_list)
         for string_list in string_lists
@@ -464,7 +464,7 @@ def basic_setmetatable(
         raise LuaError("cannot change a protected metatable")
     # If metatable is nil, removes the metatable of the given table.
     if metatable is LuaNil:
-        table.set_metatable(LuaNil)
+        table.remove_metatable()
         return [table]
     table.set_metatable(metatable)
     # This function returns table.
@@ -631,7 +631,7 @@ def lf_warn(scope: Scope, msg1: LuaString, /, *a: LuaString) -> PyLuaRet:
     return basic_warn(scope, msg1, *a)
 
 
-def basic_warn(scope: Scope, msg1: LuaString, /, *a: LuaString) -> PyLuaRet:
+def basic_warn(scope: Scope, msg1: LuaString, /, *a: LuaString) -> None:
     """warn (msg1, ···)"""
     # Emits a warning with a message composed by the concatenation of all
     # its arguments (which should be strings).
@@ -658,6 +658,7 @@ def basic_warn(scope: Scope, msg1: LuaString, /, *a: LuaString) -> PyLuaRet:
     if not scope.vm.emitting_warnings:
         return None
     scope.vm.get_warning(msg1, *a)
+    return None
 
 
 @lua_function(name="xpcall", gets_scope=True)

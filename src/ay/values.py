@@ -40,7 +40,7 @@ class LuaValue(ABC):
         """
         :return: The value's metatable if it exists, or :data:`LuaNil` if not.
         """
-        if hasattr(self, "_metatable"):
+        if hasattr(self, "_metatable") and self._metatable:
             return self._metatable
         return LuaNil
 
@@ -70,18 +70,26 @@ class LuaValue(ABC):
 
         :raises NotImplementedError: if the value can't have a metatable
         """
-        if "_metatable" in self.__slots__:
+        if hasattr(self, "_metatable"):
             self._metatable = value
         else:
             raise NotImplementedError()
 
-    def __eq__(self, other: LuaValue) -> bool:
+    def remove_metatable(self):
+        """Removes the value's metatable if the value can have one.
+
+        Does nothing if the value can't have a metatable
+        """
+        if hasattr(self, "_metatable"):
+            self._metatable = None
+
+    def __eq__(self, other) -> bool:
         """Compare this value according to Lua's rules on equality."""
         from .operations import rel_eq
 
         return rel_eq(self, other).true
 
-    def __ne__(self, other: LuaValue) -> bool:
+    def __ne__(self, other) -> bool:
         from .operations import rel_ne
 
         return rel_ne(self, other).true
@@ -107,8 +115,7 @@ LuaNil = LuaNilType()
 Represents the value of the *nil* basic type in Lua.
 Sole object of the ``LuaNilType`` class.
 """
-if not TYPE_CHECKING:
-    del LuaNilType
+del LuaNilType
 
 
 @attrs.define(slots=True, eq=False)
@@ -219,6 +226,7 @@ class LuaObject(LuaValue, ABC):
 class LuaFunction(LuaObject):
     """Class representing values of the *function* basic type in Lua."""
 
+    # TODO: Make param_names not Optional.
     param_names: list[LuaString] | None
     """The names of the parameters of the function.
 
@@ -326,21 +334,23 @@ class LuaFunction(LuaObject):
 
     def _call(
         self,
-        args: list[LuaValue | list[LuaValue]],
+        args: Multires,
         scope: Scope,
     ):
         if not callable(self.block):
             new_scope = scope.push()
             # Function is implemented in Lua
+            assert self.param_names is not None
+            param_count = len(self.param_names)
+
             if self.variadic:
                 from ay.operations import adjust_flatten
-
                 args = adjust_flatten(args)
-                new_scope.varargs = args[len(self.param_names) :]
-                args = args[: len(self.param_names)]
+                new_scope.varargs = args[param_count:]
+                args = args[:param_count]
             from ay.operations import adjust
 
-            args = adjust(args, len(self.param_names))
+            args = adjust(args, param_count)
             for param_name, arg in zip(self.param_names, args):
                 new_scope.put_local_ls(param_name, Variable(arg))
             retvals = self.block.evaluate_without_inner_scope(new_scope)
@@ -402,7 +412,7 @@ class LuaTable(LuaObject, LuaIndexableABC):
 
     map: dict[LuaValue, LuaValue] = attrs.field(factory=dict)
     """The key-value pairs of the table."""
-    _metatable: LuaTable = LuaNil
+    _metatable: LuaTable | None = None
     """The metatable of the table."""
 
     def __repr__(self):

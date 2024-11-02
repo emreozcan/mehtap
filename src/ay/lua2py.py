@@ -1,4 +1,4 @@
-from typing import Any, overload, Callable, Union
+from typing import Any, overload, Callable, Union, TYPE_CHECKING
 
 from ay.values import (
     LuaNil,
@@ -12,8 +12,12 @@ from ay.values import (
 from ay.vm import VirtualMachine
 
 
+if TYPE_CHECKING:
+    from ay.values import LuaNilType
+
+
 @overload
-def lua2py(value: LuaNil) -> None:
+def lua2py(value: LuaNilType) -> None:
     pass
 
 

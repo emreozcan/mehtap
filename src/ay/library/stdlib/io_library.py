@@ -28,7 +28,7 @@ FAIL = LuaNil
 
 @attrs.define(slots=True, eq=False, repr=False)
 class LuaFile(LuaUserdata, LuaIndexableABC):
-    io: BytesIO
+    io: BinaryIO
 
     def __str__(self):
         return f"file {self.io}"
@@ -105,7 +105,7 @@ def _lf_file_method_lines(self: LuaFile, /, *formats) -> PyLuaRet:
 def _file_method_lines(self: LuaFile, /, *formats) -> PyLuaRet:
     # When no format is given, uses "l" as a default.
     if not formats:
-        formats = [LuaString(b"l")]
+        formats = (LuaString(b"l"),)
 
     # Returns an iterator function that,
     @lua_function()
@@ -416,8 +416,7 @@ def io_output(scope: Scope, file: LuaFile | LuaString = None, /) -> PyLuaRet:
     # and sets its handle as the default input file.
     try:
         if isinstance(file, LuaString):
-            file = open(file.content, "rb")
-            scope.vm.default_output = file
+            scope.vm.default_output = open(file.content, "rb")
             return None
         # When called with a file handle, it simply sets this file handle as
         # the default input file.
@@ -435,7 +434,7 @@ def io_output(scope: Scope, file: LuaFile | LuaString = None, /) -> PyLuaRet:
 
 
 @lua_function(name="popen", gets_scope=True, preserve=True)
-def lf_io_popen():
+def lf_io_popen() -> PyLuaRet:
     return io_popen()
 
 

@@ -5,7 +5,7 @@ import io
 import string
 from abc import ABC, abstractmethod
 from collections.abc import Sequence, Iterable, Callable
-from typing import Literal, TYPE_CHECKING, Sequence
+from typing import TYPE_CHECKING
 
 import attrs
 
@@ -103,7 +103,7 @@ class Block(Statement, Expression):
         return self.execute_without_inner_scope(scope.push())
 
     def evaluate_without_inner_scope(self, scope: Scope) -> list[LuaValue]:
-        r = []
+        r: None | list[LuaValue] = []
         for stmt in self.statements:
             r = stmt.execute(scope)
         return (
@@ -397,6 +397,7 @@ class TableConstructor(Expression):
         else:
             field_iter = iter(self.fields)
         for field in field_iter:
+            key: LuaValue
             if isinstance(field, FieldWithKey):
                 if isinstance(field.key, Name):
                     key = str_to_lua_string(field.key.name.text)
@@ -413,7 +414,7 @@ class TableConstructor(Expression):
                 raise NotImplementedError(f"{type(field)=}")
         if last_field and isinstance(last_field, FieldCounterKey):
             last_field_value = last_field.value.evaluate(scope)
-            if isinstance(last_field_value, list):
+            if isinstance(last_field_value, Sequence):
                 for counter, val in enumerate(last_field_value, start=counter):
                     table.put(
                         LuaNumber(counter, LuaNumberType.INTEGER),

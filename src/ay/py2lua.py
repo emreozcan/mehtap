@@ -10,10 +10,8 @@ from typing import (
     Concatenate,
     Literal,
     TYPE_CHECKING,
-    Protocol,
+    Protocol, TypeVar,
 )
-
-from typing_extensions import TypeVar
 
 from ay.operations import str_to_lua_string
 from ay.scope import Scope
@@ -130,13 +128,15 @@ PyLuaWrapRet = Optional[list[Py2LuaAccepts]]
 LuaCallback = TypeVar(
     "LuaCallback",
     bound=Callable[..., PyLuaRet],
-    covariant=True,
 )
 LuaScopeCallback = TypeVar(
     "LuaScopeCallback",
     bound=Callable[Concatenate[Scope, ...], PyLuaRet],
 )
-PyCallback = TypeVar("PyCallback", bound=Callable[..., PyLuaWrapRet])
+PyCallback = TypeVar(
+    "PyCallback",
+    bound=Callable[..., PyLuaWrapRet],
+)
 PyScopeCallback = TypeVar(
     "PyScopeCallback",
     bound=Callable[Concatenate[Scope, ...], PyLuaWrapRet],
