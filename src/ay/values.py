@@ -3,7 +3,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from enum import Enum
-from typing import TYPE_CHECKING, TypeVar, Never
+from typing import TYPE_CHECKING, TypeVar, NoReturn
 
 import attrs
 
@@ -87,7 +87,7 @@ class LuaValue(ABC):
         self,
         args: Multires,
         scope: Scope | None,
-    ) -> Never:
+    ) -> NoReturn:
         from ay.control_structures import LuaError
         raise LuaError(f"attempt to call {type_of_lv(self)} value")
 
