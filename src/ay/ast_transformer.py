@@ -1,5 +1,4 @@
 from collections.abc import Sequence
-from typing import Optional, Union
 
 import lark
 
@@ -28,7 +27,7 @@ class LuaTransformer(lark.Transformer):
     @staticmethod
     def var_index(
         base: nodes.Expression,
-        index: Union[nodes.Expression, nodes.Name],
+        index: nodes.Expression | nodes.Name,
     ) -> nodes.VarIndex:
         if isinstance(index, nodes.Name):
             return nodes.VarIndex(
@@ -47,7 +46,7 @@ class LuaTransformer(lark.Transformer):
 
     @staticmethod
     def tableconstructor(
-        fieldlist: Optional[Sequence[nodes.FieldWithKey]],
+        fieldlist: Sequence[nodes.FieldWithKey] | None,
     ) -> nodes.TableConstructor:
         if fieldlist is None:
             return nodes.TableConstructor(fields=tuple())
@@ -70,9 +69,9 @@ class LuaTransformer(lark.Transformer):
     @staticmethod
     def numeral_dec(
         digits: nodes.Terminal,
-        fract_digits: Optional[nodes.Terminal],
-        e_sign: Optional[nodes.Terminal],
-        e_digits: Optional[nodes.Terminal],
+        fract_digits: nodes.Terminal | None,
+        e_sign: nodes.Terminal | None,
+        e_digits: nodes.Terminal | None,
     ) -> nodes.NumeralDec:
         return nodes.NumeralDec(
             digits=digits,
@@ -84,9 +83,9 @@ class LuaTransformer(lark.Transformer):
     @staticmethod
     def numeral_hex(
         digits: nodes.Terminal,
-        fract_digits: Optional[nodes.Terminal],
-        p_sign: Optional[nodes.Terminal],
-        p_digits: Optional[nodes.Terminal],
+        fract_digits: nodes.Terminal | None,
+        p_sign: nodes.Terminal | None,
+        p_digits: nodes.Terminal | None,
     ) -> nodes.NumeralHex:
         return nodes.NumeralHex(
             digits=digits,
@@ -97,7 +96,8 @@ class LuaTransformer(lark.Transformer):
 
     @staticmethod
     def field_with_key(
-        key: Union[nodes.Expression, nodes.Name], value: nodes.Expression
+        key: nodes.Expression | nodes.Name,
+        value: nodes.Expression,
     ) -> nodes.FieldWithKey:
         return nodes.FieldWithKey(key=key, value=value)
 
@@ -132,7 +132,7 @@ class LuaTransformer(lark.Transformer):
 
     @staticmethod
     def attname(
-        name: nodes.Name, attrib: Optional[nodes.Name]
+        name: nodes.Name, attrib: nodes.Name | None
     ) -> nodes.AttributeName:
         return nodes.AttributeName(name=name, attrib=attrib)
 

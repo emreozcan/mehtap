@@ -1,4 +1,4 @@
-from typing import Any, overload, Callable, Union, TYPE_CHECKING
+from typing import Any, overload, Callable, TYPE_CHECKING
 
 from ay.values import (
     LuaNil,
@@ -27,7 +27,7 @@ def lua2py(value: LuaBool) -> bool:
 
 
 @overload
-def lua2py(value: LuaNumber) -> Union[int, float]:
+def lua2py(value: LuaNumber) -> int | float:
     pass
 
 

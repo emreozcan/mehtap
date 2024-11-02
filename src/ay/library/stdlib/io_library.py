@@ -219,7 +219,10 @@ SYMBOL__FD = LuaString(b"__fd")
 
 @lua_function(name="seek")
 def _lf_file_method_seek(
-    self: LuaFile, whence: LuaString = None, offset: LuaNumber = None, /
+    self: LuaFile,
+    whence: LuaString | None = None,
+    offset: LuaNumber | None = None,
+    /,
 ) -> PyLuaRet:
     if whence is None:
         whence = LuaString(b"cur")
@@ -268,11 +271,11 @@ def _file_method_write(
 
 
 @lua_function(name="close", gets_scope=True, preserve=True)
-def lf_io_close(scope: Scope, file: LuaFile = None, /) -> PyLuaRet:
+def lf_io_close(scope: Scope, file: LuaFile | None = None, /) -> PyLuaRet:
     return io_close(scope, file)
 
 
-def io_close(scope: Scope, file: LuaFile = None, /) -> PyLuaRet:
+def io_close(scope: Scope, file: LuaFile | None = None, /) -> PyLuaRet:
     if file is None:
         binary_io = scope.vm.default_output
     else:
@@ -292,11 +295,15 @@ def io_flush(scope: Scope, /) -> PyLuaRet:
 
 
 @lua_function(name="input", gets_scope=True, preserve=True)
-def lf_io_input(scope: Scope, file: LuaFile | LuaString = None, /) -> PyLuaRet:
+def lf_io_input(
+    scope: Scope, file: LuaFile | LuaString | None = None, /
+) -> PyLuaRet:
     return io_input(scope, file)
 
 
-def io_input(scope: Scope, file: LuaFile | LuaString = None, /) -> PyLuaRet:
+def io_input(
+    scope: Scope, file: LuaFile | LuaString | None = None, /
+) -> PyLuaRet:
     # When called with a file name, it opens the named file (in text mode),
     # and sets its handle as the default input file.
     try:
@@ -321,12 +328,14 @@ def io_input(scope: Scope, file: LuaFile | LuaString = None, /) -> PyLuaRet:
 
 @lua_function(name="table", gets_scope=True, preserve=True)
 def lf_io_lines(
-    scope: Scope, filename: LuaString = None, /, *formats
+    scope: Scope, filename: LuaString | None = None, /, *formats
 ) -> PyLuaRet:
     return io_lines(scope, filename, *formats)
 
 
-def io_lines(scope: Scope, filename: LuaString = None, /, *formats) -> PyLuaRet:
+def io_lines(
+    scope: Scope, filename: LuaString | None = None, /, *formats
+) -> PyLuaRet:
     # The call io.lines() (with no file name) is equivalent to
     # io.input():lines("l"); that is, it iterates over the lines of the
     # default input file.
@@ -363,11 +372,13 @@ def io_lines(scope: Scope, filename: LuaString = None, /, *formats) -> PyLuaRet:
 
 
 @lua_function(name="open", gets_scope=True, preserve=True)
-def lf_io_open(filename: LuaString, mode: LuaString = None, /) -> PyLuaRet:
+def lf_io_open(
+    filename: LuaString, mode: LuaString | None = None, /
+) -> PyLuaRet:
     return io_open(filename, mode)
 
 
-def io_open(filename: LuaString, mode: LuaString = None, /) -> PyLuaRet:
+def io_open(filename: LuaString, mode: LuaString | None = None, /) -> PyLuaRet:
     # This function opens a file, in the mode specified in the string mode.
     # In case of success, it returns a new file handle.
     #
@@ -405,11 +416,15 @@ def io_open(filename: LuaString, mode: LuaString = None, /) -> PyLuaRet:
 
 
 @lua_function(name="output", gets_scope=True, preserve=True)
-def lf_io_output(scope: Scope, file: LuaFile | LuaString = None, /) -> PyLuaRet:
+def lf_io_output(
+    scope: Scope, file: LuaFile | LuaString | None = None, /
+) -> PyLuaRet:
     return io_output(scope, file)
 
 
-def io_output(scope: Scope, file: LuaFile | LuaString = None, /) -> PyLuaRet:
+def io_output(
+    scope: Scope, file: LuaFile | LuaString | None = None, /
+) -> PyLuaRet:
     # Similar to io.input, but operates over the default output file.
 
     # When called with a file name, it opens the named file (in text mode),
