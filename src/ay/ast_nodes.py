@@ -499,7 +499,7 @@ class FuncCallMethod(Expression, Statement):
         v = self.object.evaluate(scope)
         assert isinstance(v, LuaIndexableABC)
         function = v.get(str_to_lua_string(self.method.name.text))
-        args = [arg.evaluate(scope) for arg in self.args]
+        args = [v, *(arg.evaluate(scope) for arg in self.args)]
         return function.call(args, scope)
 
     def execute(self, scope: Scope) -> None | list[LuaValue]:
