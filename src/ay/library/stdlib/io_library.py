@@ -247,11 +247,11 @@ def _lf_file_method_write(
     /,
     *values: LuaValue,
 ) -> PyLuaRet:
-    return _file_method_write(self.io, *values)
+    return _file_method_write(self, *values)
 
 
 def _file_method_write(
-    self: BinaryIO,
+    self: LuaFile,
     /,
     *values: LuaValue,
 ) -> PyLuaRet:
@@ -317,7 +317,7 @@ def io_input(scope: Scope, file: LuaFile | LuaString | None = None, /):
         raise LuaError(f"io.input(): {e!s}")
 
 
-@lua_function(name="table", gets_scope=True)
+@lua_function(name="lines", gets_scope=True)
 def lf_io_lines(
     scope: Scope, filename: LuaString | None = None, /, *formats
 ) -> PyLuaRet:
@@ -344,22 +344,19 @@ def io_lines(
     # closes the file.
     @lua_function()
     def iterator_function() -> PyLuaRet:
-        f = _file_method_lines(file_handle, *formats)
+        f = _file_method_read(file_handle, *formats)
         if to_close and (
             f is None
-            or any(
-                isinstance(r, LuaNil)
-                or (isinstance(r, LuaString) and not r.content)
-                for r in f
-            )
+            or any(r is LuaNil for r in f)
         ):
             file_handle.io.close()
-        # Besides the iterator function, io.lines returns three other
-        # values: two nil values as placeholders, plus the created file
-        # handle.
-        # Therefore, when used in a generic for loop, the file is closed
-        # also if the loop is interrupted by an error or a break.
-        return [iterator_function, LuaNil, LuaNil, file_handle]
+        return f
+    # Besides the iterator function, io.lines returns three other
+    # values: two nil values as placeholders, plus the created file
+    # handle.
+    # Therefore, when used in a generic for loop, the file is closed
+    # also if the loop is interrupted by an error or a break.
+    return [iterator_function, LuaNil, LuaNil, file_handle]
 
 
 @lua_function(name="open", gets_scope=True)
