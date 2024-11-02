@@ -337,7 +337,7 @@ class LuaFunction(LuaObject):
                 scope or self.parent_scope or VirtualMachine().root_scope,
             )
         except LuaError as le:
-            le.push_tb(f"call {self}")
+            le.push_tb(str(self))
             raise le
         except ReturnException as e:
             return e.values if e.values is not None else []

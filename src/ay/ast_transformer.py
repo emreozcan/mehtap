@@ -16,6 +16,21 @@ class LuaTransformer(lark.Transformer):
     def __default_token__(self, token):
         return nodes.Terminal(text=token.value)
 
+    def _call_userfunc(self, tree: lark.Tree, new_children=None):
+        node: nodes.Node = super()._call_userfunc(tree, new_children)
+        if not tree.meta.empty:
+            if isinstance(node, Sequence):
+                for child in node:
+                    child.line = tree.meta.line
+            else:
+                node.line = tree.meta.line
+        return node
+
+    def _call_userfunc_token(self, token: lark.Token):
+        node: nodes.Node = super()._call_userfunc_token(token)
+        node.line = token.line
+        return node
+
     @staticmethod
     def NAME(token: lark.Token):
         return nodes.Name(name=nodes.Terminal(text=token.value))

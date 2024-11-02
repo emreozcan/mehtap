@@ -190,6 +190,16 @@ def handle_luaerror(lua_error, vm):
         print("traceback:")
         for entry in lua_error.traceback:
             print("\t" + entry, file=sys.stderr)
+    if lua_error.caused_by:
+        type_name = lua_error.caused_by.__class__.__name__
+        stringifed = str(lua_error.caused_by)
+        if stringifed:
+            print(
+                f"caused by: {type_name} ({lua_error.caused_by})",
+                file=sys.stderr
+            )
+        else:
+            print(f"caused by: {lua_error.caused_by}", file=sys.stderr)
 
 
 def display_object(val: list[LuaValue]) -> str | None:

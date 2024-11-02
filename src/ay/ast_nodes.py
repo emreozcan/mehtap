@@ -47,6 +47,7 @@ def flatten(v: Iterable[LuaValue | Iterable[LuaValue]]) -> list[LuaValue]:
 
 @attrs.define(slots=True)
 class Node(ABC):
+    line: int = attrs.field(kw_only=True, default=-1)
     pass
 
 
@@ -80,10 +81,12 @@ class Statement(NonTerminal, ABC):
         try:
             return self._execute(scope)
         except LuaError as le:
-            le.push_tb(f"execute {self}")
+            le.push_tb(f"{self.line}: statement {self.__class__.__name__}")
             raise le
         except Exception as e:
-            raise LuaError(str(e), caused_by=e)
+            le = LuaError(str(e), caused_by=e)
+            le.push_tb(f"{self.line}: statement {self.__class__.__name__}")
+            raise le
 
 
 @attrs.define(slots=True)
@@ -96,10 +99,15 @@ class Expression(NonTerminal, ABC):
         try:
             return self._evaluate(scope)
         except LuaError as le:
-            le.push_tb(f"evaluate {self}")
+            # If something is both a Statement and an Expression,
+            # only add its expression part to the traceback.
+            if not isinstance(self, Statement):
+                le.push_tb(f"{self.line}: expression {self.__class__.__name__}")
             raise le
         except Exception as e:
-            raise LuaError(str(e), caused_by=e)
+            le = LuaError(str(e), caused_by=e)
+            le.push_tb(f"{self.line}: expression {self.__class__.__name__}")
+            raise le
 
     def evaluate_single(self, scope: Scope) -> LuaValue:
         return adjust_to_one(self.evaluate(scope))
