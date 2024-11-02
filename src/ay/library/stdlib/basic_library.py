@@ -725,11 +725,11 @@ class BasicLibrary(LibraryProvider):
         # affect any environment, nor vice versa.
         global_table.put(LuaString(b"_G"), global_table)
 
-        for local_name, local_value in globals().items():
-            if local_name.startswith("lf_"):
-                assert isinstance(local_value, LuaFunction)
-                assert local_value.name
+        for name_of_global, value_of_global in globals().items():
+            if name_of_global.startswith("lf_"):
+                assert isinstance(value_of_global, LuaFunction)
+                assert value_of_global.name
                 global_table.put(
-                    LuaString(local_value.name.encode("ascii")),
-                    local_value,
+                    LuaString(value_of_global.name.encode("ascii")),
+                    value_of_global,
                 )

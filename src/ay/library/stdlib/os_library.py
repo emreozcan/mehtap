@@ -268,11 +268,11 @@ class OSLibrary(LibraryProvider):
         os_table = LuaTable()
         global_table.put(LuaString(b"os"), os_table)
 
-        for local_name, local_value in globals().items():
-            if local_name.startswith("lf_io_"):
-                assert isinstance(local_value, LuaFunction)
-                assert local_value.name
-                global_table.put(
-                    LuaString(local_value.name.encode("ascii")),
-                    local_value,
+        for name_of_global, value_of_global in globals().items():
+            if name_of_global.startswith("lf_io_"):
+                assert isinstance(value_of_global, LuaFunction)
+                assert value_of_global.name
+                os_table.put(
+                    LuaString(value_of_global.name.encode("ascii")),
+                    value_of_global,
                 )
