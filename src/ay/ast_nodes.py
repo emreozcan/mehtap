@@ -478,7 +478,6 @@ class FuncDef(Expression):
 class FuncCallRegular(Expression, Statement):
     def evaluate(self, scope: Scope) -> list[LuaValue]:
         function = self.name.evaluate(scope)
-        assert isinstance(function, LuaFunction)
         args = [arg.evaluate(scope) for arg in self.args]
         return function.call(args, scope)
 
@@ -500,7 +499,6 @@ class FuncCallMethod(Expression, Statement):
         v = self.object.evaluate(scope)
         assert isinstance(v, LuaIndexableABC)
         function = v.get(str_to_lua_string(self.method.name.text))
-        assert isinstance(function, LuaFunction)
         args = [arg.evaluate(scope) for arg in self.args]
         return function.call(args, scope)
 

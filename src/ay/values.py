@@ -3,7 +3,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from enum import Enum
-from typing import TYPE_CHECKING, TypeVar
+from typing import TYPE_CHECKING, TypeVar, Never
 
 import attrs
 
@@ -82,6 +82,14 @@ class LuaValue(ABC):
         """
         if hasattr(self, "_metatable"):
             self._metatable = None
+
+    def call(
+        self,
+        args: Multires,
+        scope: Scope | None,
+    ) -> Never:
+        from ay.control_structures import LuaError
+        raise LuaError(f"attempt to call {type_of_lv(self)} value")
 
     def __eq__(self, other) -> bool:
         """Compare this value according to Lua's rules on equality."""
