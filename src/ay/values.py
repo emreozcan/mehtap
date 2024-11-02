@@ -372,7 +372,10 @@ class LuaFunction(LuaObject):
             except Exception as e:
                 from ay.control_structures import LuaError
 
-                raise LuaError(LuaString(f"{self!s}: {e!s}".encode("utf-8")))
+                raise LuaError(
+                    LuaString(f"{self!s}: {e!s}".encode("utf-8")),
+                    caused_by=e,
+                ) from e
 
 
 @attrs.define(slots=True, eq=False)

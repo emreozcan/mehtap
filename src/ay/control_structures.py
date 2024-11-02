@@ -16,13 +16,23 @@ class LuaError(BaseException):
 
     message: LuaValue
     level: int
+    caused_by: Exception | None = None
 
-    def __init__(self, message: LuaValue | str, level: int = 1):
+    def __init__(
+        self,
+        message: LuaValue | str,
+        level: int = 1,
+        caused_by: Exception | None = None
+    ):
         if isinstance(message, str):
             message = str_to_lua_string(message)
         self.message = message
         self.level = level
+        self.caused_by = caused_by
         super().__init__(message, level)
+
+    def __repr__(self):
+        return f"<error level {self.level}: {self.message}>"
 
 
 @attrs.define(slots=True)
