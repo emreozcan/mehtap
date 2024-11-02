@@ -4,13 +4,11 @@ from inspect import signature
 from collections.abc import Mapping, Iterable, Callable
 from typing import (
     overload,
-    Any,
     Union,
-    Concatenate,
     Literal,
     TYPE_CHECKING,
     Protocol,
-    TypeVar,
+    TypeVar, ParamSpec, Concatenate,
 )
 
 from ay.operations import str_to_lua_string
@@ -127,22 +125,41 @@ def _py2lua(py_val, obj_map):
 
 PyLuaRet = list[LuaValue] | None
 PyLuaWrapRet = list[Py2LuaAccepts] | None
-LuaCallback = TypeVar(
-    "LuaCallback",
-    bound=Callable[..., PyLuaRet],
-)
-LuaScopeCallback = TypeVar(
-    "LuaScopeCallback",
-    bound=Callable[Concatenate[Scope, ...], PyLuaRet],
-)
-PyCallback = TypeVar(
-    "PyCallback",
-    bound=Callable[..., PyLuaWrapRet],
-)
-PyScopeCallback = TypeVar(
-    "PyScopeCallback",
-    bound=Callable[Concatenate[Scope, ...], PyLuaWrapRet],
-)
+P = ParamSpec("P")
+if TYPE_CHECKING:
+    LuaCallback = TypeVar(
+        "LuaCallback",
+        bound=Callable[..., PyLuaRet],
+    )
+    LuaScopeCallback = TypeVar(
+        "LuaScopeCallback",
+        bound=Callable[Concatenate[Scope, ...], PyLuaRet],
+    )
+    PyCallback = TypeVar(
+        "PyCallback",
+        bound=Callable[..., PyLuaWrapRet],
+    )
+    PyScopeCallback = TypeVar(
+        "PyScopeCallback",
+        bound=Callable[Concatenate[Scope, ...], PyLuaWrapRet],
+    )
+else:
+    LuaCallback = TypeVar(
+        "LuaCallback",
+        bound=Callable[..., PyLuaRet],
+    )
+    LuaScopeCallback = TypeVar(
+        "LuaScopeCallback",
+        bound=Callable[Concatenate[Scope, P], PyLuaRet],
+    )
+    PyCallback = TypeVar(
+        "PyCallback",
+        bound=Callable[..., PyLuaWrapRet],
+    )
+    PyScopeCallback = TypeVar(
+        "PyScopeCallback",
+        bound=Callable[Concatenate[Scope, P], PyLuaWrapRet],
+    )
 
 
 @overload
