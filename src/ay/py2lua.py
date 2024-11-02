@@ -22,7 +22,7 @@ def py2lua(value: int | float) -> LuaNumber: ...
 
 
 @overload
-def py2lua(value: str) -> LuaString: ...
+def py2lua(value: str | bytes) -> LuaString: ...
 
 
 @overload
@@ -72,6 +72,8 @@ def _py2lua(py_val, obj_map):
         return LuaNumber(py_val)
     if isinstance(py_val, str):
         return LuaString(py_val.encode("utf-8"))
+    if isinstance(py_val, bytes):
+        return LuaString(py_val)
     if isinstance(py_val, Mapping):
         m = LuaTable()
         obj_map[id(py_val)] = m
@@ -103,6 +105,7 @@ def lua_function(
     gets_scope: bool = False,
     wrap_values: bool = False,
     rename_args: Optional[list[str]] = None,
+    preserve: Optional[bool] = False,
 ) -> LuaDecorator:
     """Turns Python functions to :class:`LuaFunction` instances.
 
@@ -115,6 +118,9 @@ def lua_function(
                         Lua/Python
                         when passing them to/from the function.
     :param rename_args: Allows to rename the arguments of the function.
+    :param preserve: If set to True, the original function will be returned
+                     instead of the :class:`LuaFunction` instance.
+                     The table will still get the LuaFunction instance.
     :return: A decorator that turns Python functions to :class:`LuaFunction`
              instances.
 
@@ -149,6 +155,12 @@ def lua_function(
     arguments to the function.
     """
     from ay.control_structures import ReturnException
+
+    if preserve and not table:
+        raise ValueError(
+            "So, the decorator will preserve the object and will not put the"
+            " LuaFunction instance in the table... What's your point?"
+        )
 
     def decorator(func: Callable) -> LuaFunction:
         f_signature = signature(func)
@@ -221,6 +233,9 @@ def lua_function(
         )
         if table is not None:
             table.put(py2lua(used_name), lf)
+
+        if preserve:
+            return func
         return lf
 
     return decorator

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sys
+from typing import BinaryIO
 
 import attrs
 
@@ -18,6 +19,9 @@ class VirtualMachine:
     globals: LuaTable
     root_scope: Scope
     emitting_warnings: bool = False
+    default_input: BinaryIO = sys.stdin.buffer
+    default_output: BinaryIO = sys.stdout.buffer
+
 
     def __init__(self):
         self.globals = create_global_table()

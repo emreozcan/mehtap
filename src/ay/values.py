@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from abc import ABC
+from abc import ABC, abstractmethod
 from collections.abc import Callable
 from enum import Enum
 from typing import TYPE_CHECKING, TypeVar
@@ -368,8 +368,27 @@ class LuaThread(LuaObject):
     pass
 
 
+class LuaIndexableABC(ABC):
+    @abstractmethod
+    def put(self, key: LuaValue, value: LuaValue, *, raw: bool = True) -> None:
+        ...
+
+    @abstractmethod
+    def get(self, key: LuaValue, *, raw: bool = True) -> LuaValue:
+        ...
+
+    T = TypeVar("T")
+    @abstractmethod
+    def get_with_fallback(self, key: LuaValue, fallback: T) -> LuaValue | T:
+        ...
+
+    @abstractmethod
+    def has(self, key: LuaValue) -> bool:
+        ...
+
+
 @attrs.define(slots=True, eq=False, repr=False)
-class LuaTable(LuaObject):
+class LuaTable(LuaObject, LuaIndexableABC):
     """Class representing values of the *table* basic type in Lua."""
     map: dict[LuaValue, LuaValue] = attrs.field(factory=dict)
     """The key-value pairs of the table."""

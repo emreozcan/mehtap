@@ -21,7 +21,7 @@ def lua2py(value: LuaNumber) -> Union[int, float]:
 
 
 @overload
-def lua2py(value: LuaString) -> str:
+def lua2py(value: LuaString) -> bytes:
     pass
 
 
@@ -73,7 +73,7 @@ def _lua2py(lua_val, obj_map):
     if isinstance(lua_val, LuaNumber):
         return lua_val.value
     if isinstance(lua_val, LuaString):
-        return lua_val.content.decode("utf-8")
+        return lua_val.content
     if isinstance(lua_val, LuaTable):
         mt = lua_val.get_metatable()
         if mt is not LuaNil:
