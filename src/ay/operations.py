@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from collections import UserList
-from typing import Protocol, overload, SupportsIndex
+from collections.abc import Sequence, MutableSequence
+from typing import TypeAlias
 
 from ay.values import (
     LuaBool,
@@ -478,22 +478,14 @@ def length(a: LuaValue, *, raw: bool = True) -> LuaNumber:
     raise NotImplementedError()  # TODO.
 
 
-class Multires(Protocol, UserList):
-    """
-    A list where each element is either a :class:`LuaValue` or
-    :data:`Multires`.
-    """
-
-    @overload
-    def __getitem__(self, _: SupportsIndex, /) -> Multires | LuaValue: ...
-
-    @overload
-    def __getitem__(self, _: slice, /) -> Multires: ...
-
-    def __getitem__(self, _, /): ...
+Multires: TypeAlias = "Sequence[LuaValue | Multires]"
+"""
+A list where each element is either a :class:`LuaValue` or
+:data:`Multires`.
+"""
 
 
-def adjust(multires: Multires, needed: int) -> list[LuaValue]:
+def adjust(multires: Multires, needed: int) -> Sequence[LuaValue]:
     """
     :param multires: The multires of input values.
     :param needed: The amount of values needed.
@@ -506,8 +498,8 @@ def adjust(multires: Multires, needed: int) -> list[LuaValue]:
     # When the list of expressions ends with a multires expression,
     # all results from that expression
     # enter the list of values before the adjustment.
-    multires = multires.copy()
-    if multires and isinstance(multires[-1], list):
+    multires = [x for x in multires]
+    if multires and isinstance(multires[-1], Sequence):
         multires.extend(multires.pop())
 
     # The adjustment follows these rules:
@@ -524,23 +516,23 @@ def adjust(multires: Multires, needed: int) -> list[LuaValue]:
     # the last element, ..., Lua adjusts the result list of that expression
     # to one element.
     for i, value in enumerate(multires):
-        if isinstance(value, list):
+        if isinstance(value, Sequence):
             multires[i] = adjust(value, 1)[0]
 
     return multires
 
 
-def adjust_flatten(multires: Multires) -> list[LuaValue]:
+def adjust_flatten(multires: Multires) -> Sequence[LuaValue]:
     """
     :return: The input multires where each element is adjusted to one value
              except for the last, which is extended to the list of previous
              values.
     """
-    multires = multires.copy()
-    if multires and isinstance(multires[-1], list):
+    multires = [x for x in multires]
+    if multires and isinstance(multires[-1], Sequence):
         multires.extend(multires.pop())
     for i, value in enumerate(multires):
-        if isinstance(value, list):
+        if isinstance(value, Sequence):
             multires[i] = adjust(value, 1)[0]
     return multires
 
@@ -554,6 +546,6 @@ def adjust_to_one(multires_or_value: Multires | LuaValue) -> LuaValue:
     :param multires_or_value: The multires or single Lua value to adjust.
     :return: A single Lua value.
     """
-    if isinstance(multires_or_value, list):
+    if isinstance(multires_or_value, Sequence):
         return adjust(multires_or_value, 1)[0]
     return multires_or_value

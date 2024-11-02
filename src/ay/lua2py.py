@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Any, overload, Callable, TYPE_CHECKING
 
 from ay.values import (
