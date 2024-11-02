@@ -1,6 +1,7 @@
 import argparse
 import os
 import sys
+import traceback
 
 import lark.exceptions
 
@@ -173,6 +174,8 @@ def enter_interactive(vm: VirtualMachine) -> None:
                     sys.stdout = save
             else:
                 print(lua_error.message, file=sys.stderr)
+            if lua_error.caused_by:
+                print(traceback.format_exc())
             # TODO: Add stack traceback.
         if r is not None:
             d = display_object(r)
