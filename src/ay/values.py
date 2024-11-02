@@ -492,3 +492,33 @@ class LuaTable(LuaObject, LuaIndexableABC):
 
     def has(self, key: LuaValue) -> bool:
         return key in self.map
+
+
+def type_of_lv(a: LuaValue) -> str:
+    """
+    :return: The result of ``type(a)`` in Lua as a Python :class:`str`.
+
+    This is not an operation but it is included here for ease of access.
+    """
+    #  Returns the type of its only argument, coded as a string.
+    #  The possible results of this function are "nil"
+    #  (a string, not the value nil),
+    #  "number", "string", "boolean", "table", "function", "thread", and
+    #  "userdata".
+    if a is LuaNil:
+        return "nil"
+    if isinstance(a, LuaNumber):
+        return "number"
+    if isinstance(a, LuaString):
+        return "string"
+    if isinstance(a, LuaBool):
+        return "boolean"
+    if isinstance(a, LuaTable):
+        return "table"
+    if isinstance(a, LuaFunction):
+        return "function"
+    if isinstance(a, LuaThread):
+        return "thread"
+    if isinstance(a, LuaUserdata):
+        return "userdata"
+    raise TypeError(f"Unexpected type: {type(a)}")

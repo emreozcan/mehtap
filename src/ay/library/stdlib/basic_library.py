@@ -3,7 +3,6 @@ from __future__ import annotations
 import sys
 from typing import TYPE_CHECKING
 
-from ay import operations
 from ay.ast_nodes import UnaryOperation, UnaryOperator
 from ay.ast_transformer import transformer
 from ay.py2lua import PyLuaRet, py2lua
@@ -18,9 +17,7 @@ from ay.values import (
     LuaNumberType,
     MAX_INT64,
     LuaFunction,
-    LuaBool,
-    LuaThread,
-    LuaUserdata, LuaIndexableABC,
+    LuaIndexableABC, type_of_lv,
 )
 from ay.control_structures import LuaError
 from ay.values import LuaBool
@@ -519,7 +516,7 @@ def basic_tonumber(scope: Scope, e, base=None, /) -> PyLuaRet:
     if not isinstance(e, LuaString):
         raise LuaError(
             f"bad argument to 'tonumber' "
-            f"(string expected, got {basic_type_impl(e)!s})"
+            f"(string expected, got {type_of_lv(e)})"
         )
     # In bases above 10, the letter 'A' (in either upper or lower case)
     # represents 10, 'B' represents 11, and so forth, with 'Z' representing
@@ -593,37 +590,7 @@ def basic_type(v: LuaValue, /) -> PyLuaRet:
     #  (a string, not the value nil),
     #  "number", "string", "boolean", "table", "function", "thread", and
     #  "userdata".
-    return [basic_type_impl(v)]
-
-
-def basic_type_impl(a: LuaValue) -> LuaString:
-    """
-    :return: The result of ``type(a)`` in Lua.
-
-    This is not an operation but it is included here for ease of access.
-    """
-    #  Returns the type of its only argument, coded as a string.
-    #  The possible results of this function are "nil"
-    #  (a string, not the value nil),
-    #  "number", "string", "boolean", "table", "function", "thread", and
-    #  "userdata".
-    if a is LuaNil:
-        return LuaString(b"nil")
-    if isinstance(a, LuaNumber):
-        return LuaString(b"number")
-    if isinstance(a, LuaString):
-        return LuaString(b"string")
-    if isinstance(a, LuaBool):
-        return LuaString(b"boolean")
-    if isinstance(a, LuaTable):
-        return LuaString(b"table")
-    if isinstance(a, LuaFunction):
-        return LuaString(b"function")
-    if isinstance(a, LuaThread):
-        return LuaString(b"thread")
-    if isinstance(a, LuaUserdata):
-        return LuaString(b"userdata")
-    raise TypeError(f"Unexpected type: {type(a)}")
+    return [LuaString(type_of_lv(v).encode("ascii"))]
 
 
 @lua_function(name="warn", gets_scope=True)
@@ -642,7 +609,7 @@ def basic_warn(scope: Scope, msg1: LuaString, /, *a: LuaString) -> None:
         if not isinstance(v, LuaString):
             raise LuaError(
                 f"bad argument #{i} to 'warn' "
-                f"(string expected, got {basic_type_impl(v)!s})"
+                f"(string expected, got {type_of_lv(v)})"
             )
     if not a and msg1.content.startswith(b"@"):
         # In particular, the standard warning function in Lua recognizes the
