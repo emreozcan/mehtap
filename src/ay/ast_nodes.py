@@ -114,8 +114,9 @@ class Block(Statement, Expression):
             else r if r else []
         )
 
-    def execute_without_inner_scope(self, scope: Scope) \
-            -> Sequence[LuaValue] | None:
+    def execute_without_inner_scope(
+        self, scope: Scope
+    ) -> Sequence[LuaValue] | None:
         v = None
         for stmt in self.statements:
             v = stmt.execute(scope)
@@ -521,8 +522,7 @@ class UnaryOperator(enum.Enum):
 
 
 unary_operator_functions: dict[
-    UnaryOperator,
-    Callable[[LuaValue], LuaValue]
+    UnaryOperator, Callable[[LuaValue], LuaValue]
 ] = {
     UnaryOperator.NEG: ay_operations.arith_unary_minus,
     UnaryOperator.NOT: ay_operations.logical_unary_not,
@@ -566,8 +566,7 @@ class BinaryOperator(enum.Enum):
 
 
 binary_operator_functions: dict[
-    BinaryOperator,
-    Callable[[LuaValue, LuaValue], LuaValue]
+    BinaryOperator, Callable[[LuaValue, LuaValue], LuaValue]
 ] = {
     BinaryOperator.LT: ay_operations.rel_lt,
     BinaryOperator.LE: ay_operations.rel_le,
@@ -589,7 +588,6 @@ binary_operator_functions: dict[
     BinaryOperator.MODULO: ay_operations.arith_mod,
     BinaryOperator.EXP: ay_operations.arith_exp,
 }
-
 
 
 @attrs.define(slots=True)
@@ -614,9 +612,8 @@ class BinaryOperation(Expression, ABC):
             # The disjunction operator "or" returns its first argument if this
             # value is different from nil and false;
             l_val = self.lhs.evaluate_single(scope)
-            if (
-                l_val is not ay_values.LuaNil
-                and l_val != ay_values.LuaBool(False)
+            if l_val is not ay_values.LuaNil and l_val != ay_values.LuaBool(
+                False
             ):
                 return l_val
             # otherwise, or returns its second argument.
@@ -807,8 +804,7 @@ class For(Statement):
         inner_scope = scope.push()
         while condition_func(control_val, limit).true:
             inner_scope.put_local_ls(
-                control_varname,
-                ay_values.Variable(control_val)
+                control_varname, ay_values.Variable(control_val)
             )
             self.block.execute_without_inner_scope(inner_scope)
             overflow, control_val = ay_operations.overflow_arith_add(
@@ -843,9 +839,7 @@ class ForIn(Statement):
         name_count = len(self.names)
         names = [name.as_lua_string() for name in self.names]
         for name in names:
-            body_scope.put_local_ls(
-                name, ay_values.Variable(ay_values.LuaNil)
-            )
+            body_scope.put_local_ls(name, ay_values.Variable(ay_values.LuaNil))
         # The first of these variables is the control variable.
         control_variable_name = names[0]
         # The loop starts by evaluating explist to produce four values:
@@ -871,7 +865,7 @@ class ForIn(Statement):
             results = adjust(
                 iterator_function.call(
                     [state, body_scope.get_ls(control_variable_name)],
-                    outer_scope
+                    outer_scope,
                 ),
                 name_count,
             )
@@ -993,6 +987,7 @@ class ParsedLiteralLuaStringExpr(Expression):
     For example, the "b" in ``a.b = 1``.
     (Which is transformed to be equivalent to ``a["b"] = 1``.)
     """
+
     value: LuaString
 
     def evaluate(self, scope: Scope) -> LuaValue | Sequence[LuaValue]:

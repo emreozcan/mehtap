@@ -1,7 +1,14 @@
 from typing import Any, overload, Callable, Union
 
-from ay.values import LuaNil, LuaBool, LuaNumber, LuaString, LuaTable, \
-    LuaFunction, LuaValue
+from ay.values import (
+    LuaNil,
+    LuaBool,
+    LuaNumber,
+    LuaString,
+    LuaTable,
+    LuaFunction,
+    LuaValue,
+)
 from ay.vm import VirtualMachine
 
 
@@ -113,6 +120,7 @@ def _lua2py(lua_val, obj_map):
 
         def func(*args):
             return lua2py(lua_val.call(*[py2lua(x) for x in args], None))
+
         if lua_val.name is not None:
             func.__name__ = func.__qualname__ = lua_val.name
         else:

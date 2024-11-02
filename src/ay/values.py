@@ -16,6 +16,7 @@ if TYPE_CHECKING:
 @attrs.define(slots=True, eq=True, repr=False)
 class Variable:
     """Tuple of a Lua value and its properties describing a local variable."""
+
     value: LuaValue
     """The value of the variable."""
     constant: bool = False
@@ -84,6 +85,7 @@ class LuaValue(ABC):
         from .operations import rel_ne
 
         return rel_ne(self, other).true
+
     __ne__.__doc__ = __eq__.__doc__
 
 
@@ -127,6 +129,7 @@ class LuaNumberType(Enum):
     """LuaNumberType(value)
     Enumeration of the types of numbers in Lua.
     """
+
     INTEGER = 1
     """Number type that represents 64-bit signed integers."""
     FLOAT = 2
@@ -143,10 +146,11 @@ ALL_SET = 2**64 - 1
 class LuaNumber(LuaValue):
     """Class representing values of the *number* basic type in Lua.
 
-        :param value: The underlying value of this number value.
-        :param type: The type of this number value.
-                     If provided, must match the type of ``value``.
+    :param value: The underlying value of this number value.
+    :param type: The type of this number value.
+                 If provided, must match the type of ``value``.
     """
+
     value: int | float
     """The underlying value of this number value."""
     type: LuaNumberType | None
@@ -214,6 +218,7 @@ class LuaObject(LuaValue, ABC):
 @attrs.define(slots=True, eq=False)
 class LuaFunction(LuaObject):
     """Class representing values of the *function* basic type in Lua."""
+
     param_names: list[LuaString] | None
     """The names of the parameters of the function.
 
@@ -255,10 +260,7 @@ class LuaFunction(LuaObject):
     """
 
     def _py_param_str(self, index):
-        if (
-            not self.param_names
-            or index == len(self.param_names)
-        ):
+        if not self.param_names or index == len(self.param_names):
             if self.variadic:
                 if self.param_names:
                     return "[, ...]"
@@ -312,6 +314,7 @@ class LuaFunction(LuaObject):
         """
         from ay.control_structures import ReturnException
         from ay.vm import VirtualMachine
+
         try:
             self._call(
                 args,
@@ -331,20 +334,24 @@ class LuaFunction(LuaObject):
             # Function is implemented in Lua
             if self.variadic:
                 from ay.operations import adjust_flatten
+
                 args = adjust_flatten(args)
-                new_scope.varargs = args[len(self.param_names):]
-                args = args[:len(self.param_names)]
+                new_scope.varargs = args[len(self.param_names) :]
+                args = args[: len(self.param_names)]
             from ay.operations import adjust
+
             args = adjust(args, len(self.param_names))
             for param_name, arg in zip(self.param_names, args):
                 new_scope.put_local_ls(param_name, Variable(arg))
             retvals = self.block.evaluate_without_inner_scope(new_scope)
             if retvals is not None:
                 from ay.control_structures import ReturnException
+
                 raise ReturnException(retvals)
         else:
             # Function is implemented in Python
             from ay.operations import adjust_flatten
+
             args = adjust_flatten(args)
             try:
                 if not self.gets_scope:
@@ -353,43 +360,46 @@ class LuaFunction(LuaObject):
                     self.block(scope, *args)
             except Exception as e:
                 from ay.control_structures import LuaError
+
                 raise LuaError(LuaString(f"{self!s}: {e!s}".encode("utf-8")))
 
 
 @attrs.define(slots=True, eq=False)
 class LuaUserdata(LuaObject):
     """Class representing values of the *userdata* basic type in Lua."""
+
     pass
 
 
 @attrs.define(slots=True, eq=False)
 class LuaThread(LuaObject):
     """Class representing values of the *thread* basic type in Lua."""
+
     pass
 
 
 class LuaIndexableABC(ABC):
     @abstractmethod
-    def put(self, key: LuaValue, value: LuaValue, *, raw: bool = True) -> None:
-        ...
+    def put(
+        self, key: LuaValue, value: LuaValue, *, raw: bool = True
+    ) -> None: ...
 
     @abstractmethod
-    def get(self, key: LuaValue, *, raw: bool = True) -> LuaValue:
-        ...
+    def get(self, key: LuaValue, *, raw: bool = True) -> LuaValue: ...
 
     T = TypeVar("T")
-    @abstractmethod
-    def get_with_fallback(self, key: LuaValue, fallback: T) -> LuaValue | T:
-        ...
 
     @abstractmethod
-    def has(self, key: LuaValue) -> bool:
-        ...
+    def get_with_fallback(self, key: LuaValue, fallback: T) -> LuaValue | T: ...
+
+    @abstractmethod
+    def has(self, key: LuaValue) -> bool: ...
 
 
 @attrs.define(slots=True, eq=False, repr=False)
 class LuaTable(LuaObject, LuaIndexableABC):
     """Class representing values of the *table* basic type in Lua."""
+
     map: dict[LuaValue, LuaValue] = attrs.field(factory=dict)
     """The key-value pairs of the table."""
     _metatable: LuaTable = LuaNil
@@ -462,6 +472,7 @@ class LuaTable(LuaObject, LuaIndexableABC):
         return LuaNil
 
     T = TypeVar("T")
+
     def get_with_fallback(self, key: LuaValue, fallback: T) -> LuaValue | T:
         return self.map.get(key, fallback)
 

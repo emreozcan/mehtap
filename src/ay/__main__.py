@@ -31,13 +31,13 @@ def _main():
         "-e",
         metavar="stat",
         help="execute string 'stat'",
-        dest="execute_string"
+        dest="execute_string",
     )
     arg_parser.add_argument(
         "-i",
         action="store_true",
         help="enter interactive mode after executing 'script'",
-        dest="enter_interactive"
+        dest="enter_interactive",
     )
     arg_parser.add_argument(
         "-l",
@@ -85,9 +85,7 @@ def _main():
         arg_table.put(LuaNumber(1), str_to_lua_string(args.script))
         for i, arg in enumerate(args.args, start=2):
             arg_table.put(LuaNumber(i), str_to_lua_string(arg))
-        vm.root_scope.varargs = [
-            str_to_lua_string(arg) for arg in args.args
-        ]
+        vm.root_scope.varargs = [str_to_lua_string(arg) for arg in args.args]
     else:
         for i, arg in enumerate(sys.argv, start=1):
             arg_table.put(LuaNumber(i), str_to_lua_string(arg))
@@ -98,7 +96,7 @@ def _main():
             "AY_INIT_" + "_".join(__version__.split(".")),
             "AY_INIT",
             "LUA_INIT_5_4",
-            "LUA_INIT"
+            "LUA_INIT",
         ]
         for env_var in env_vars:
             if env_var in os.environ:
@@ -159,15 +157,15 @@ def enter_interactive(vm: VirtualMachine) -> None:
             except lark.exceptions.UnexpectedEOF:
                 continue
         except lark.exceptions.UnexpectedInput as e:
-            print(" "*len(prompt) + collected_line.splitlines()[e.line - 1])
+            print(" " * len(prompt) + collected_line.splitlines()[e.line - 1])
             print(f"{' '*len(prompt)}{' ' * (e.column - 1)}^")
-            print(f"error: unexpected input, "
-                  f"line {e.line}, column {e.column}")
+            print(
+                f"error: unexpected input, " f"line {e.line}, column {e.column}"
+            )
         except LuaError as lua_error:
-            if (
-                not isinstance(lua_error.message, LuaString)
-                and lua_error.message.has_metamethod(LuaString(b"__tostring"))
-            ):
+            if not isinstance(
+                lua_error.message, LuaString
+            ) and lua_error.message.has_metamethod(LuaString(b"__tostring")):
                 save = sys.stdout
                 sys.stdout = sys.stderr
                 try:

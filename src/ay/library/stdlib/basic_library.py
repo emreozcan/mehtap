@@ -17,7 +17,7 @@ from ay.values import (
     LuaNumber,
     LuaNumberType,
     MAX_INT64,
-    LuaFunction
+    LuaFunction,
 )
 from ay.control_structures import LuaError
 from ay.values import LuaBool
@@ -58,7 +58,7 @@ def provide(table: LuaTable) -> None:
         """collectgarbage ([opt [, arg]])"""
         warn.call(
             [py2lua("collectgarbage(): ay doesn't have garbage collection")],
-            scope
+            scope,
         )
         return [LuaNil]
 
@@ -137,7 +137,9 @@ def provide(table: LuaTable) -> None:
         # will iterate over the key–value pairs (1,t[1]), (2,t[2]), ..., up
         # to the first absent index.
         @lua_function()
-        def iterator_function(state, control_variable: LuaNumber, /) -> PyLuaRet:
+        def iterator_function(
+            state, control_variable: LuaNumber, /
+        ) -> PyLuaRet:
             index = control_variable.value + 1
             if index > MAX_INT64:
                 return None
@@ -335,7 +337,7 @@ def provide(table: LuaTable) -> None:
                 raise LuaError(
                     "bad argument #1 to 'select' (index out of range)"
                 )
-            return list(a[index - 1:])
+            return list(a[index - 1 :])
         # Otherwise, index must be the string "#",
         if index != LuaString(b"#"):
             raise LuaError(

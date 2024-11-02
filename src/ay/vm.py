@@ -11,7 +11,8 @@ from ay.values import (
     LuaTable,
     LuaString,
     Variable,
-    LuaValue, )
+    LuaValue,
+)
 
 
 @attrs.define(slots=True, repr=False, init=False)
@@ -21,7 +22,6 @@ class VirtualMachine:
     emitting_warnings: bool = False
     default_input: BinaryIO = sys.stdin.buffer
     default_output: BinaryIO = sys.stdout.buffer
-
 
     def __init__(self):
         self.globals = create_global_table()

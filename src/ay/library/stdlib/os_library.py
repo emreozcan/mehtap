@@ -9,11 +9,9 @@ import time as py_time
 import datetime
 
 from ay.operations import str_to_lua_string
-from ay.py2lua import lua_function, \
-    PyLuaWrapRet, py2lua, PyLuaRet
+from ay.py2lua import lua_function, PyLuaWrapRet, py2lua, PyLuaRet
 from ay.library.provider_abc import LibraryProvider
-from ay.values import LuaTable, LuaString, LuaNil, LuaNumber, \
-    LuaBool, LuaValue
+from ay.values import LuaTable, LuaString, LuaNil, LuaNumber, LuaBool, LuaValue
 
 FAIL = LuaNil
 
@@ -92,9 +90,7 @@ def os_table_generator() -> LuaTable:
         #               number is the signal that terminated the command.
         return [
             LuaBool(True) if retcode == 0 else FAIL,
-            str_to_lua_string(
-                "exit" if retcode >= 0 else "signal"
-            ),
+            str_to_lua_string("exit" if retcode >= 0 else "signal"),
             LuaNumber(abs(retcode)),
         ]
 

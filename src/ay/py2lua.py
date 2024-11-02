@@ -2,15 +2,30 @@ from __future__ import annotations
 
 from inspect import signature
 from collections.abc import Mapping, Iterable, Callable
-from typing import Optional, overload, Any, Union, Concatenate, Literal, \
-    TYPE_CHECKING, Protocol
+from typing import (
+    Optional,
+    overload,
+    Any,
+    Union,
+    Concatenate,
+    Literal,
+    TYPE_CHECKING,
+    Protocol,
+)
 
 from typing_extensions import TypeVar
 
 from ay.operations import str_to_lua_string
 from ay.scope import Scope
-from ay.values import LuaValue, LuaFunction, LuaTable, LuaString, LuaNil, \
-    LuaBool, LuaNumber
+from ay.values import (
+    LuaValue,
+    LuaFunction,
+    LuaTable,
+    LuaString,
+    LuaNil,
+    LuaBool,
+    LuaNumber,
+)
 
 
 if TYPE_CHECKING:
@@ -26,7 +41,6 @@ class SupportsLua(Protocol[LV]):
 
 PyLuaNative = Union[None, bool, int, float, str, Mapping, Iterable, Callable]
 Py2LuaAccepts = Union[PyLuaNative, SupportsLua[LV]]
-
 
 
 @overload
@@ -122,10 +136,7 @@ LuaScopeCallback = TypeVar(
     "LuaScopeCallback",
     bound=Callable[Concatenate[Scope, ...], PyLuaRet],
 )
-PyCallback = TypeVar(
-    "PyCallback",
-    bound=Callable[..., PyLuaWrapRet]
-)
+PyCallback = TypeVar("PyCallback", bound=Callable[..., PyLuaWrapRet])
 PyScopeCallback = TypeVar(
     "PyScopeCallback",
     bound=Callable[Concatenate[Scope, ...], PyLuaWrapRet],
@@ -290,7 +301,7 @@ def lua_function(
         rename_args=rename_args,
         gets_scope=gets_scope,
         wrap_values=wrap_values,
-        preserve=preserve if preserve is not None else False
+        preserve=preserve if preserve is not None else False,
     )
 
 
@@ -340,13 +351,17 @@ def _lua_function(
             callable_argnames.append(param.name)
 
         if wrap_values:
+
             def new_function(*args: LuaValue) -> None:
                 from ay.lua2py import lua2py
+
                 return_values = func(*(lua2py(v) for v in args))
                 if isinstance(return_values, (list, tuple)):
                     raise ReturnException([py2lua(v) for v in return_values])
                 raise ReturnException([py2lua(return_values)])
+
         else:
+
             def new_function(*args: LuaValue) -> None:
                 raise ReturnException(func(*args))
 
@@ -357,8 +372,7 @@ def _lua_function(
             rename_arg_count = len(rename_args)
             if callable_arg_count != rename_arg_count:
                 scope_warning = (
-                    "(not counting the scope parameter,) "
-                    if gets_scope else ""
+                    "(not counting the scope parameter,) " if gets_scope else ""
                 )
                 raise ValueError(
                     f"Callable has {callable_arg_count} parameters "

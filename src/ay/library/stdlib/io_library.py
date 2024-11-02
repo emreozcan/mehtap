@@ -12,8 +12,15 @@ from ay.library.provider_abc import LibraryProvider
 from ay.parser import numeral_parser
 from ay.py2lua import lua_function, PyLuaRet
 from ay.scope import Scope
-from ay.values import LuaTable, LuaString, LuaNil, LuaNumber, LuaValue, \
-    LuaUserdata, LuaIndexableABC
+from ay.values import (
+    LuaTable,
+    LuaString,
+    LuaNil,
+    LuaNumber,
+    LuaValue,
+    LuaUserdata,
+    LuaIndexableABC,
+)
 
 FAIL = LuaNil
 
@@ -50,12 +57,18 @@ class LuaFile(LuaUserdata, LuaIndexableABC):
                 raise LuaError("invalid index to a file value")
 
     T = TypeVar("T")
+
     def get_with_fallback(self, key: LuaValue, fallback: T) -> LuaValue | T:
         return self.get(key)
 
     def has(self, key: LuaValue) -> bool:
         return isinstance(key, LuaString) and key.content in (
-            b"close", b"flush", b"lines", b"read", b"seek", b"setvbuf",
+            b"close",
+            b"flush",
+            b"lines",
+            b"read",
+            b"seek",
+            b"setvbuf",
             b"write",
         )
 
@@ -87,6 +100,7 @@ def _fsync_io(io: IO, /) -> PyLuaRet:
 def file_method_lines(self: LuaFile, /, *formats) -> PyLuaRet:
     return _file_method_lines(self, *formats)
 
+
 def _file_method_lines(self: LuaFile, /, *formats) -> PyLuaRet:
     # When no format is given, uses "l" as a default.
     if not formats:
@@ -98,6 +112,7 @@ def _file_method_lines(self: LuaFile, /, *formats) -> PyLuaRet:
         # each time it is called, reads the file
         # according to the given formats.
         return _file_method_read(self, *formats)
+
     # As an example, the construction
     #     for c in file:lines(1) do body end
     # will iterate over all characters of the file, starting at the current
@@ -174,12 +189,11 @@ def read_format_number(file: LuaFile, number: int) -> LuaString:
 
 
 @lua_function(name="read")
-def file_method_read(self: LuaFile, *formats: LuaValue) \
-        -> PyLuaRet:
+def file_method_read(self: LuaFile, *formats: LuaValue) -> PyLuaRet:
     return _file_method_read(self, *formats)
 
-def _file_method_read(self: LuaFile, *formats: LuaValue) \
-        -> PyLuaRet:
+
+def _file_method_read(self: LuaFile, *formats: LuaValue) -> PyLuaRet:
     if not formats:
         return [read_format_l(self)]
     return_vals: list[LuaValue] = []
@@ -204,10 +218,7 @@ SYMBOL__FD = LuaString(b"__fd")
 
 @lua_function(name="seek")
 def file_method_seek(
-    self: LuaFile,
-    whence: LuaString = None,
-    offset: LuaNumber = None,
-    /
+    self: LuaFile, whence: LuaString = None, offset: LuaNumber = None, /
 ) -> PyLuaRet:
     if whence is None:
         whence = LuaString(b"cur")
@@ -227,11 +238,7 @@ def file_method_seek(
 
 @lua_function(name="setvbuf", gets_scope=True)
 def file_method_setvbuf(
-    scope: Scope,
-    self: LuaFile,
-    mode,
-    size = None,
-    /
+    scope: Scope, self: LuaFile, mode, size=None, /
 ) -> PyLuaRet:
     scope.vm.get_warning("file:setvbuf(): ignored call")
     return None
@@ -244,6 +251,7 @@ def file_method_write(
     *values: LuaValue,
 ) -> PyLuaRet:
     return _file_method_write(self, *values)
+
 
 def _file_method_write(
     self: LuaFile,
@@ -297,8 +305,9 @@ def provide(io_table: LuaTable) -> None:
             raise LuaError(f"io.input(): {e!s}")
 
     @lua_function(io_table, gets_scope=True, preserve=True)
-    def lines(scope: Scope, filename: LuaString = None, /, *formats) \
-            -> PyLuaRet:
+    def lines(
+        scope: Scope, filename: LuaString = None, /, *formats
+    ) -> PyLuaRet:
         # The call io.lines() (with no file name) is equivalent to
         # io.input():lines("l"); that is, it iterates over the lines of the
         # default input file.
@@ -309,6 +318,7 @@ def provide(io_table: LuaTable) -> None:
         else:
             file_handle = LuaFile(open(filename.content, "rb"))
             to_close = True
+
         # Opens the given file name in read mode and returns an iterator
         # function that works like file:lines(···) over the opened file.
         # When the iterator function fails to read any value, it automatically
@@ -316,14 +326,12 @@ def provide(io_table: LuaTable) -> None:
         @lua_function()
         def iterator_function() -> PyLuaRet:
             f = _file_method_lines(file_handle, *formats)
-            if (
-                to_close and (
-                    f is None
-                    or any(
-                        isinstance(r, LuaNil)
-                        or (isinstance(r, LuaString) and not r.content)
-                        for r in f
-                    )
+            if to_close and (
+                f is None
+                or any(
+                    isinstance(r, LuaNil)
+                    or (isinstance(r, LuaString) and not r.content)
+                    for r in f
                 )
             ):
                 file_handle.io.close()
@@ -442,6 +450,7 @@ def provide(io_table: LuaTable) -> None:
         #
         # Equivalent to io.output():write(···).
         return _file_method_write(output(scope), *values)
+
 
 SYMBOL_IO = LuaString(b"io")
 
