@@ -379,6 +379,18 @@ class LuaTransformer(lark.Transformer):
         return nodes.FuncCallRegular(name=name, args=args)
 
     @staticmethod
+    def functioncall_method(
+        base: nodes.Expression,
+        method: nodes.Name,
+        args: Sequence[nodes.Expression],
+    ) -> nodes.FuncCallMethod:
+        return nodes.FuncCallMethod(
+            object=base,
+            method=method,
+            args=args,
+        )
+
+    @staticmethod
     def literalstring(terminal: nodes.Terminal) -> nodes.LiteralString:
         return nodes.LiteralString(text=terminal)
 
