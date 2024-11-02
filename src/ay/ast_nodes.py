@@ -18,7 +18,7 @@ from ay.values import (
     LuaString,
     MAX_INT64,
     LuaTable,
-    LuaFunction,
+    LuaFunction, LuaIndexableABC,
 )
 from ay.operations import (
     int_wrap_overflow,
@@ -371,7 +371,7 @@ class VarName(Variable):
 class VarIndex(Variable):
     def evaluate(self, scope: Scope) -> LuaValue:
         table = self.base.evaluate(scope)
-        assert isinstance(table, LuaTable)
+        assert isinstance(table, LuaIndexableABC)
         return table.get(self.index.evaluate_single(scope))
 
     base: Expression
@@ -498,7 +498,7 @@ class FuncCallMethod(Expression, Statement):
         # A call v:name(args) is syntactic sugar for v.name(v,args),
         # except that v is evaluated only once.
         v = self.object.evaluate(scope)
-        assert isinstance(v, LuaTable)
+        assert isinstance(v, LuaIndexableABC)
         function = v.get(str_to_lua_string(self.method.name.text))
         assert isinstance(function, LuaFunction)
         args = [arg.evaluate(scope) for arg in self.args]
@@ -648,7 +648,7 @@ class Assignment(Statement):
                 scope.put_nonlocal_ls(var_name, value)
             elif isinstance(variable, VarIndex):
                 table = variable.base.evaluate(scope)
-                assert isinstance(table, LuaTable)
+                assert isinstance(table, LuaIndexableABC)
                 table.put(variable.index.evaluate(scope), value)
             else:
                 raise NotImplementedError(f"{type(variable)=}")
@@ -911,7 +911,7 @@ class FunctionStatement(Statement):
             table = scope.get_ls(self.name.names[0].as_lua_string())
             for name in self.name.names[1:-1]:
                 table = table.get(name.as_lua_string())
-                assert isinstance(table, LuaTable)
+                assert isinstance(table, LuaIndexableABC)
             function.name = self.name.names[-1].as_lua_string()
             table.put(function.name, function)
         return [function]

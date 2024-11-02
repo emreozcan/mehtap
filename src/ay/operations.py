@@ -17,7 +17,7 @@ from ay.values import (
     LuaTable,
     LuaFunction,
     LuaThread,
-    LuaUserdata,
+    LuaUserdata, LuaIndexableABC,
 )
 
 
@@ -465,7 +465,7 @@ def length(a: LuaValue, *, raw: bool = True) -> LuaNumber:
     if a.has_metamethod(LuaString(b"__len")) and not raw:
         raise NotImplementedError()  # TODO.
 
-    if isinstance(a, LuaTable):
+    if isinstance(a, LuaIndexableABC):
         if not a.map:
             return LuaNumber(0, LuaNumberType.INTEGER)
         border = 0

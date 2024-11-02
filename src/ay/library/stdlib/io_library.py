@@ -74,12 +74,6 @@ class LuaFile(LuaUserdata, LuaIndexableABC):
         )
 
 
-# Make isinstance() think LuaFile is a LuaTable.
-# TODO: This is a hack. Find a better way to do this.
-#       Maybe make every place check LuaIndexableABC instead of LuaTable.
-LuaFile.__bases__ = (LuaUserdata, LuaTable)
-
-
 @lua_function(name="close")
 def _lf_file_method_close(self: LuaFile, /) -> PyLuaRet:
     self.io.close()

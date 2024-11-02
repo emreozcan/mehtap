@@ -20,7 +20,7 @@ from ay.values import (
     LuaFunction,
     LuaBool,
     LuaThread,
-    LuaUserdata,
+    LuaUserdata, LuaIndexableABC,
 )
 from ay.control_structures import LuaError
 from ay.values import LuaBool
@@ -378,7 +378,7 @@ def basic_rawget(
     # Gets the real value of table[index], without using the __index
     # metavalue.
     # table must be a table; index may be any value.
-    assert isinstance(table, LuaTable)
+    assert isinstance(table, LuaIndexableABC)
     return [table.get(index, raw=True)]
 
 
@@ -391,7 +391,7 @@ def basic_rawlen(v: LuaTable | LuaString, /) -> PyLuaRet:
     """rawlen (v)"""
     # Returns the length of the object v, which must be a table or a string,
     # without invoking the __len metamethod. Returns an integer.
-    assert isinstance(v, (LuaTable, LuaString))
+    assert isinstance(v, (LuaIndexableABC, LuaString))
     return [length(v, raw=True)]
 
 
@@ -458,7 +458,7 @@ def basic_setmetatable(
 ) -> PyLuaRet:
     """setmetatable (table, metatable)"""
     # Sets the metatable for the given table.
-    assert isinstance(table, LuaTable)
+    assert isinstance(table, LuaIndexableABC)
     # If the original metatable has a __metatable field, raises an error.
     if table.has_metamethod(SYMBOL_METATABLE):
         raise LuaError("cannot change a protected metatable")
