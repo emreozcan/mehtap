@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from io import FileIO, SEEK_CUR, SEEK_SET, SEEK_END, BytesIO
 from os import fsync
 from tempfile import TemporaryFile
@@ -20,7 +22,7 @@ from ay.values import (
     LuaValue,
     LuaUserdata,
     LuaIndexableABC,
-    LuaFunction,
+    LuaFunction, LuaBool,
 )
 
 FAIL = LuaNil
@@ -29,9 +31,6 @@ FAIL = LuaNil
 @attrs.define(slots=True, eq=False, repr=False)
 class LuaFile(LuaUserdata, LuaIndexableABC):
     io: BinaryIO
-
-    def __str__(self):
-        return f"file {self.io}"
 
     def put(self, key: LuaValue, value: LuaValue, *, raw: bool = True) -> None:
         raise LuaError("attempt to set index on a file value")
@@ -184,11 +183,11 @@ def _read_format_number(file: LuaFile, number: int) -> LuaString:
 
 
 @lua_function(name="read")
-def _lf_file_method_read(self: LuaFile, *formats: LuaValue) -> PyLuaRet:
+def _lf_file_method_read(self: LuaFile, /, *formats: LuaValue) -> PyLuaRet:
     return _file_method_read(self, *formats)
 
 
-def _file_method_read(self: LuaFile, *formats: LuaValue) -> PyLuaRet:
+def _file_method_read(self: LuaFile, /, *formats: LuaValue) -> PyLuaRet:
     if not formats:
         return [_read_format_l(self)]
     return_vals: list[LuaValue] = []
@@ -248,11 +247,11 @@ def _lf_file_method_write(
     /,
     *values: LuaValue,
 ) -> PyLuaRet:
-    return _file_method_write(self, *values)
+    return _file_method_write(self.io, *values)
 
 
 def _file_method_write(
-    self: LuaFile,
+    self: BinaryIO,
     /,
     *values: LuaValue,
 ) -> PyLuaRet:
@@ -264,7 +263,7 @@ def _file_method_write(
     return [self]
 
 
-@lua_function(name="close", gets_scope=True, preserve=True)
+@lua_function(name="close", gets_scope=True)
 def lf_io_close(scope: Scope, file: LuaFile | None = None, /) -> PyLuaRet:
     return io_close(scope, file)
 
@@ -278,7 +277,7 @@ def io_close(scope: Scope, file: LuaFile | None = None, /) -> PyLuaRet:
     return None
 
 
-@lua_function(name="flush", gets_scope=True, preserve=True)
+@lua_function(name="flush", gets_scope=True)
 def lf_io_flush(scope: Scope, /) -> PyLuaRet:
     return io_flush(scope)
 
@@ -288,16 +287,14 @@ def io_flush(scope: Scope, /) -> PyLuaRet:
     return None
 
 
-@lua_function(name="input", gets_scope=True, preserve=True)
+@lua_function(name="input", gets_scope=True)
 def lf_io_input(
     scope: Scope, file: LuaFile | LuaString | None = None, /
 ) -> PyLuaRet:
     return io_input(scope, file)
 
 
-def io_input(
-    scope: Scope, file: LuaFile | LuaString | None = None, /
-) -> PyLuaRet:
+def io_input(scope: Scope, file: LuaFile | LuaString | None = None, /):
     # When called with a file name, it opens the named file (in text mode),
     # and sets its handle as the default input file.
     try:
@@ -320,7 +317,7 @@ def io_input(
         raise LuaError(f"io.input(): {e!s}")
 
 
-@lua_function(name="table", gets_scope=True, preserve=True)
+@lua_function(name="table", gets_scope=True)
 def lf_io_lines(
     scope: Scope, filename: LuaString | None = None, /, *formats
 ) -> PyLuaRet:
@@ -365,7 +362,7 @@ def io_lines(
         return [iterator_function, LuaNil, LuaNil, file_handle]
 
 
-@lua_function(name="open", gets_scope=True, preserve=True)
+@lua_function(name="open", gets_scope=True)
 def lf_io_open(
     filename: LuaString, mode: LuaString | None = None, /
 ) -> PyLuaRet:
@@ -409,7 +406,7 @@ def io_open(filename: LuaString, mode: LuaString | None = None, /) -> PyLuaRet:
     return [LuaFile(open(filename.content, mode_str))]
 
 
-@lua_function(name="output", gets_scope=True, preserve=True)
+@lua_function(name="output", gets_scope=True)
 def lf_io_output(
     scope: Scope, file: LuaFile | LuaString | None = None, /
 ) -> PyLuaRet:
@@ -417,8 +414,7 @@ def lf_io_output(
 
 
 def io_output(
-    scope: Scope, file: LuaFile | LuaString | None = None, /
-) -> PyLuaRet:
+    scope: Scope, file: LuaFile | LuaString | None = None, /):
     # Similar to io.input, but operates over the default output file.
 
     # When called with a file name, it opens the named file (in text mode),
@@ -442,7 +438,7 @@ def io_output(
         raise LuaError(f"io.output(): {e!s}")
 
 
-@lua_function(name="popen", gets_scope=True, preserve=True)
+@lua_function(name="popen", gets_scope=True)
 def lf_io_popen() -> PyLuaRet:
     return io_popen()
 
@@ -458,7 +454,7 @@ def io_popen():
     raise NotImplementedError()
 
 
-@lua_function(name="read", gets_scope=True, preserve=True)
+@lua_function(name="read", gets_scope=True)
 def lf_io_read(scope: Scope, /, *formats) -> PyLuaRet:
     return io_read(scope, *formats)
 
@@ -470,7 +466,7 @@ def io_read(scope: Scope, /, *formats) -> PyLuaRet:
     return _file_method_read(lf_io_input(scope))
 
 
-@lua_function(name="tmpfile", preserve=True)
+@lua_function(name="tmpfile")
 def lf_io_tmpfile() -> PyLuaRet:
     return io_tmpfile()
 
@@ -484,7 +480,7 @@ def io_tmpfile() -> PyLuaRet:
     return [LuaFile(TemporaryFile())]
 
 
-@lua_function(name="type", preserve=True)
+@lua_function(name="type")
 def lf_io_type(obj: LuaValue, /) -> PyLuaRet:
     return io_type(obj)
 
@@ -502,7 +498,7 @@ def io_type(obj: LuaValue, /) -> PyLuaRet:
     return [LuaString(b"file")]
 
 
-@lua_function(name="write", gets_scope=True, preserve=True)
+@lua_function(name="write", gets_scope=True)
 def lf_io_write(scope: Scope, /, *values: LuaValue) -> PyLuaRet:
     return io_write(scope, *values)
 
@@ -511,13 +507,13 @@ def io_write(scope: Scope, /, *values: LuaValue) -> PyLuaRet:
     # io.write (···)
     #
     # Equivalent to io.output():write(···).
-    return _file_method_write(lf_io_output(scope), *values)
+    return _file_method_write(scope.vm.default_output, *values)
 
 
 SYMBOL_IO = LuaString(b"io")
 
 
-class IOProvider(LibraryProvider):
+class IOLibrary(LibraryProvider):
     def provide(self, global_table: LuaTable) -> None:
         io_table = LuaTable()
         global_table.put(SYMBOL_IO, io_table)
