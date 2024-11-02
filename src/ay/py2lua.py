@@ -2,15 +2,35 @@ from __future__ import annotations
 
 from inspect import signature
 from collections.abc import Mapping, Iterable, Callable
-from typing import Optional, overload, Any, Union
+from typing import Optional, overload, Any, Union, Concatenate, Literal, \
+    TYPE_CHECKING, Protocol
+
+from typing_extensions import TypeVar
 
 from ay.operations import str_to_lua_string
+from ay.scope import Scope
 from ay.values import LuaValue, LuaFunction, LuaTable, LuaString, LuaNil, \
     LuaBool, LuaNumber
 
 
+if TYPE_CHECKING:
+    from ay.values import LuaNilType
+
+
+LV = TypeVar("LV", bound=LuaValue, covariant=True)
+
+
+class SupportsLua(Protocol[LV]):
+    def __lua__(self) -> LV: ...
+
+
+PyLuaNative = Union[None, bool, int, float, str, Mapping, Iterable, Callable]
+Py2LuaAccepts = Union[PyLuaNative, SupportsLua[LV]]
+
+
+
 @overload
-def py2lua(value: None) -> LuaNil: ...
+def py2lua(value: None) -> LuaNilType: ...
 
 
 @overload
@@ -38,10 +58,10 @@ def py2lua(value: Callable) -> LuaFunction: ...
 
 
 @overload
-def py2lua(value: Any) -> LuaValue: ...
+def py2lua(value: SupportsLua[LV]) -> LV: ...
 
 
-def py2lua(value) -> LuaValue:
+def py2lua(value):
     """Convert a plain Python value to a :class:`LuaValue`.
 
     If the value (or a member of the value) has a ``__lua__`` dunder method,
@@ -91,11 +111,121 @@ def _py2lua(py_val, obj_map):
     raise TypeError(f"can't convert {py_val!r} to LuaValue")
 
 
-Py2LuaAccepts = Union[bool, int, float, str, Mapping, Iterable, Callable]
 PyLuaRet = Optional[list[LuaValue]]
 PyLuaWrapRet = Optional[list[Py2LuaAccepts]]
-PyLuaFunction = Callable[..., PyLuaRet]
-LuaDecorator = Callable[[PyLuaFunction], LuaFunction]
+LuaCallback = TypeVar(
+    "LuaCallback",
+    bound=Callable[..., PyLuaRet],
+    covariant=True,
+)
+LuaScopeCallback = TypeVar(
+    "LuaScopeCallback",
+    bound=Callable[Concatenate[Scope, ...], PyLuaRet],
+)
+PyCallback = TypeVar(
+    "PyCallback",
+    bound=Callable[..., PyLuaWrapRet]
+)
+PyScopeCallback = TypeVar(
+    "PyScopeCallback",
+    bound=Callable[Concatenate[Scope, ...], PyLuaWrapRet],
+)
+
+
+@overload
+def lua_function(
+    table: Optional[LuaTable] = None,
+    *,
+    name: Optional[str] = None,
+    gets_scope: Literal[False] = False,
+    wrap_values: Literal[False] = False,
+    rename_args: Optional[list[str]] = None,
+    preserve: Literal[False] = False,
+) -> Callable[[LuaCallback], LuaFunction]: ...
+
+
+@overload
+def lua_function(
+    table: Optional[LuaTable] = None,
+    *,
+    name: Optional[str] = None,
+    gets_scope: Literal[False] = False,
+    wrap_values: Literal[False] = False,
+    rename_args: Optional[list[str]] = None,
+    preserve: Literal[True] = True,
+) -> Callable[[LuaCallback], LuaCallback]: ...
+
+
+@overload
+def lua_function(
+    table: Optional[LuaTable] = None,
+    *,
+    name: Optional[str] = None,
+    gets_scope: Literal[False] = False,
+    wrap_values: Literal[True] = True,
+    rename_args: Optional[list[str]] = None,
+    preserve: Literal[False] = False,
+) -> Callable[[PyCallback], LuaFunction]: ...
+
+
+@overload
+def lua_function(
+    table: Optional[LuaTable] = None,
+    *,
+    name: Optional[str] = None,
+    gets_scope: Literal[False] = False,
+    wrap_values: Literal[True] = True,
+    rename_args: Optional[list[str]] = None,
+    preserve: Literal[True] = True,
+) -> Callable[[PyCallback], PyCallback]: ...
+
+
+@overload
+def lua_function(
+    table: Optional[LuaTable] = None,
+    *,
+    name: Optional[str] = None,
+    gets_scope: Literal[True] = True,
+    wrap_values: Literal[False] = False,
+    rename_args: Optional[list[str]] = None,
+    preserve: Literal[False] = False,
+) -> Callable[[LuaScopeCallback], LuaFunction]: ...
+
+
+@overload
+def lua_function(
+    table: Optional[LuaTable] = None,
+    *,
+    name: Optional[str] = None,
+    gets_scope: Literal[True] = True,
+    wrap_values: Literal[False] = False,
+    rename_args: Optional[list[str]] = None,
+    preserve: Literal[True] = True,
+) -> Callable[[LuaScopeCallback], LuaScopeCallback]: ...
+
+
+@overload
+def lua_function(
+    table: Optional[LuaTable] = None,
+    *,
+    name: Optional[str] = None,
+    gets_scope: Literal[True] = True,
+    wrap_values: Literal[True] = True,
+    rename_args: Optional[list[str]] = None,
+    preserve: Literal[False] = False,
+) -> Callable[[PyScopeCallback], LuaFunction]: ...
+
+
+@overload
+def lua_function(
+    table: Optional[LuaTable] = None,
+    *,
+    name: Optional[str] = None,
+    gets_scope: Literal[True] = True,
+    wrap_values: Literal[True] = True,
+    rename_args: Optional[list[str]] = None,
+    preserve: Literal[True] = True,
+) -> Callable[[PyScopeCallback], PyScopeCallback]: ...
 
 
 def lua_function(
@@ -106,7 +236,7 @@ def lua_function(
     wrap_values: bool = False,
     rename_args: Optional[list[str]] = None,
     preserve: Optional[bool] = False,
-) -> LuaDecorator:
+):
     """Turns Python functions to :class:`LuaFunction` instances.
 
     :param table: If provided, the newly created :class:`LuaFunction` will be
@@ -154,6 +284,25 @@ def lua_function(
     This change is only cosmetic since only parameter order is used to bind
     arguments to the function.
     """
+    return _lua_function(
+        table=table,
+        name=name,
+        rename_args=rename_args,
+        gets_scope=gets_scope,
+        wrap_values=wrap_values,
+        preserve=preserve if preserve is not None else False
+    )
+
+
+def _lua_function(
+    *,
+    table: Optional[LuaTable],
+    name: Optional[str],
+    rename_args: Optional[list[str]],
+    gets_scope: bool,
+    wrap_values: bool,
+    preserve: bool,
+):
     from ay.control_structures import ReturnException
 
     if preserve and not table:
@@ -162,7 +311,7 @@ def lua_function(
             " LuaFunction instance in the table... What's your point?"
         )
 
-    def decorator(func: Callable) -> LuaFunction:
+    def decorator(func: Callable):
         f_signature = signature(func)
         callable_argnames = []
         minimum_required = 0
