@@ -19,7 +19,7 @@ from ay.values import (
     LuaString,
     MAX_INT64,
     LuaTable,
-    LuaFunction, LuaIndexableABC,
+    LuaFunction, LuaIndexableABC, type_of_lv,
 )
 from ay.operations import (
     int_wrap_overflow,
@@ -380,7 +380,7 @@ class VarArgExpr(Expression):
         v = scope.get_varargs()
         if v is not None:
             return v
-        raise NotImplementedError()
+        return []
 
 
 @attrs.define(slots=True)
@@ -400,7 +400,8 @@ class VarName(Variable):
 class VarIndex(Variable):
     def _evaluate(self, scope: Scope) -> LuaValue:
         table = self.base.evaluate(scope)
-        assert isinstance(table, LuaIndexableABC)
+        if not isinstance(table, LuaIndexableABC):
+            raise LuaError(f"attempt to index {type_of_lv(table)} value")
         return table.get(self.index.evaluate_single(scope))
 
     base: Expression
@@ -433,14 +434,14 @@ class TableConstructor(Expression):
                 elif isinstance(field.key, Expression):
                     key = field.key.evaluate_single(scope)
                 else:
-                    raise NotImplementedError(f"{type(field.key)=}")
+                    raise ValueError(f"{type(field.key)=}")
                 table.put(key, field.value.evaluate_single(scope))
             elif isinstance(field, FieldCounterKey):
                 key = LuaNumber(counter, LuaNumberType.INTEGER)
                 counter += 1
                 table.put(key, field.value.evaluate_single(scope))
             else:
-                raise NotImplementedError(f"{type(field)=}")
+                raise ValueError(f"{type(field)=}")
         if last_field and isinstance(last_field, FieldCounterKey):
             last_field_value = last_field.value.evaluate(scope)
             if isinstance(last_field_value, Sequence):
@@ -526,7 +527,8 @@ class FuncCallMethod(Expression, Statement):
         # A call v:name(args) is syntactic sugar for v.name(v,args),
         # except that v is evaluated only once.
         v = self.object.evaluate(scope)
-        assert isinstance(v, LuaIndexableABC)
+        if not isinstance(table, LuaIndexableABC):
+            raise LuaError(f"attempt to index {type_of_lv(table)} value")
         function = v.get(str_to_lua_string(self.method.name.text))
         args = [v, *(arg.evaluate(scope) for arg in self.args)]
         return function.call(args, scope)
@@ -675,10 +677,13 @@ class Assignment(Statement):
                 scope.put_nonlocal_ls(var_name, value)
             elif isinstance(variable, VarIndex):
                 table = variable.base.evaluate(scope)
-                assert isinstance(table, LuaIndexableABC)
+                if not isinstance(table, LuaIndexableABC):
+                    raise LuaError(
+                        f"attempt to index {type_of_lv(table)} value"
+                    )
                 table.put(variable.index.evaluate(scope), value)
             else:
-                raise NotImplementedError(f"{type(variable)=}")
+                raise ValueError(f"{type(variable)=}")
         return values
 
     names: Sequence[Variable]
@@ -782,14 +787,17 @@ class For(Statement):
         # Their values are called respectively
         # the initial value,
         initial_value = adjust_to_one(self.start.evaluate(scope))
-        assert isinstance(initial_value, LuaNumber)
+        if not isinstance(initial_value, LuaNumber):
+            raise LuaError("the initial value must be a number")
         # the limit,
         limit = adjust_to_one(self.stop.evaluate(scope))
-        assert isinstance(limit, LuaNumber)
+        if not isinstance(limit, LuaNumber):
+            raise LuaError("the limit value must be a number")
         # and the step. If the step is absent, it defaults to 1.
         if self.step:
             step = adjust_to_one(self.step.evaluate(scope))
-            assert isinstance(step, LuaNumber)
+            if not isinstance(step, LuaNumber):
+                raise LuaError("the step value must be a number")
         else:
             step = LuaNumber(1, LuaNumberType.INTEGER)
         # If both the initial value and the step are integers,
@@ -812,7 +820,7 @@ class For(Statement):
         # A negative step makes a decreasing sequence;
         # a step equal to zero raises an error.
         if step.value == 0:
-            raise NotImplementedError()
+            raise LuaError("step must not be zero")
         # The loop continues while the value is less than or equal to the limit
         # (greater than or equal to for a negative step).
         # If the initial value is already greater than the limit
@@ -875,7 +883,7 @@ class ForIn(Statement):
         # an iterator function,
         iterator_function = exp_vals[0]
         if not isinstance(iterator_function, LuaFunction):
-            raise NotImplementedError()
+            raise LuaError("the iterator function must be a function")
         # a state,
         state = exp_vals[1]
         # an initial value for the control variable,
@@ -938,7 +946,10 @@ class FunctionStatement(Statement):
             table = scope.get_ls(self.name.names[0].as_lua_string())
             for name in self.name.names[1:-1]:
                 table = table.get(name.as_lua_string())
-                assert isinstance(table, LuaIndexableABC)
+                if not isinstance(table, LuaIndexableABC):
+                    raise LuaError(
+                        f"attempt to index {type_of_lv(table)} value"
+                    )
             function.name = self.name.names[-1].as_lua_string()
             table.put(function.name, function)
         return [function]
@@ -1002,8 +1013,9 @@ class LocalAssignment(Statement):
                         var_name, ay_values.Variable(exp_val, constant=True)
                     )
                 else:
-                    # TODO: Create an error
-                    raise NotImplementedError()
+                    raise LuaError(
+                        f"unknown attribute '{attrib.content.decode('ascii')}'"
+                    )
         return exp_vals
 
 

@@ -7,6 +7,8 @@ from typing import TYPE_CHECKING, TypeVar, NoReturn
 
 import attrs
 
+from ay.control_structures import LuaError
+
 if TYPE_CHECKING:
     from ay.ast_nodes import Block
     from ay.scope import Scope
@@ -73,7 +75,7 @@ class LuaValue(ABC):
         if hasattr(self, "_metatable"):
             self._metatable = value
         else:
-            raise NotImplementedError()
+            raise LuaError(f"cannot set metatable for {type_of_lv(self)} value")
 
     def remove_metatable(self):
         """Removes the value's metatable if the value can have one.
@@ -469,18 +471,17 @@ class LuaTable(LuaObject, LuaIndexableABC):
         if not raw:
             raise NotImplementedError()  # todo. (__newindex metavalue)
 
-        if key is LuaNil:
-            raise NotImplementedError()
+        # Warning: Do not optimize by deleting keys that are assigned LuaNil,
+        # as Lua allows you to set existing fields in a table to nil while
+        # traversing it by using next().
+
         if isinstance(key, LuaNumber):
             if key.type == LuaNumberType.FLOAT:
                 if key.value == float("nan"):
-                    raise NotImplementedError()
+                    raise LuaError("table index is NaN")
                 if key.value.is_integer():
                     key = LuaNumber(int(key.value), LuaNumberType.INTEGER)
 
-        # Note: Do not optimize by deleting keys that are assigned LuaNil,
-        # as Lua allows you to set existing fields in a table to nil while
-        # traversing it by using next().
         self.map[key] = value
 
     # TODO: Change raw's default value to False.

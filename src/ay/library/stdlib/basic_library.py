@@ -263,7 +263,7 @@ def basic_pairs(scope: Scope, t: LuaTable, /) -> list[LuaValue] | None:
     metamethod = t.get_metamethod(SYMBOL_PAIRS)
     if metamethod is not None:
         if not isinstance(metamethod, LuaFunction):
-            raise NotImplementedError()
+            raise LuaError("'__pairs' metavalue must be a function")
         return metamethod.call([t], scope)
     # Otherwise, returns three values: the next function, the table t, and
     # nil, so that the construction
@@ -375,7 +375,8 @@ def basic_rawget(
     # Gets the real value of table[index], without using the __index
     # metavalue.
     # table must be a table; index may be any value.
-    assert isinstance(table, LuaIndexableABC)
+    if not isinstance(table, LuaTable):
+        raise LuaError("'table' must be a table")
     return [table.get(index, raw=True)]
 
 
@@ -388,7 +389,8 @@ def basic_rawlen(v: LuaTable | LuaString, /) -> PyLuaRet:
     """rawlen (v)"""
     # Returns the length of the object v, which must be a table or a string,
     # without invoking the __len metamethod. Returns an integer.
-    assert isinstance(v, (LuaIndexableABC, LuaString))
+    if not isinstance(v, (LuaIndexableABC, LuaString)):
+        raise LuaError("'v' must be a table or a string")
     return [length(v, raw=True)]
 
 
@@ -455,7 +457,8 @@ def basic_setmetatable(
 ) -> PyLuaRet:
     """setmetatable (table, metatable)"""
     # Sets the metatable for the given table.
-    assert isinstance(table, LuaIndexableABC)
+    if not isinstance(table, LuaTable):
+        raise LuaError("'table' must be a table")
     # If the original metatable has a __metatable field, raises an error.
     if table.has_metamethod(SYMBOL_METATABLE):
         raise LuaError("cannot change a protected metatable")
@@ -565,7 +568,7 @@ def basic_tostring(scope: Scope, v: LuaValue, /) -> PyLuaRet:
         # then tostring calls the corresponding value with v as argument,
         # and uses the result of the call as its result.
         if not isinstance(tostring_field, LuaFunction):
-            raise NotImplementedError()
+            raise LuaError("'__tostring' metavalue must be a function")
         return tostring_field.call([v], scope)
     # Otherwise, if the metatable of v has a __name field with a string
     # value,

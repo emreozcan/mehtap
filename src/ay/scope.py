@@ -6,6 +6,7 @@ from typing import TypeVar, TYPE_CHECKING
 import attrs
 
 from ay.ast_transformer import transformer
+from ay.control_structures import LuaError
 from ay.parser import expr_parser, chunk_parser
 from ay.values import LuaString, Variable, LuaValue
 
@@ -32,7 +33,6 @@ class Scope:
         r = ast.evaluate(self)
         if isinstance(r, LuaValue):
             return [r]
-        assert isinstance(r, list)
         return r
 
     def exec(self, chunk: str) -> list[LuaValue]:
@@ -66,7 +66,6 @@ class Scope:
         return self.parent.get_varargs()
 
     def has_ls(self, key: LuaString) -> bool:
-        assert isinstance(key, LuaString)
         if key in self.locals:
             return True
         if self.parent is None:
@@ -74,7 +73,6 @@ class Scope:
         return self.parent.has_ls(key)
 
     def get_ls(self, key: LuaString) -> LuaValue:
-        assert isinstance(key, LuaString)
         if key in self.locals:
             return self.locals[key].value
         if self.parent is None:
@@ -82,20 +80,17 @@ class Scope:
         return self.parent.get_ls(key)
 
     def put_local_ls(self, key: LuaString, variable: Variable):
-        assert isinstance(key, LuaString)
         if not isinstance(variable, Variable):
             raise TypeError(f"Expected Variable, got {type(variable)}")
 
         if key in self.locals and self.locals[key].constant:
-            raise NotImplementedError()
+            raise LuaError("attempt to change constant variable")
         self.locals[key] = variable
 
     def put_nonlocal_ls(self, key: LuaString, value: LuaValue):
-        assert isinstance(key, LuaString)
-        assert isinstance(value, LuaValue)
         if key in self.locals:
             if self.locals[key].constant:
-                raise NotImplementedError()
+                raise LuaError("attempt to change constant variable")
             self.locals[key] = Variable(value)
             return
         if self.parent is None:

@@ -8,6 +8,7 @@ import tempfile
 import time as py_time
 import datetime
 
+from ay.control_structures import LuaError
 from ay.operations import str_to_lua_string
 from ay.py2lua import lua_function, PyLuaWrapRet, py2lua, PyLuaRet
 from ay.library.provider_abc import LibraryProvider
@@ -99,7 +100,8 @@ def os_execute(command=None, /) -> PyLuaRet:
 
     # This function is equivalent to the ISO C function system.
     # It passes command to be executed by an operating system shell.
-    assert isinstance(command, LuaString)
+    if not isinstance(command, LuaString):
+        raise LuaError("'command' must be a string")
     retcode = subprocess.call(
         command.content.decode("utf-8"),
         shell=True,
@@ -137,7 +139,7 @@ def os_exit(code=None, close=None, /) -> PyLuaRet:
     elif isinstance(code, LuaBool):
         code = 0 if code.true else 1
     else:
-        raise NotImplementedError()
+        raise LuaError("'code' must be a number or a boolean")
 
     # If the optional second argument close is true, the function closes the
     # Lua state before exiting (see lua_close).
@@ -156,7 +158,8 @@ def lf_os_getenv(varname, /) -> PyLuaRet:
 def os_getenv(varname, /) -> PyLuaRet:
     #  Returns the value of the process environment variable varname or fail
     #  if the variable is not defined.
-    assert isinstance(varname, LuaString)
+    if not isinstance(varname, LuaString):
+        raise LuaError("'varname' must be a string")
     value = os.getenv(varname.content.decode("utf-8"))
     if value is None:
         return [FAIL]
@@ -171,7 +174,8 @@ def lf_os_remove(filename, /) -> PyLuaRet:
 def os_remove(filename, /) -> PyLuaRet:
     # Deletes the file (or empty directory, on POSIX systems) with the
     # given name.
-    assert isinstance(filename, LuaString)
+    if not isinstance(filename, LuaString):
+        raise LuaError("'filename' must be a string")
     try:
         os.unlink(filename.content)
     except OSError as e:
@@ -189,8 +193,10 @@ def lf_os_rename(oldname, newname, /) -> PyLuaRet:
 
 def os_rename(oldname, newname, /) -> PyLuaRet:
     # Renames the file or directory named oldname to newname.
-    assert isinstance(oldname, LuaString)
-    assert isinstance(newname, LuaString)
+    if not isinstance(oldname, LuaString):
+        raise LuaError("'oldname' must be a string")
+    if not isinstance(newname, LuaString):
+        raise LuaError("'newname' must be a string")
     try:
         os.rename(oldname.content, newname.content)
     except OSError as e:
@@ -225,7 +231,8 @@ def os_setlocale(locale, category=None, /) -> PyLuaRet:
 
     # Sets the current locale of the program.
     # locale is a system-dependent string specifying a locale;
-    assert isinstance(locale, LuaString)
+    if not isinstance(locale, LuaString):
+        raise LuaError("'locale' must be a string")
     # If locale is the empty string, the current locale is set to an
     # implementation-defined native locale.
     if not locale.content:

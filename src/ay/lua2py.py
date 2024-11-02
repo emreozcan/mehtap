@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any, overload, Callable, TYPE_CHECKING
 
+from ay.control_structures import LuaError
 from ay.values import (
     LuaNil,
     LuaBool,
@@ -9,7 +10,7 @@ from ay.values import (
     LuaString,
     LuaTable,
     LuaFunction,
-    LuaValue,
+    LuaValue, type_of_lv,
 )
 from ay.vm import VirtualMachine
 
@@ -92,7 +93,11 @@ def _lua2py(lua_val, obj_map):
         if mt is not LuaNil:
             metamethod = mt.get(PY_SYMBOL)
             if metamethod is not LuaNil:
-                assert isinstance(metamethod, LuaFunction)
+                if not isinstance(metamethod, LuaFunction):
+                    raise LuaError(
+                        f"metamethod __py if a {type_of_lv(metamethod)}, "
+                        f"not a function"
+                    )
                 if metamethod.parent_scope or not metamethod.gets_scope:
                     m = _lua2py(
                         metamethod.call(

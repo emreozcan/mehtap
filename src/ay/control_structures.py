@@ -4,8 +4,6 @@ from typing import TYPE_CHECKING
 
 import attrs
 
-from ay.operations import str_to_lua_string
-
 if TYPE_CHECKING:
     from ay.ast_nodes import Name
     from ay.values import LuaValue
@@ -26,7 +24,8 @@ class LuaError(BaseException):
         caused_by: Exception | None = None
     ):
         if isinstance(message, str):
-            message = str_to_lua_string(message)
+            from ay.values import LuaString
+            message = LuaString(message.encode("ascii"))
         self.message = message
         self.level = level
         self.caused_by = caused_by

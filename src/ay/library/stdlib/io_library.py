@@ -203,7 +203,10 @@ def _file_method_read(self: LuaFile, /, *formats: LuaValue) -> PyLuaRet:
         elif format == LuaString(b"L"):
             return_vals.append(_read_format_big_l(self))
         else:
-            raise NotImplementedError()
+            raise LuaError(
+                "invalid format (valid formats are a number, 'n', 'a', 'l', "
+                "and 'L'.)"
+            )
     return return_vals
 
 
@@ -229,7 +232,7 @@ def _lf_file_method_seek(
         case b"end":
             new_offset = self.io.seek(int(offset.value), SEEK_END)
         case _:
-            raise NotImplementedError()
+            raise LuaError("invalid whence (must be 'set', 'cur', or 'end'.)")
     return [LuaNumber(new_offset)]
 
 
@@ -384,7 +387,8 @@ def io_open(filename: LuaString, mode: LuaString | None = None, /) -> PyLuaRet:
     # some systems to open the file in binary mode.
     if mode is None:
         mode = LuaString(b"r")
-    assert isinstance(mode, LuaString)
+    if not isinstance(mode, LuaString):
+        raise LuaError("'mode' must be a string")
     match mode.content:
         case b"r" | b"rb":
             mode_str = "rb"
@@ -399,7 +403,7 @@ def io_open(filename: LuaString, mode: LuaString | None = None, /) -> PyLuaRet:
         case b"a+" | b"a+b":
             mode_str = "a+b"
         case _:
-            raise NotImplementedError()
+            raise LuaError("invalid mode (must match /[rwa]+?b?/.)")
     return [LuaFile(open(filename.content, mode_str))]
 
 

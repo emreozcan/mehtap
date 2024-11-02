@@ -37,22 +37,17 @@ class VirtualMachine:
         return self.root_scope.exec_file(file_path)
 
     def has_ls(self, key: LuaString):
-        assert isinstance(key, LuaString)
         return self.root_scope.has_ls(key) or self.globals.has(key)
 
     def get_ls(self, key: LuaString):
-        assert isinstance(key, LuaString)
         if self.root_scope.has_ls(key):
             return self.root_scope.get_ls(key)
         return self.globals.get(key)
 
     def put_local_ls(self, key: LuaString, variable: Variable):
-        assert isinstance(key, LuaString)
-        assert isinstance(variable, Variable)
         self.root_scope.put_local_ls(key, variable)
 
     def put_nonlocal_ls(self, key: LuaString, variable: Variable | LuaValue):
-        assert isinstance(key, LuaString)
         if isinstance(variable, Variable):
             assert not variable.constant
             assert not variable.to_be_closed
@@ -61,7 +56,8 @@ class VirtualMachine:
         elif isinstance(variable, LuaValue):
             self.globals.put(key, variable)
             return
-        assert False
+        else:
+            raise TypeError(f"invalid key type {type(variable)}")
 
     def get_warning(self, *messages: str | bytes | LuaString):
         if self.emitting_warnings:
