@@ -345,6 +345,7 @@ class LuaFunction(LuaObject):
 
             if self.variadic:
                 from ay.operations import adjust_flatten
+
                 args = adjust_flatten(args)
                 new_scope.varargs = args[param_count:]
                 args = args[:param_count]

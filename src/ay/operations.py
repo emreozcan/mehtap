@@ -483,16 +483,14 @@ class Multires(Protocol, UserList):
     A list where each element is either a :class:`LuaValue` or
     :data:`Multires`.
     """
-    @overload
-    def __getitem__(self, _: SupportsIndex, /) -> Multires | LuaValue:
-        ...
 
     @overload
-    def __getitem__(self, _: slice, /) -> Multires:
-        ...
+    def __getitem__(self, _: SupportsIndex, /) -> Multires | LuaValue: ...
 
-    def __getitem__(self, _, /):
-        ...
+    @overload
+    def __getitem__(self, _: slice, /) -> Multires: ...
+
+    def __getitem__(self, _, /): ...
 
 
 def adjust(multires: Multires, needed: int) -> list[LuaValue]:

@@ -9,7 +9,8 @@ from typing import (
     Concatenate,
     Literal,
     TYPE_CHECKING,
-    Protocol, TypeVar,
+    Protocol,
+    TypeVar,
 )
 
 from ay.operations import str_to_lua_string
