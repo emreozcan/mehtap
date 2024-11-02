@@ -527,8 +527,8 @@ class FuncCallMethod(Expression, Statement):
         # A call v:name(args) is syntactic sugar for v.name(v,args),
         # except that v is evaluated only once.
         v = self.object.evaluate(scope)
-        if not isinstance(table, LuaIndexableABC):
-            raise LuaError(f"attempt to index {type_of_lv(table)} value")
+        if not isinstance(v, LuaIndexableABC):
+            raise LuaError(f"attempt to index {type_of_lv(v)} value")
         function = v.get(str_to_lua_string(self.method.name.text))
         args = [v, *(arg.evaluate(scope) for arg in self.args)]
         return function.call(args, scope)
