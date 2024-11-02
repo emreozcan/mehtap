@@ -5,6 +5,7 @@ Lua 5.4 programming language implementation in Pure Python
 [![Codacy Grade Badge](https://app.codacy.com/project/badge/Grade/c8799d9203354667a97ba39aca2c75f2)](https://app.codacy.com/gh/EmreOzcan/ay/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
 [![Codacy Coverage Badge](https://app.codacy.com/project/badge/Coverage/c8799d9203354667a97ba39aca2c75f2)](https://app.codacy.com/gh/EmreOzcan/ay/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_coverage)
 [![checks/master](https://img.shields.io/github/check-runs/emreozcan/ay/master?logo=github&label=checks%2Fmaster)](https://github.com/emreozcan/ay/actions/workflows/test.yml)
+[![docs](https://readthedocs.org/projects/ay/badge/?version=latest&style=flat)](https://ay.readthedocs.io/en/latest/)
 
 ## What is supported?
 
