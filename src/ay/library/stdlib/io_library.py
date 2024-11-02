@@ -20,6 +20,7 @@ from ay.values import (
     LuaValue,
     LuaUserdata,
     LuaIndexableABC,
+    LuaFunction,
 )
 
 FAIL = LuaNil
@@ -40,19 +41,19 @@ class LuaFile(LuaUserdata, LuaIndexableABC):
             raise LuaError("invalid index to a file value")
         match key.content:
             case b"close":
-                return file_method_close
+                return _lf_file_method_close
             case b"flush":
-                return file_method_flush
+                return _lf_file_method_flush
             case b"lines":
-                return file_method_lines
+                return _lf_file_method_lines
             case b"read":
-                return file_method_read
+                return _lf_file_method_read
             case b"seek":
-                return file_method_seek
+                return _lf_file_method_seek
             case b"setvbuf":
-                return file_method_setvbuf
+                return _lf_file_method_setvbuf
             case b"write":
-                return file_method_write
+                return _lf_file_method_write
             case _:
                 raise LuaError("invalid index to a file value")
 
@@ -80,13 +81,13 @@ LuaFile.__bases__ = (LuaUserdata, LuaTable)
 
 
 @lua_function(name="close")
-def file_method_close(self: LuaFile, /) -> PyLuaRet:
+def _lf_file_method_close(self: LuaFile, /) -> PyLuaRet:
     self.io.close()
     return None
 
 
 @lua_function(name="flush")
-def file_method_flush(self: LuaFile, /) -> PyLuaRet:
+def _lf_file_method_flush(self: LuaFile, /) -> PyLuaRet:
     return _fsync_io(self.io)
 
 
@@ -97,7 +98,7 @@ def _fsync_io(io: IO, /) -> PyLuaRet:
 
 
 @lua_function(name="lines")
-def file_method_lines(self: LuaFile, /, *formats) -> PyLuaRet:
+def _lf_file_method_lines(self: LuaFile, /, *formats) -> PyLuaRet:
     return _file_method_lines(self, *formats)
 
 
@@ -121,7 +122,7 @@ def _file_method_lines(self: LuaFile, /, *formats) -> PyLuaRet:
     return [iterator_function]
 
 
-def read_format_n(file: LuaFile) -> LuaNumber | FAIL:
+def _read_format_n(file: LuaFile) -> LuaNumber | FAIL:
     # "n": reads a numeral and returns it as a float or an integer,
     # following the lexical conventions of Lua.
     # (The numeral may have leading whitespaces and a sign.) This format
@@ -146,13 +147,13 @@ def read_format_n(file: LuaFile) -> LuaNumber | FAIL:
     return FAIL
 
 
-def read_format_a(file: LuaFile) -> LuaString:
+def _read_format_a(file: LuaFile) -> LuaString:
     # "a": reads the whole file, starting at the current position. On end of
     # file, it returns the empty string; this format never fails.
     return LuaString(file.io.read())
 
 
-def read_format_l(file: LuaFile) -> LuaString | FAIL:
+def _read_format_l(file: LuaFile) -> LuaString | FAIL:
     # "l": reads the next line skipping the end of line, returning fail on
     # end of file. This is the default format.
     line = file.io.readline()
@@ -161,7 +162,7 @@ def read_format_l(file: LuaFile) -> LuaString | FAIL:
     return LuaString(line[:-1])
 
 
-def read_format_big_l(file: LuaFile) -> LuaString:
+def _read_format_big_l(file: LuaFile) -> LuaString:
     # "L": reads the next line keeping the end-of-line character (if present),
     # returning fail on end of file.
     line = file.io.readline()
@@ -170,7 +171,7 @@ def read_format_big_l(file: LuaFile) -> LuaString:
     return LuaString(line)
 
 
-def read_format_number(file: LuaFile, number: int) -> LuaString:
+def _read_format_number(file: LuaFile, number: int) -> LuaString:
     # number: reads a string with up to this number of bytes, returning fail
     # on end of file.
     # If number is zero,
@@ -189,25 +190,25 @@ def read_format_number(file: LuaFile, number: int) -> LuaString:
 
 
 @lua_function(name="read")
-def file_method_read(self: LuaFile, *formats: LuaValue) -> PyLuaRet:
+def _lf_file_method_read(self: LuaFile, *formats: LuaValue) -> PyLuaRet:
     return _file_method_read(self, *formats)
 
 
 def _file_method_read(self: LuaFile, *formats: LuaValue) -> PyLuaRet:
     if not formats:
-        return [read_format_l(self)]
+        return [_read_format_l(self)]
     return_vals: list[LuaValue] = []
     for format in formats:
         if isinstance(format, LuaNumber):
-            return_vals.append(read_format_number(self, int(format.value)))
+            return_vals.append(_read_format_number(self, int(format.value)))
         elif format == LuaString(b"n"):
-            return_vals.append(read_format_n(self))
+            return_vals.append(_read_format_n(self))
         elif format == LuaString(b"a"):
-            return_vals.append(read_format_a(self))
+            return_vals.append(_read_format_a(self))
         elif format == LuaString(b"l"):
-            return_vals.append(read_format_l(self))
+            return_vals.append(_read_format_l(self))
         elif format == LuaString(b"L"):
-            return_vals.append(read_format_big_l(self))
+            return_vals.append(_read_format_big_l(self))
         else:
             raise NotImplementedError()
     return return_vals
@@ -217,7 +218,7 @@ SYMBOL__FD = LuaString(b"__fd")
 
 
 @lua_function(name="seek")
-def file_method_seek(
+def _lf_file_method_seek(
     self: LuaFile, whence: LuaString = None, offset: LuaNumber = None, /
 ) -> PyLuaRet:
     if whence is None:
@@ -237,7 +238,7 @@ def file_method_seek(
 
 
 @lua_function(name="setvbuf", gets_scope=True)
-def file_method_setvbuf(
+def _lf_file_method_setvbuf(
     scope: Scope, self: LuaFile, mode, size=None, /
 ) -> PyLuaRet:
     scope.vm.get_warning("file:setvbuf(): ignored call")
@@ -245,7 +246,7 @@ def file_method_setvbuf(
 
 
 @lua_function(name="write")
-def file_method_write(
+def _lf_file_method_write(
     self: LuaFile,
     /,
     *values: LuaValue,
@@ -266,197 +267,258 @@ def _file_method_write(
     return [self]
 
 
-def provide(io_table: LuaTable) -> None:
-    @lua_function(io_table, gets_scope=True, preserve=True)
-    def close(scope: Scope, file: LuaFile = None, /) -> PyLuaRet:
+@lua_function(name="close", gets_scope=True, preserve=True)
+def lf_io_close(scope: Scope, file: LuaFile = None, /) -> PyLuaRet:
+    return io_close(scope, file)
+
+
+def io_close(scope: Scope, file: LuaFile = None, /) -> PyLuaRet:
+    if file is None:
+        binary_io = scope.vm.default_output
+    else:
+        binary_io = file.io
+    binary_io.close()
+    return None
+
+
+@lua_function(name="flush", gets_scope=True, preserve=True)
+def lf_io_flush(scope: Scope, /) -> PyLuaRet:
+    return io_flush(scope)
+
+
+def io_flush(scope: Scope, /) -> PyLuaRet:
+    _fsync_io(scope.vm.default_output)
+    return None
+
+
+@lua_function(name="input", gets_scope=True, preserve=True)
+def lf_io_input(scope: Scope, file: LuaFile | LuaString = None, /) -> PyLuaRet:
+    return io_input(scope, file)
+
+
+def io_input(scope: Scope, file: LuaFile | LuaString = None, /) -> PyLuaRet:
+    # When called with a file name, it opens the named file (in text mode),
+    # and sets its handle as the default input file.
+    try:
+        if isinstance(file, LuaString):
+            file = open(file.content, "rb")
+            scope.vm.default_input = file
+            return None
+        # When called with a file handle, it simply sets this file handle as
+        # the default input file.
+        if isinstance(file, LuaFile):
+            scope.vm.default_input = file.io
+            return None
+        # When called without arguments, it returns the
+        # current default input file.
         if file is None:
-            binary_io = scope.vm.default_output
-        else:
-            binary_io = file.io
-        binary_io.close()
-        return None
+            return [LuaFile(scope.vm.default_input)]
+        # In case of errors this function raises the error, instead of
+        # returning an error code.
+    except Exception as e:
+        raise LuaError(f"io.input(): {e!s}")
 
-    @lua_function(io_table, gets_scope=True, preserve=True)
-    def flush(scope: Scope, /) -> PyLuaRet:
-        _fsync_io(scope.vm.default_output)
-        return None
 
-    @lua_function(io_table, gets_scope=True, preserve=True)
-    def input(scope: Scope, file: LuaFile | LuaString = None, /) -> PyLuaRet:
-        # When called with a file name, it opens the named file (in text mode),
-        # and sets its handle as the default input file.
-        try:
-            if isinstance(file, LuaString):
-                file = open(file.content, "rb")
-                scope.vm.default_input = file
-                return None
-            # When called with a file handle, it simply sets this file handle as
-            # the default input file.
-            if isinstance(file, LuaFile):
-                scope.vm.default_input = file.io
-                return None
-            # When called without arguments, it returns the
-            # current default input file.
-            if file is None:
-                return [LuaFile(scope.vm.default_input)]
-            # In case of errors this function raises the error, instead of
-            # returning an error code.
-        except Exception as e:
-            raise LuaError(f"io.input(): {e!s}")
+@lua_function(name="table", gets_scope=True, preserve=True)
+def lf_io_lines(
+    scope: Scope, filename: LuaString = None, /, *formats
+) -> PyLuaRet:
+    return io_lines(scope, filename, *formats)
 
-    @lua_function(io_table, gets_scope=True, preserve=True)
-    def lines(
-        scope: Scope, filename: LuaString = None, /, *formats
-    ) -> PyLuaRet:
-        # The call io.lines() (with no file name) is equivalent to
-        # io.input():lines("l"); that is, it iterates over the lines of the
-        # default input file.
-        # In this case, the iterator does not close the file when the loop ends.
-        if filename is None:
-            file_handle = LuaFile(scope.vm.default_input)
-            to_close = False
-        else:
-            file_handle = LuaFile(open(filename.content, "rb"))
-            to_close = True
 
-        # Opens the given file name in read mode and returns an iterator
-        # function that works like file:lines(···) over the opened file.
-        # When the iterator function fails to read any value, it automatically
-        # closes the file.
-        @lua_function()
-        def iterator_function() -> PyLuaRet:
-            f = _file_method_lines(file_handle, *formats)
-            if to_close and (
-                f is None
-                or any(
-                    isinstance(r, LuaNil)
-                    or (isinstance(r, LuaString) and not r.content)
-                    for r in f
-                )
-            ):
-                file_handle.io.close()
-            # Besides the iterator function, io.lines returns three other
-            # values: two nil values as placeholders, plus the created file
-            # handle.
-            # Therefore, when used in a generic for loop, the file is closed
-            # also if the loop is interrupted by an error or a break.
-            return [iterator_function, LuaNil, LuaNil, file_handle]
+def io_lines(scope: Scope, filename: LuaString = None, /, *formats) -> PyLuaRet:
+    # The call io.lines() (with no file name) is equivalent to
+    # io.input():lines("l"); that is, it iterates over the lines of the
+    # default input file.
+    # In this case, the iterator does not close the file when the loop ends.
+    if filename is None:
+        file_handle = LuaFile(scope.vm.default_input)
+        to_close = False
+    else:
+        file_handle = LuaFile(open(filename.content, "rb"))
+        to_close = True
 
-    @lua_function(io_table, gets_scope=True, preserve=True, name="open")
-    def io_open(filename: LuaString, mode: LuaString = None, /) -> PyLuaRet:
-        # This function opens a file, in the mode specified in the string mode.
-        # In case of success, it returns a new file handle.
-        #
-        # The mode string can be any of the following:
-        #
-        #     "r": read mode (the default);
-        #     "w": write mode;
-        #     "a": append mode;
-        #     "r+": update mode, all previous data is preserved;
-        #     "w+": update mode, all previous data is erased;
-        #     "a+": append update mode, previous data is preserved, writing is
-        #           only allowed at the end of file.
-        #
-        # The mode string can also have a 'b' at the end, which is needed in
-        # some systems to open the file in binary mode.
-        if mode is None:
-            mode = LuaString(b"r")
-        assert isinstance(mode, LuaString)
-        match mode.content:
-            case b"r" | b"rb":
-                mode_str = "rb"
-            case b"w" | b"wb":
-                mode_str = "wb"
-            case b"a" | b"ab":
-                mode_str = "ab"
-            case b"r+" | b"r+b":
-                mode_str = "r+b"
-            case b"w+" | b"w+b":
-                mode_str = "w+b"
-            case b"a+" | b"a+b":
-                mode_str = "a+b"
-            case _:
-                raise NotImplementedError()
-        return [LuaFile(open(filename.content, mode_str))]
+    # Opens the given file name in read mode and returns an iterator
+    # function that works like file:lines(···) over the opened file.
+    # When the iterator function fails to read any value, it automatically
+    # closes the file.
+    @lua_function()
+    def iterator_function() -> PyLuaRet:
+        f = _file_method_lines(file_handle, *formats)
+        if to_close and (
+            f is None
+            or any(
+                isinstance(r, LuaNil)
+                or (isinstance(r, LuaString) and not r.content)
+                for r in f
+            )
+        ):
+            file_handle.io.close()
+        # Besides the iterator function, io.lines returns three other
+        # values: two nil values as placeholders, plus the created file
+        # handle.
+        # Therefore, when used in a generic for loop, the file is closed
+        # also if the loop is interrupted by an error or a break.
+        return [iterator_function, LuaNil, LuaNil, file_handle]
 
-    @lua_function(io_table, gets_scope=True, preserve=True)
-    def output(scope: Scope, file: LuaFile | LuaString = None, /) -> PyLuaRet:
-        # Similar to io.input, but operates over the default output file.
 
-        # When called with a file name, it opens the named file (in text mode),
-        # and sets its handle as the default input file.
-        try:
-            if isinstance(file, LuaString):
-                file = open(file.content, "rb")
-                scope.vm.default_output = file
-                return None
-            # When called with a file handle, it simply sets this file handle as
-            # the default input file.
-            if isinstance(file, LuaFile):
-                scope.vm.default_output = file.io
-                return None
-            # When called without arguments, it returns the
-            # current default input file.
-            if file is None:
-                return [LuaFile(scope.vm.default_output)]
-            # In case of errors this function raises the error, instead of
-            # returning an error code.
-        except Exception as e:
-            raise LuaError(f"io.output(): {e!s}")
+@lua_function(name="open", gets_scope=True, preserve=True)
+def lf_io_open(filename: LuaString, mode: LuaString = None, /) -> PyLuaRet:
+    return io_open(filename, mode)
 
-    @lua_function(io_table, gets_scope=True, preserve=True)
-    def popen():
-        # io.popen (prog [, mode])
-        # This function is system dependent and is not available on all
-        # platforms.
-        # Starts the program prog in a separated process and returns a file
-        # handle that you can use to read data from this program
-        # (if mode is "r", the default) or to write data to this program
-        # (if mode is "w").
-        raise NotImplementedError()
 
-    @lua_function(io_table, gets_scope=True, preserve=True)
-    def read(scope: Scope, /, *formats) -> PyLuaRet:
-        # io.read (···)
-        #
-        # Equivalent to io.input():read(···).
-        return _file_method_read(input(scope))
+def io_open(filename: LuaString, mode: LuaString = None, /) -> PyLuaRet:
+    # This function opens a file, in the mode specified in the string mode.
+    # In case of success, it returns a new file handle.
+    #
+    # The mode string can be any of the following:
+    #
+    #     "r": read mode (the default);
+    #     "w": write mode;
+    #     "a": append mode;
+    #     "r+": update mode, all previous data is preserved;
+    #     "w+": update mode, all previous data is erased;
+    #     "a+": append update mode, previous data is preserved, writing is
+    #           only allowed at the end of file.
+    #
+    # The mode string can also have a 'b' at the end, which is needed in
+    # some systems to open the file in binary mode.
+    if mode is None:
+        mode = LuaString(b"r")
+    assert isinstance(mode, LuaString)
+    match mode.content:
+        case b"r" | b"rb":
+            mode_str = "rb"
+        case b"w" | b"wb":
+            mode_str = "wb"
+        case b"a" | b"ab":
+            mode_str = "ab"
+        case b"r+" | b"r+b":
+            mode_str = "r+b"
+        case b"w+" | b"w+b":
+            mode_str = "w+b"
+        case b"a+" | b"a+b":
+            mode_str = "a+b"
+        case _:
+            raise NotImplementedError()
+    return [LuaFile(open(filename.content, mode_str))]
 
-    @lua_function(io_table, preserve=True)
-    def tmpfile() -> PyLuaRet:
-        # io.tmpfile ()
-        #
-        # In case of success, returns a handle for a temporary file. This file
-        # is opened in update mode and it is automatically removed when the
-        # program ends.
-        return [LuaFile(TemporaryFile())]
 
-    @lua_function(io_table, preserve=True)
-    def type(obj: LuaValue, /) -> PyLuaRet:
-        # io.type (obj)
-        #
-        # Checks whether obj is a valid file handle. Returns the string "file"
-        # if obj is an open file handle, "closed file" if obj is a closed file
-        # handle, or fail if obj is not a file handle.
-        if not isinstance(obj, LuaFile):
-            return [FAIL]
-        if obj.io.closed:
-            return [LuaString(b"closed file")]
-        return [LuaString(b"file")]
+@lua_function(name="output", gets_scope=True, preserve=True)
+def lf_io_output(scope: Scope, file: LuaFile | LuaString = None, /) -> PyLuaRet:
+    return io_output(scope, file)
 
-    @lua_function(io_table, gets_scope=True, preserve=True)
-    def write(scope: Scope, /, *values: LuaValue) -> PyLuaRet:
-        # io.write (···)
-        #
-        # Equivalent to io.output():write(···).
-        return _file_method_write(output(scope), *values)
+
+def io_output(scope: Scope, file: LuaFile | LuaString = None, /) -> PyLuaRet:
+    # Similar to io.input, but operates over the default output file.
+
+    # When called with a file name, it opens the named file (in text mode),
+    # and sets its handle as the default input file.
+    try:
+        if isinstance(file, LuaString):
+            file = open(file.content, "rb")
+            scope.vm.default_output = file
+            return None
+        # When called with a file handle, it simply sets this file handle as
+        # the default input file.
+        if isinstance(file, LuaFile):
+            scope.vm.default_output = file.io
+            return None
+        # When called without arguments, it returns the
+        # current default input file.
+        if file is None:
+            return [LuaFile(scope.vm.default_output)]
+        # In case of errors this function raises the error, instead of
+        # returning an error code.
+    except Exception as e:
+        raise LuaError(f"io.output(): {e!s}")
+
+
+@lua_function(name="popen", gets_scope=True, preserve=True)
+def lf_io_popen():
+    return io_popen()
+
+
+def io_popen():
+    # io.popen (prog [, mode])
+    # This function is system dependent and is not available on all
+    # platforms.
+    # Starts the program prog in a separated process and returns a file
+    # handle that you can use to read data from this program
+    # (if mode is "r", the default) or to write data to this program
+    # (if mode is "w").
+    raise NotImplementedError()
+
+
+@lua_function(name="read", gets_scope=True, preserve=True)
+def lf_io_read(scope: Scope, /, *formats) -> PyLuaRet:
+    return io_read(scope, *formats)
+
+
+def io_read(scope: Scope, /, *formats) -> PyLuaRet:
+    # io.read (···)
+    #
+    # Equivalent to io.input():read(···).
+    return _file_method_read(lf_io_input(scope))
+
+
+@lua_function(name="tmpfile", preserve=True)
+def lf_io_tmpfile() -> PyLuaRet:
+    return io_tmpfile()
+
+
+def io_tmpfile() -> PyLuaRet:
+    # io.tmpfile ()
+    #
+    # In case of success, returns a handle for a temporary file. This file
+    # is opened in update mode and it is automatically removed when the
+    # program ends.
+    return [LuaFile(TemporaryFile())]
+
+
+@lua_function(name="type", preserve=True)
+def lf_io_type(obj: LuaValue, /) -> PyLuaRet:
+    return io_type(obj)
+
+
+def io_type(obj: LuaValue, /) -> PyLuaRet:
+    # io.type (obj)
+    #
+    # Checks whether obj is a valid file handle. Returns the string "file"
+    # if obj is an open file handle, "closed file" if obj is a closed file
+    # handle, or fail if obj is not a file handle.
+    if not isinstance(obj, LuaFile):
+        return [FAIL]
+    if obj.io.closed:
+        return [LuaString(b"closed file")]
+    return [LuaString(b"file")]
+
+
+@lua_function(name="write", gets_scope=True, preserve=True)
+def lf_io_write(scope: Scope, /, *values: LuaValue) -> PyLuaRet:
+    return io_write(scope, *values)
+
+
+def io_write(scope: Scope, /, *values: LuaValue) -> PyLuaRet:
+    # io.write (···)
+    #
+    # Equivalent to io.output():write(···).
+    return _file_method_write(lf_io_output(scope), *values)
 
 
 SYMBOL_IO = LuaString(b"io")
 
 
 class IOProvider(LibraryProvider):
-    def provide(self, table: LuaTable) -> None:
+    def provide(self, global_table: LuaTable) -> None:
         io_table = LuaTable()
-        provide(io_table)
-        table.put(SYMBOL_IO, io_table)
+        global_table.put(SYMBOL_IO, io_table)
+
+        for local_name, local_value in globals().items():
+            if local_name.startswith("lf_io_"):
+                assert isinstance(local_value, LuaFunction)
+                assert local_value.name
+                global_table.put(
+                    LuaString(local_value.name.encode("ascii")),
+                    local_value,
+                )

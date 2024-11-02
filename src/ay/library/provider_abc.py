@@ -9,5 +9,5 @@ if TYPE_CHECKING:
 
 class LibraryProvider(ABC):
     @abstractmethod
-    def provide(self, table: LuaTable) -> None:
+    def provide(self, global_table: LuaTable) -> None:
         pass

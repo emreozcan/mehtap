@@ -548,33 +548,3 @@ def adjust_to_one(multires_or_value: Multires | LuaValue) -> LuaValue:
     if isinstance(multires_or_value, list):
         return adjust(multires_or_value, 1)[0]
     return multires_or_value
-
-
-def type_(a: LuaValue) -> LuaString:
-    """
-    :return: The result of ``type(a)`` in Lua.
-
-    This is not an operation but it is included here for ease of access.
-    """
-    #  Returns the type of its only argument, coded as a string.
-    #  The possible results of this function are "nil"
-    #  (a string, not the value nil),
-    #  "number", "string", "boolean", "table", "function", "thread", and
-    #  "userdata".
-    if a is LuaNil:
-        return LuaString(b"nil")
-    if isinstance(a, LuaNumber):
-        return LuaString(b"number")
-    if isinstance(a, LuaString):
-        return LuaString(b"string")
-    if isinstance(a, LuaBool):
-        return LuaString(b"boolean")
-    if isinstance(a, LuaTable):
-        return LuaString(b"table")
-    if isinstance(a, LuaFunction):
-        return LuaString(b"function")
-    if isinstance(a, LuaThread):
-        return LuaString(b"thread")
-    if isinstance(a, LuaUserdata):
-        return LuaString(b"userdata")
-    raise TypeError(f"Unexpected type: {type(a)}")

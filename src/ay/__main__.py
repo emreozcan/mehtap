@@ -7,7 +7,7 @@ import lark.exceptions
 
 from ay import __version__ as __version__
 from ay.control_structures import LuaError
-from ay.library.stdlib import basic_library
+from ay.library.stdlib.basic_library import basic_print
 from ay.operations import str_to_lua_string
 from ay.vm import VirtualMachine
 from ay.values import LuaValue, LuaTable, LuaNumber, LuaString
@@ -169,10 +169,7 @@ def enter_interactive(vm: VirtualMachine) -> None:
                 save = sys.stdout
                 sys.stdout = sys.stderr
                 try:
-                    basic_library.library_table.get(LuaString(b"print")).call(
-                        [lua_error.message],
-                        vm.root_scope,
-                    )
+                    basic_print(vm.root_scope, lua_error.message)
                 finally:
                     sys.stdout = save
             else:
