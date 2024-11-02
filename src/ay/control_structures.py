@@ -17,6 +17,7 @@ class LuaError(BaseException):
     message: LuaValue
     level: int
     caused_by: Exception | None = None
+    traceback: list[str]
 
     def __init__(
         self,
@@ -29,10 +30,14 @@ class LuaError(BaseException):
         self.message = message
         self.level = level
         self.caused_by = caused_by
+        self.traceback = []
         super().__init__(message, level)
 
     def __repr__(self):
         return f"<error level {self.level}: {self.message}>"
+
+    def push_tb(self, tb: str):
+        self.traceback.append(tb)
 
 
 @attrs.define(slots=True)

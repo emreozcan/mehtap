@@ -330,12 +330,15 @@ class LuaFunction(LuaObject):
         """
         from ay.control_structures import ReturnException
         from ay.vm import VirtualMachine
-
+        from ay.control_structures import LuaError
         try:
             self._call(
                 args,
                 scope or self.parent_scope or VirtualMachine().root_scope,
             )
+        except LuaError as le:
+            le.push_tb(f"call {self}")
+            raise le
         except ReturnException as e:
             return e.values if e.values is not None else []
         return []
@@ -379,7 +382,8 @@ class LuaFunction(LuaObject):
                     self.block(scope, *args)
             except Exception as e:
                 from ay.control_structures import LuaError
-
+                s_e = str(e)
+                assert s_e
                 raise LuaError(
                     LuaString(f"{self!s}: {e!s}".encode("utf-8")),
                     caused_by=e,

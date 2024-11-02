@@ -151,37 +151,45 @@ def enter_interactive(vm: VirtualMachine) -> None:
         r: list[LuaValue] | None = None
         try:
             r = vm.exec(collected_line)
-        except lark.exceptions.UnexpectedEOF as e:
+        except lark.exceptions.UnexpectedInput as e:
             try:
                 r = vm.eval(collected_line)
-            except lark.exceptions.UnexpectedEOF:
+            except lark.exceptions.UnexpectedInput:
+                print_lark_error_shower(collected_line, e, prompt)
                 continue
-        except lark.exceptions.UnexpectedInput as e:
-            print(" " * len(prompt) + collected_line.splitlines()[e.line - 1])
-            print(f"{' '*len(prompt)}{' ' * (e.column - 1)}^")
-            print(
-                f"error: unexpected input, " f"line {e.line}, column {e.column}"
-            )
+            except LuaError as lua_error:
+                handle_luaerror(lua_error, vm)
         except LuaError as lua_error:
-            if not isinstance(
-                lua_error.message, LuaString
-            ) and lua_error.message.has_metamethod(LuaString(b"__tostring")):
-                save = sys.stdout
-                sys.stdout = sys.stderr
-                try:
-                    basic_print(vm.root_scope, lua_error.message)
-                finally:
-                    sys.stdout = save
-            else:
-                print(lua_error.message, file=sys.stderr)
-            if lua_error.caused_by:
-                print(traceback.format_exc())
-            # TODO: Add stack traceback.
+            handle_luaerror(lua_error, vm)
         if r is not None:
             d = display_object(r)
             if d is not None:
                 print(d)
         collected_line = ""
+
+
+def print_lark_error_shower(collected_line, e, prompt):
+    print(" " * len(prompt) + collected_line.splitlines()[e.line - 1])
+    print(f"{' ' * len(prompt)}{' ' * (e.column - 1)}^")
+    print(f"error: unexpected input, " f"line {e.line}, column {e.column}")
+
+
+def handle_luaerror(lua_error, vm):
+    if not isinstance(
+        lua_error.message, LuaString
+    ) and lua_error.message.has_metamethod(LuaString(b"__tostring")):
+        save = sys.stdout
+        sys.stdout = sys.stderr
+        try:
+            basic_print(vm.root_scope, lua_error.message)
+        finally:
+            sys.stdout = save
+    else:
+        print(lua_error.message, file=sys.stderr)
+    if lua_error.traceback:
+        print("traceback:")
+        for entry in lua_error.traceback:
+            print("\t" + entry, file=sys.stderr)
 
 
 def display_object(val: list[LuaValue]) -> str | None:

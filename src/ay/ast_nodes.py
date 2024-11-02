@@ -10,7 +10,8 @@ from typing import TYPE_CHECKING
 import attrs
 
 import ay.values as ay_values
-from ay.control_structures import BreakException, GotoException, ReturnException
+from ay.control_structures import BreakException, GotoException, \
+    ReturnException, LuaError
 from ay.values import (
     LuaNumber,
     LuaValue,
@@ -72,15 +73,33 @@ class Chunk(NonTerminal):
 @attrs.define(slots=True)
 class Statement(NonTerminal, ABC):
     @abstractmethod
-    def execute(self, scope: Scope) -> Sequence[LuaValue] | None:
+    def _execute(self, scope: Scope) -> Sequence[LuaValue] | None:
         pass
+
+    def execute(self, scope: Scope) -> Sequence[LuaValue] | None:
+        try:
+            return self._execute(scope)
+        except LuaError as le:
+            le.push_tb(f"execute {self}")
+            raise le
+        except Exception as e:
+            raise LuaError(str(e), caused_by=e)
 
 
 @attrs.define(slots=True)
 class Expression(NonTerminal, ABC):
     @abstractmethod
-    def evaluate(self, scope: Scope) -> LuaValue | Sequence[LuaValue]:
+    def _evaluate(self, scope: Scope) -> LuaValue | Sequence[LuaValue]:
         pass
+
+    def evaluate(self, scope: Scope) -> LuaValue | Sequence[LuaValue]:
+        try:
+            return self._evaluate(scope)
+        except LuaError as le:
+            le.push_tb(f"evaluate {self}")
+            raise le
+        except Exception as e:
+            raise LuaError(str(e), caused_by=e)
 
     def evaluate_single(self, scope: Scope) -> LuaValue:
         return adjust_to_one(self.evaluate(scope))
@@ -90,18 +109,19 @@ class Expression(NonTerminal, ABC):
 class ParenExpression(Expression):
     exp: Expression
 
-    def evaluate(self, scope: Scope) -> LuaValue | Sequence[LuaValue]:
+    def _evaluate(self, scope: Scope) -> LuaValue | Sequence[LuaValue]:
         return adjust_to_one(self.exp.evaluate(scope))
 
 
 @attrs.define(slots=True)
 class Block(Statement, Expression):
-    def evaluate(self, scope: Scope) -> list[LuaValue]:
+    def _evaluate(self, scope: Scope) -> list[LuaValue]:
         return self.evaluate_without_inner_scope(scope.push())
 
-    def execute(self, scope: Scope) -> Sequence[LuaValue] | None:
+    def _execute(self, scope: Scope) -> Sequence[LuaValue] | None:
         return self.execute_without_inner_scope(scope.push())
 
+    # TODO: Handle errors
     def evaluate_without_inner_scope(self, scope: Scope) -> list[LuaValue]:
         r: None | list[LuaValue] = []
         for stmt in self.statements:
@@ -114,6 +134,7 @@ class Block(Statement, Expression):
             else r if r else []
         )
 
+    # TODO: Handle errors
     def execute_without_inner_scope(
         self, scope: Scope
     ) -> Sequence[LuaValue] | None:
@@ -138,7 +159,7 @@ class NumeralHex(Numeral):
     p_sign: Terminal | None = None
     p_digits: Terminal | None = None
 
-    def evaluate(self, scope: Scope) -> LuaValue:
+    def _evaluate(self, scope: Scope) -> LuaValue:
         if self.fract_digits or self.p_digits:
             if not self.p_sign:
                 self.p_sign = Terminal("+")
@@ -161,7 +182,7 @@ class NumeralDec(Numeral):
     e_sign: Terminal | None = None
     e_digits: Terminal | None = None
 
-    def evaluate(self, scope: Scope) -> LuaValue:
+    def _evaluate(self, scope: Scope) -> LuaValue:
         if self.fract_digits or self.e_digits:
             if not self.e_sign:
                 self.e_sign = Terminal("+")
@@ -313,7 +334,7 @@ class LiteralString(Expression):
         bytes_io.seek(0)
         return LuaString(bytes_io.read())
 
-    def evaluate(self, scope: Scope) -> LuaString:
+    def _evaluate(self, scope: Scope) -> LuaString:
         if self.text.text[0] != "[":
             return self._simple_string()
         return self._long_bracket()
@@ -321,19 +342,19 @@ class LiteralString(Expression):
 
 @attrs.define(slots=True)
 class LiteralFalse(Expression):
-    def evaluate(self, scope: Scope) -> LuaValue:
+    def _evaluate(self, scope: Scope) -> LuaValue:
         return ay_values.LuaBool(False)
 
 
 @attrs.define(slots=True)
 class LiteralTrue(Expression):
-    def evaluate(self, scope: Scope) -> LuaValue:
+    def _evaluate(self, scope: Scope) -> LuaValue:
         return ay_values.LuaBool(True)
 
 
 @attrs.define(slots=True)
 class LiteralNil(Expression):
-    def evaluate(self, scope: Scope) -> LuaValue:
+    def _evaluate(self, scope: Scope) -> LuaValue:
         return ay_values.LuaNil
 
 
@@ -347,7 +368,7 @@ class Name(NonTerminal):
 
 @attrs.define(slots=True)
 class VarArgExpr(Expression):
-    def evaluate(self, scope: Scope) -> LuaValue | Sequence[LuaValue]:
+    def _evaluate(self, scope: Scope) -> LuaValue | Sequence[LuaValue]:
         v = scope.get_varargs()
         if v is not None:
             return v
@@ -361,7 +382,7 @@ class Variable(Expression, ABC):
 
 @attrs.define(slots=True)
 class VarName(Variable):
-    def evaluate(self, scope: Scope) -> LuaValue:
+    def _evaluate(self, scope: Scope) -> LuaValue:
         return scope.get_ls(str_to_lua_string(self.name.name.text))
 
     name: Name
@@ -369,7 +390,7 @@ class VarName(Variable):
 
 @attrs.define(slots=True)
 class VarIndex(Variable):
-    def evaluate(self, scope: Scope) -> LuaValue:
+    def _evaluate(self, scope: Scope) -> LuaValue:
         table = self.base.evaluate(scope)
         assert isinstance(table, LuaIndexableABC)
         return table.get(self.index.evaluate_single(scope))
@@ -382,7 +403,7 @@ class VarIndex(Variable):
 class TableConstructor(Expression):
     fields: Sequence[Field]
 
-    def evaluate(self, scope: Scope) -> LuaValue:
+    def _evaluate(self, scope: Scope) -> LuaValue:
         table = LuaTable()
         if not self.fields:
             return table
@@ -455,7 +476,7 @@ class FuncBody(Expression):
     body: Block
     vararg: bool = False
 
-    def evaluate(self, scope: Scope) -> LuaFunction:
+    def _evaluate(self, scope: Scope) -> LuaFunction:
         return LuaFunction(
             param_names=[p.as_lua_string() for p in self.params],
             variadic=self.vararg,
@@ -470,18 +491,18 @@ class FuncBody(Expression):
 class FuncDef(Expression):
     body: FuncBody
 
-    def evaluate(self, scope: Scope) -> LuaValue:
+    def _evaluate(self, scope: Scope) -> LuaValue:
         return self.body.evaluate(scope)
 
 
 @attrs.define(slots=True)
 class FuncCallRegular(Expression, Statement):
-    def evaluate(self, scope: Scope) -> list[LuaValue]:
+    def _evaluate(self, scope: Scope) -> list[LuaValue]:
         function = self.name.evaluate(scope)
         args = [arg.evaluate(scope) for arg in self.args]
         return function.call(args, scope)
 
-    def execute(self, scope: Scope) -> None | list[LuaValue]:
+    def _execute(self, scope: Scope) -> None | list[LuaValue]:
         r = self.evaluate(scope)
         if r:
             return r
@@ -493,7 +514,7 @@ class FuncCallRegular(Expression, Statement):
 
 @attrs.define(slots=True)
 class FuncCallMethod(Expression, Statement):
-    def evaluate(self, scope: Scope) -> Sequence[LuaValue]:
+    def _evaluate(self, scope: Scope) -> Sequence[LuaValue]:
         # A call v:name(args) is syntactic sugar for v.name(v,args),
         # except that v is evaluated only once.
         v = self.object.evaluate(scope)
@@ -502,7 +523,7 @@ class FuncCallMethod(Expression, Statement):
         args = [v, *(arg.evaluate(scope) for arg in self.args)]
         return function.call(args, scope)
 
-    def execute(self, scope: Scope) -> None | list[LuaValue]:
+    def _execute(self, scope: Scope) -> None | list[LuaValue]:
         try:
             self.evaluate(scope)
         except ReturnException as re:
@@ -535,7 +556,7 @@ class UnaryOperation(Expression):
     op: UnaryOperator
     exp: Expression
 
-    def evaluate(self, scope: Scope) -> LuaValue:
+    def _evaluate(self, scope: Scope) -> LuaValue:
         v = self.exp.evaluate(scope)
         return unary_operator_functions[self.op](v)
 
@@ -595,7 +616,7 @@ class BinaryOperation(Expression, ABC):
     op: BinaryOperator
     rhs: Expression
 
-    def evaluate(self, scope: Scope) -> LuaValue:
+    def _evaluate(self, scope: Scope) -> LuaValue:
         op = self.op
         # Both and and or use short-circuit evaluation;
         # that is, the second operand is evaluated only if necessary.
@@ -630,13 +651,13 @@ class ReturnStatement(NonTerminal):
 
 @attrs.define(slots=True)
 class EmptyStatement(Statement):
-    def execute(self, scope: Scope) -> None:
+    def _execute(self, scope: Scope) -> None:
         pass
 
 
 @attrs.define(slots=True)
 class Assignment(Statement):
-    def execute(self, scope: Scope) -> list[LuaValue]:
+    def _execute(self, scope: Scope) -> list[LuaValue]:
         values = adjust(
             [expr.evaluate(scope) for expr in self.exprs], len(self.names)
         )
@@ -658,7 +679,7 @@ class Assignment(Statement):
 
 @attrs.define(slots=True)
 class Label(Statement):
-    def execute(self, scope: Scope) -> None:
+    def _execute(self, scope: Scope) -> None:
         raise NotImplementedError()
 
     name: Name
@@ -666,13 +687,13 @@ class Label(Statement):
 
 @attrs.define(slots=True)
 class Break(Statement):
-    def execute(self, scope: Scope) -> None:
+    def _execute(self, scope: Scope) -> None:
         raise BreakException()
 
 
 @attrs.define(slots=True)
 class Goto(Statement):
-    def execute(self, scope: Scope) -> None:
+    def _execute(self, scope: Scope) -> None:
         raise GotoException(self.name)
 
     name: Name
@@ -680,7 +701,7 @@ class Goto(Statement):
 
 @attrs.define(slots=True)
 class Do(Statement):
-    def execute(self, scope: Scope) -> None:
+    def _execute(self, scope: Scope) -> None:
         self.block.execute(scope)
 
     block: Block
@@ -688,7 +709,7 @@ class Do(Statement):
 
 @attrs.define(slots=True)
 class While(Statement):
-    def execute(self, scope: Scope) -> None:
+    def _execute(self, scope: Scope) -> None:
         new_vm = scope.push()
         try:
             while coerce_to_bool(self.condition.evaluate(scope)).true:
@@ -702,7 +723,7 @@ class While(Statement):
 
 @attrs.define(slots=True)
 class Repeat(Statement):
-    def execute(self, scope: Scope) -> None:
+    def _execute(self, scope: Scope) -> None:
         new_vm = scope.push()
         try:
             while True:
@@ -718,7 +739,7 @@ class Repeat(Statement):
 
 @attrs.define(slots=True)
 class If(Statement):
-    def execute(self, scope: Scope) -> None:
+    def _execute(self, scope: Scope) -> None:
         for cnd, blk in self.blocks:
             if coerce_to_bool(cnd.evaluate(scope)).true:
                 blk.execute(scope)
@@ -738,7 +759,7 @@ class For(Statement):
     step: Expression | None
     block: Block
 
-    def execute(self, scope: Scope) -> None:
+    def _execute(self, scope: Scope) -> None:
         try:
             self._execute(scope)
         except BreakException:
@@ -819,7 +840,7 @@ class ForIn(Statement):
     exprs: Sequence[Expression]
     block: Block
 
-    def execute(self, scope: Scope) -> None:
+    def _execute(self, scope: Scope) -> None:
         try:
             self._execute(scope)
         except BreakException:
@@ -897,7 +918,7 @@ class FunctionStatement(Statement):
     name: FuncName
     body: FuncBody
 
-    def execute(self, scope: Scope) -> list[LuaFunction]:
+    def _execute(self, scope: Scope) -> list[LuaFunction]:
         function = self.body.evaluate(scope)
         if self.name.method:
             function.param_names.insert(0, LuaString(b"self"))
@@ -920,7 +941,7 @@ class LocalFunctionStatement(Statement):
     name: Name
     body: FuncBody
 
-    def execute(self, scope: Scope) -> list[LuaFunction]:
+    def _execute(self, scope: Scope) -> list[LuaFunction]:
         # The statement
         #      local function f () body end
         # translates to
@@ -948,7 +969,7 @@ class LocalAssignment(Statement):
     names: Sequence[AttributeName]
     exprs: Sequence[Expression]
 
-    def execute(self, scope: Scope) -> list[LuaValue]:
+    def _execute(self, scope: Scope) -> list[LuaValue]:
         if self.exprs:
             exp_vals = [exp.evaluate(scope) for exp in self.exprs]
             exp_vals = adjust(exp_vals, len(self.names))
@@ -989,5 +1010,5 @@ class ParsedLiteralLuaStringExpr(Expression):
 
     value: LuaString
 
-    def evaluate(self, scope: Scope) -> LuaValue | Sequence[LuaValue]:
+    def _evaluate(self, scope: Scope) -> LuaValue | Sequence[LuaValue]:
         return self.value
