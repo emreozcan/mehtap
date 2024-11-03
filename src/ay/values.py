@@ -537,10 +537,13 @@ class LuaTable(LuaObject, LuaIndexableABC):
     T = TypeVar("T")
 
     def get_with_fallback(self, key: LuaValue, fallback: T) -> LuaValue | T:
-        return self.map.get(key, fallback)
+        f = self.map.get(key, None)
+        if f is LuaNil or f is None:
+            return fallback
+        return f
 
     def has(self, key: LuaValue) -> bool:
-        return key in self.map
+        return key in self.map and self.map[key] is not LuaNil
 
 
 def type_of_lv(a: LuaValue) -> str:
