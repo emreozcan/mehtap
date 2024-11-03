@@ -409,6 +409,12 @@ class LuaTransformer(lark.Transformer):
         return nodes.FunctionStatement(name=funcname, body=funcbody)
 
     @staticmethod
+    def stat_localfunction(
+        LOCAL, FUNCTION, name: nodes.Name, funcbody: nodes.FuncBody
+    ):
+        return nodes.LocalFunctionStatement(name=name, body=funcbody)
+
+    @staticmethod
     def stat_while(
         WHILE,
         cond: nodes.Expression,
