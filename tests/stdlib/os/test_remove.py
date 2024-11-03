@@ -1,4 +1,4 @@
-import sys
+import os
 
 import pytest
 
@@ -19,7 +19,7 @@ def test_remove_file(tmp_path):
     assert not file.exists()
 
 
-@pytest.mark.skipif(sys.platform.startswith("win"), reason="POSIX only")
+@pytest.mark.skipif(os.name != "posix", reason="POSIX only")
 def test_remove_empty_dir(tmp_path):
     dir = (tmp_path / "dir")
     dir.mkdir()

@@ -177,7 +177,13 @@ def os_remove(filename, /) -> PyLuaRet:
     if not isinstance(filename, LuaString):
         raise LuaError("'filename' must be a string")
     try:
-        os.unlink(filename.content)
+        try:
+            os.unlink(filename.content)
+        except OSError as e:
+            if os.name == "posix" and e.errno == 21:
+                os.rmdir(filename.content)
+            else:
+                raise e
     except OSError as e:
         # If this function fails, it returns fail plus a string describing
         # the error and the error code.
