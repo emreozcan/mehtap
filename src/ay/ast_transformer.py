@@ -1,6 +1,7 @@
 from collections.abc import Sequence
 
 import lark
+from lark import Tree
 
 import ay.ast_nodes as nodes
 from ay.ast_nodes import BinaryOperator
@@ -30,6 +31,29 @@ class LuaTransformer(lark.Transformer):
         node: nodes.Node = super()._call_userfunc_token(token)
         node.line = token.line
         return node
+
+    def transform(
+        self, tree, *, filename: str | None = None
+    ) -> nodes.Node:
+        root: nodes.Node = super().transform(tree)
+        if filename is None:
+            return root
+        recursive_stack = [root]
+        while recursive_stack:
+            node = recursive_stack.pop()
+            if not isinstance(node, nodes.Node):
+                continue
+            node.file = filename
+            for slot in node.__slots__:
+                new_candidate = getattr(node, slot)
+                if new_candidate is None:
+                    continue
+                if isinstance(new_candidate, nodes.Node):
+                    recursive_stack.append(new_candidate)
+                elif isinstance(new_candidate, Sequence):
+                    recursive_stack.extend(new_candidate)
+        return root
+
 
     @staticmethod
     def NAME(token: lark.Token):

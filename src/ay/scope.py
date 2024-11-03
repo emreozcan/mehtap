@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from io import SEEK_SET
 from os import PathLike
+from os.path import basename
 from typing import TypeVar, TYPE_CHECKING
 
 import attrs
@@ -37,7 +38,7 @@ class Scope:
 
     def eval(self, expr: str):
         parsed_lua = expr_parser.parse(expr)
-        ast = transformer.transform(parsed_lua)
+        ast = transformer.transform(parsed_lua, filename="<eval>")
         try:
             r = ast.evaluate(self)
         except Exception as e:
@@ -49,9 +50,10 @@ class Scope:
             return [r]
         return r
 
-    def exec(self, chunk: str) -> list[LuaValue]:
+    def exec(self, chunk: str, *, filename: str | None = None) \
+            -> list[LuaValue]:
         parsed_lua = chunk_parser.parse(chunk)
-        ast = transformer.transform(parsed_lua)
+        ast = transformer.transform(parsed_lua, filename=filename or "<exec>")
         try:
             r = ast.block.evaluate_without_inner_scope(self)
         except Exception as e:
@@ -66,8 +68,9 @@ class Scope:
             if f.read(1) == "#":
                 f.readline()
             f.seek(0, SEEK_SET)
+            filename_str = basename(file_path)
             try:
-                r = self.exec(f.read())
+                r = self.exec(f.read(), filename=filename_str)
             except Exception as e:
                 raise LuaError(
                     LuaString(str(e).encode("utf-8")),

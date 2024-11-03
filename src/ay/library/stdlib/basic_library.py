@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sys
+from os.path import basename
 from typing import TYPE_CHECKING
 
 from ay.ast_nodes import UnaryOperation, UnaryOperator
@@ -84,16 +85,18 @@ def basic_dofile(
     #  When called without arguments, dofile executes the content of the
     #  standard input (stdin).
     infile = sys.stdin
+    filename_str = "<stdin>"
     if filename is not None:
         if isinstance(filename, LuaString):
             infile = open(filename.content, "r", encoding="utf-8")
+            filename_str = basename(filename.content)
         else:
             raise LuaError("bad argument #1 to 'dofile' (string expected)")
     #  Returns all values returned by the chunk. In case of errors,
     #  dofile propagates the error to its caller.
     #  (That is, dofile does not run in protected mode.)
     parsed_chunk = chunk_parser.parse(infile.read())
-    chunk_node = transformer.transform(parsed_chunk)
+    chunk_node = transformer.transform(parsed_chunk, filename=filename_str)
     # TODO: Figure this out.
     #       Chunks are normally compiled as vararg functions in Lua.
     r = chunk_node.block.evaluate(scope)
