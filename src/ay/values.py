@@ -411,7 +411,7 @@ class LuaFunction(LuaObject):
                     caused_by=e,
                 )
                 le.push_tb(str(self), file="<Python>", line=None)
-                raise le
+                raise le from e
 
 
 @attrs.define(slots=True, eq=False)
