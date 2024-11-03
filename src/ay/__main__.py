@@ -1,7 +1,6 @@
 import argparse
 import os
 import sys
-import traceback
 
 import lark.exceptions
 
@@ -207,10 +206,13 @@ def handle_luaerror(lua_error: LuaError, vm: VirtualMachine | None):
             )
         else:
             print(f"caused by: {lua_error.caused_by}", file=sys.stderr)
-    if not lua_error.traceback:
-        lua_error.traceback.append("no traceback available")
+    if not lua_error.traceback_messages:
+        lua_error.push_tb(
+            "no traceback available",
+            file="<Python>", line=None,
+        )
     print("traceback: (most recent call first)")
-    for entry in lua_error.traceback:
+    for entry in lua_error.traceback_messages:
         print("\t" + entry, file=sys.stderr)
 
 

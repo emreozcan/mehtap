@@ -15,7 +15,7 @@ class LuaError(BaseException):
     message: LuaValue
     level: int
     caused_by: Exception | None = None
-    traceback: list[str]
+    traceback_messages: list[str]
 
     def __init__(
         self,
@@ -29,7 +29,7 @@ class LuaError(BaseException):
         self.message = message
         self.level = level
         self.caused_by = caused_by
-        self.traceback = []
+        self.traceback_messages = []
         super().__init__(message, level)
 
     def __repr__(self):
@@ -43,15 +43,15 @@ class LuaError(BaseException):
         line: int | None = None
     ):
         if file is not None and line is not None:
-            self.traceback.append(f'{file}:{line}: {tb}')
+            self.traceback_messages.append(f'{file}:{line}: {tb}')
             return
         if file is not None and line is None:
-            self.traceback.append(f'{file}: {tb}')
+            self.traceback_messages.append(f'{file}: {tb}')
             return
         if file is None and line is not None:
-            self.traceback.append(f'{line}: {tb}')
+            self.traceback_messages.append(f'{line}: {tb}')
             return
-        self.traceback.append(tb)
+        self.traceback_messages.append(tb)
 
 
 @attrs.define(slots=True)

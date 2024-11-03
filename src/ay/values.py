@@ -397,10 +397,21 @@ class LuaFunction(LuaObject):
             from ay.operations import adjust_flatten
 
             args = adjust_flatten(args)
-            if not self.gets_scope:
-                self.block(*args)
-            else:
-                self.block(scope, *args)
+            try:
+                if not self.gets_scope:
+                    self.block(*args)
+                else:
+                    self.block(scope, *args)
+            except LuaError as le:
+                le.push_tb(str(self), file="<Python>", line=None)
+                raise le
+            except Exception as e:
+                le = LuaError(
+                    LuaString(str(e).encode("utf-8")),
+                    caused_by=e,
+                )
+                le.push_tb(str(self), file="<Python>", line=None)
+                raise le
 
 
 @attrs.define(slots=True, eq=False)
