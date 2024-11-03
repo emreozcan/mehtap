@@ -156,9 +156,7 @@ class Block(Statement, Expression):
 
     # TODO: Handle errors
     def evaluate_without_inner_scope(self, scope: Scope) -> list[LuaValue]:
-        r: None | list[LuaValue] = []
-        for stmt in self.statements:
-            r = stmt.execute(scope)
+        r = self.execute_without_inner_scope(scope)
         return (
             flatten(
                 expr.evaluate(scope) for expr in self.return_statement.values
@@ -172,8 +170,23 @@ class Block(Statement, Expression):
         self, scope: Scope
     ) -> Sequence[LuaValue] | None:
         v = None
-        for stmt in self.statements:
-            v = stmt.execute(scope)
+        index = 0
+        try:
+            while index < len(self.statements):
+                v = self.statements[index].execute(scope)
+                index += 1
+        except GotoException as ge:
+            requested_name = ge.label.name.text
+            # TODO: This sucks.
+            found = False
+            for index, stmt in enumerate(self.statements):
+                if not isinstance(stmt, Label):
+                    continue
+                if stmt.name.name.text == requested_name:
+                    found = True
+                    break
+            if not found:
+                raise ge
         return v
 
     statements: Sequence[Statement]
@@ -736,7 +749,7 @@ class Assignment(Statement):
 @attrs.define(slots=True)
 class Label(Statement):
     def _execute(self, scope: Scope) -> None:
-        raise NotImplementedError()
+        pass
 
     name: Name
 
@@ -817,11 +830,11 @@ class For(Statement):
 
     def _execute(self, scope: Scope) -> None:
         try:
-            self._execute(scope)
+            self._execute_internal(scope)
         except BreakException:
             pass
 
-    def _execute(self, scope: Scope) -> None:
+    def _execute_internal(self, scope: Scope) -> None:
         # This for loop is the "numerical" for loop explained in 3.3.5.
         # The given identifier (Name) defines the control variable,
         # which is a new variable local to the loop body (block).
@@ -901,11 +914,11 @@ class ForIn(Statement):
 
     def _execute(self, scope: Scope) -> None:
         try:
-            self._execute(scope)
+            self._execute_internal(scope)
         except BreakException:
             pass
 
-    def _execute(self, outer_scope: Scope) -> None:
+    def _execute_internal(self, outer_scope: Scope) -> None:
         # The generic for statement works over functions, called iterators.
         # On each iteration, the iterator function is called to produce a new
         # value, stopping when this new value is nil.

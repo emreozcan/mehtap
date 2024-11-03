@@ -97,7 +97,7 @@ class Scope:
                     caused_by=e,
                 )
             except LuaError as le:
-                le.push_tb("main chunk", file=str(file_path), line=0)
+                le.push_tb("main chunk", file=filename_str, line=0)
                 raise le
             return r
 

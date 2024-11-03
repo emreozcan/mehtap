@@ -349,6 +349,18 @@ class LuaTransformer(lark.Transformer):
         return nodes.EmptyStatement()
 
     @staticmethod
+    def stat_break(BREAK):
+        return nodes.Break()
+
+    @staticmethod
+    def stat_goto(GOTO, name: nodes.Name):
+        return nodes.Goto(name=name)
+
+    @staticmethod
+    def label(name: nodes.Name):
+        return nodes.Label(name=name)
+
+    @staticmethod
     def retstat(_, values: Sequence[nodes.Expression]) -> nodes.ReturnStatement:
         return nodes.ReturnStatement(values=values)
 
@@ -417,6 +429,13 @@ class LuaTransformer(lark.Transformer):
     @staticmethod
     def stat_do(DO, block, END) -> nodes.Do:
         return nodes.Do(block=block)
+
+    @staticmethod
+    def stat_if(cond, block, else_block):
+        return nodes.If(
+            blocks=[(cond, block)],
+            else_block=else_block,
+        )
 
     @staticmethod
     def namelist(*names: nodes.Name) -> Sequence[nodes.Name]:
