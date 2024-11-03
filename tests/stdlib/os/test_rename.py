@@ -26,7 +26,7 @@ def test_rename_file_fail(tmp_path):
     file.write_text("hello world")
 
     path_str = str(file)
-    r = vm.exec(f'os.rename({path_str!r}, "\n.txt")')
+    r = vm.exec(f'os.rename({path_str!r}, "")')
     assert len(r) == 3
     assert r[0] == LuaNil
     assert isinstance(r[1], LuaString)
