@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from io import SEEK_SET
 from os import PathLike
 from typing import TypeVar, TYPE_CHECKING
 
@@ -23,14 +24,27 @@ class Scope:
     parent: Scope | None
     locals: dict[LuaString, Variable] = attrs.field(factory=dict)
     varargs: list[LuaValue] | None = None
+    file: str | None = None
+    line: int | None = None
 
-    def push(self) -> Scope:
-        return Scope(self.vm, self)
+    def push(
+        self,
+        *,
+        file: str | None = None,
+        line: int | None = None
+    ) -> Scope:
+        return Scope(self.vm, self, file=file, line=line)
 
     def eval(self, expr: str):
         parsed_lua = expr_parser.parse(expr)
         ast = transformer.transform(parsed_lua)
-        r = ast.evaluate(self)
+        try:
+            r = ast.evaluate(self)
+        except Exception as e:
+            raise LuaError(
+                LuaString(str(e).encode("utf-8")),
+                caused_by=e,
+            )
         if isinstance(r, LuaValue):
             return [r]
         return r
@@ -38,14 +52,28 @@ class Scope:
     def exec(self, chunk: str) -> list[LuaValue]:
         parsed_lua = chunk_parser.parse(chunk)
         ast = transformer.transform(parsed_lua)
-        r = ast.block.evaluate_without_inner_scope(self)
+        try:
+            r = ast.block.evaluate_without_inner_scope(self)
+        except Exception as e:
+            raise LuaError(
+                LuaString(str(e).encode("utf-8")),
+                caused_by=e,
+            )
         return r
 
     def exec_file(self, file_path: AnyPath) -> list[LuaValue]:
         with open(file_path, "r", encoding="utf-8") as f:
             if f.read(1) == "#":
                 f.readline()
-            return self.exec(f.read())
+            f.seek(0, SEEK_SET)
+            try:
+                r = self.exec(f.read())
+            except Exception as e:
+                raise LuaError(
+                    LuaString(str(e).encode("utf-8")),
+                    caused_by=e,
+                )
+            return r
 
     def __repr__(self):
         cls_name = self.__class__.__name__

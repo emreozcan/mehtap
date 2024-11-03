@@ -21,6 +21,9 @@ def main():
     except KeyboardInterrupt:
         print("KeyboardInterrupt")
         sys.exit(1)
+    except LuaError as le:
+        handle_luaerror(le, None)
+        sys.exit(2)
 
 
 def _main():
@@ -76,9 +79,15 @@ def _main():
         nargs="*",
         help="arguments to script, if any",
     )
+    arg_parser.add_argument(
+        "-V", "--verbose",
+        action="store_true",
+        help="show verbose traceback",
+    )
 
     args = arg_parser.parse_args()
     vm = VirtualMachine()
+    vm.verbose_tb = bool(args.verbose)
 
     arg_table = LuaTable()
     if args.script:
@@ -174,10 +183,12 @@ def print_lark_error_shower(collected_line, e, prompt):
     print(f"error: unexpected input, " f"line {e.line}, column {e.column}")
 
 
-def handle_luaerror(lua_error, vm):
-    if not isinstance(
-        lua_error.message, LuaString
-    ) and lua_error.message.has_metamethod(LuaString(b"__tostring")):
+def handle_luaerror(lua_error: LuaError, vm: VirtualMachine | None):
+    if (
+        not isinstance(lua_error.message, LuaString)
+        and lua_error.message.has_metamethod(LuaString(b"__tostring"))
+        and vm is not None
+    ):
         save = sys.stdout
         sys.stdout = sys.stderr
         try:
@@ -185,11 +196,7 @@ def handle_luaerror(lua_error, vm):
         finally:
             sys.stdout = save
     else:
-        print(lua_error.message, file=sys.stderr)
-    if lua_error.traceback:
-        print("traceback:")
-        for entry in lua_error.traceback:
-            print("\t" + entry, file=sys.stderr)
+        print(f"error:\t{lua_error.message!s}", file=sys.stderr)
     if lua_error.caused_by:
         type_name = lua_error.caused_by.__class__.__name__
         stringifed = str(lua_error.caused_by)
@@ -200,6 +207,11 @@ def handle_luaerror(lua_error, vm):
             )
         else:
             print(f"caused by: {lua_error.caused_by}", file=sys.stderr)
+    if not lua_error.traceback:
+        lua_error.traceback.append("no traceback available")
+    print("traceback: (most recent call last)")
+    for entry in reversed(lua_error.traceback):
+        print("\t" + entry, file=sys.stderr)
 
 
 def display_object(val: list[LuaValue]) -> str | None:

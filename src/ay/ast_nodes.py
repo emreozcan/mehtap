@@ -47,6 +47,7 @@ def flatten(v: Iterable[LuaValue | Iterable[LuaValue]]) -> list[LuaValue]:
 
 @attrs.define(slots=True)
 class Node(ABC):
+    file: str = attrs.field(kw_only=True, default="<?>")
     line: int = attrs.field(kw_only=True, default=-1)
     pass
 
@@ -78,14 +79,24 @@ class Statement(NonTerminal, ABC):
         pass
 
     def execute(self, scope: Scope) -> Sequence[LuaValue] | None:
+        if not scope.vm.verbose_tb:
+            return self._execute(scope)
         try:
             return self._execute(scope)
         except LuaError as le:
-            le.push_tb(f"{self.line}: statement {self.__class__.__name__}")
+            le.push_tb(
+                f"statement {self.__class__.__name__}",
+                file=self.file,
+                line=self.line,
+            )
             raise le
         except Exception as e:
             le = LuaError(str(e), caused_by=e)
-            le.push_tb(f"{self.line}: statement {self.__class__.__name__}")
+            le.push_tb(
+                f"statement {self.__class__.__name__}",
+                file=self.file,
+                line=self.line,
+            )
             raise le
 
 
@@ -96,17 +107,27 @@ class Expression(NonTerminal, ABC):
         pass
 
     def evaluate(self, scope: Scope) -> LuaValue | Sequence[LuaValue]:
+        if not scope.vm.verbose_tb:
+            return self._evaluate(scope)
         try:
             return self._evaluate(scope)
         except LuaError as le:
             # If something is both a Statement and an Expression,
             # only add its expression part to the traceback.
             if not isinstance(self, Statement):
-                le.push_tb(f"{self.line}: expression {self.__class__.__name__}")
+                le.push_tb(
+                    f"expression {self.__class__.__name__}",
+                    file=self.file,
+                    line=self.line,
+                )
             raise le
         except Exception as e:
             le = LuaError(str(e), caused_by=e)
-            le.push_tb(f"{self.line}: expression {self.__class__.__name__}")
+            le.push_tb(
+                f"expression {self.__class__.__name__}",
+                file=self.file,
+                line=self.line,
+            )
             raise le
 
     def evaluate_single(self, scope: Scope) -> LuaValue:
@@ -124,10 +145,14 @@ class ParenExpression(Expression):
 @attrs.define(slots=True)
 class Block(Statement, Expression):
     def _evaluate(self, scope: Scope) -> list[LuaValue]:
-        return self.evaluate_without_inner_scope(scope.push())
+        return self.evaluate_without_inner_scope(
+            scope.push(file=self.file, line=self.line)
+        )
 
     def _execute(self, scope: Scope) -> Sequence[LuaValue] | None:
-        return self.execute_without_inner_scope(scope.push())
+        return self.execute_without_inner_scope(
+            scope.push(file=self.file, line=self.line)
+        )
 
     # TODO: Handle errors
     def evaluate_without_inner_scope(self, scope: Scope) -> list[LuaValue]:
@@ -509,7 +534,16 @@ class FuncCallRegular(Expression, Statement):
     def _evaluate(self, scope: Scope) -> list[LuaValue]:
         function = self.name.evaluate(scope)
         args = [arg.evaluate(scope) for arg in self.args]
-        return function.call(args, scope)
+        try:
+            r = function.call(args, scope, modify_tb=False)
+        except LuaError as le:
+            le.push_tb(
+                f"call of {function}",
+                file=self.file,
+                line=self.line,
+            )
+            raise le
+        return r
 
     def _execute(self, scope: Scope) -> None | list[LuaValue]:
         r = self.evaluate(scope)
@@ -531,7 +565,16 @@ class FuncCallMethod(Expression, Statement):
             raise LuaError(f"attempt to index {type_of_lv(v)} value")
         function = v.get(str_to_lua_string(self.method.name.text))
         args = [v, *(arg.evaluate(scope) for arg in self.args)]
-        return function.call(args, scope)
+        try:
+            r = function.call(args, scope, modify_tb=False)
+        except LuaError as le:
+            le.push_tb(
+                f"method call of {function}",
+                file=self.file,
+                line=self.line,
+            )
+            raise le
+        return r
 
     def _execute(self, scope: Scope) -> None | list[LuaValue]:
         try:
@@ -723,7 +766,7 @@ class Do(Statement):
 @attrs.define(slots=True)
 class While(Statement):
     def _execute(self, scope: Scope) -> None:
-        new_vm = scope.push()
+        new_vm = scope.push(file=self.file, line=self.line)
         try:
             while coerce_to_bool(self.condition.evaluate(scope)).true:
                 self.block.execute_without_inner_scope(new_vm)
@@ -737,7 +780,7 @@ class While(Statement):
 @attrs.define(slots=True)
 class Repeat(Statement):
     def _execute(self, scope: Scope) -> None:
-        new_vm = scope.push()
+        new_vm = scope.push(file=self.file, line=self.line)
         try:
             while True:
                 self.block.execute_without_inner_scope(new_vm)
@@ -837,7 +880,7 @@ class For(Statement):
         # If you need its value after the loop, assign it to another variable
         # before exiting the loop.
         control_val = initial_value
-        inner_scope = scope.push()
+        inner_scope = scope.push(file=self.file, line=self.line)
         while condition_func(control_val, limit).true:
             inner_scope.put_local_ls(
                 control_varname, ay_values.Variable(control_val)
@@ -871,7 +914,7 @@ class ForIn(Statement):
         #      for var_1, ···, var_n in explist do body end
         # works as follows.
         # The names var_i declare loop variables local to the loop body.
-        body_scope = outer_scope.push()
+        body_scope = outer_scope.push(file=self.file, line=self.line)
         name_count = len(self.names)
         names = [name.as_lua_string() for name in self.names]
         for name in names:

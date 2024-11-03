@@ -89,6 +89,8 @@ class LuaValue(ABC):
         self,
         args: Multires,
         scope: Scope | None,
+        *,
+        modify_tb: bool = True,
     ) -> NoReturn:
         from ay.control_structures import LuaError
         raise LuaError(f"attempt to call {type_of_lv(self)} value")
@@ -315,11 +317,17 @@ class LuaFunction(LuaObject):
         self,
         args: Multires,
         scope: Scope | None,
+        *,
+        modify_tb: bool = True,
     ) -> list[LuaValue]:
         """Call the function.
 
         :param args: The arguments to pass to the function.
         :param scope: The scope of the caller.
+        :param modify_tb: Whether to add self to the traceback of exceptions.
+                          If the caller is handling traceback,
+                          should be set to :data:`False`,
+                          otherwise should be set to :data:`True`.
         :return: A multires list of the return values of the function.
 
         The number of arguments will be suitably adjusted to the
@@ -339,10 +347,22 @@ class LuaFunction(LuaObject):
                 scope or self.parent_scope or VirtualMachine().root_scope,
             )
         except LuaError as le:
-            le.push_tb(str(self))
+            if modify_tb:
+                le.push_tb(str(self))
             raise le
         except ReturnException as e:
             return e.values if e.values is not None else []
+        except Exception as e:
+            from ay.control_structures import LuaError
+            s_e = str(e)
+            assert s_e
+            le = LuaError(
+                LuaString(f"{self!s}: {e!s}".encode("utf-8")),
+                caused_by=e,
+            )
+            if modify_tb:
+                le.push_tb(str(self))
+            raise le from e
         return []
 
     def _call(
@@ -377,19 +397,10 @@ class LuaFunction(LuaObject):
             from ay.operations import adjust_flatten
 
             args = adjust_flatten(args)
-            try:
-                if not self.gets_scope:
-                    self.block(*args)
-                else:
-                    self.block(scope, *args)
-            except Exception as e:
-                from ay.control_structures import LuaError
-                s_e = str(e)
-                assert s_e
-                raise LuaError(
-                    LuaString(f"{self!s}: {e!s}".encode("utf-8")),
-                    caused_by=e,
-                ) from e
+            if not self.gets_scope:
+                self.block(*args)
+            else:
+                self.block(scope, *args)
 
 
 @attrs.define(slots=True, eq=False)

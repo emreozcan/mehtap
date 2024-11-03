@@ -35,7 +35,22 @@ class LuaError(BaseException):
     def __repr__(self):
         return f"<error level {self.level}: {self.message}>"
 
-    def push_tb(self, tb: str):
+    def push_tb(
+        self,
+        tb: str,
+        *,
+        file: str | None = None,
+        line: int | None = None
+    ):
+        if file is not None and line is not None:
+            self.traceback.append(f'{file}:{line}: {tb}')
+            return
+        if file is not None and line is None:
+            self.traceback.append(f'{file}: {tb}')
+            return
+        if file is None and line is not None:
+            self.traceback.append(f'{line}: {tb}')
+            return
         self.traceback.append(tb)
 
 

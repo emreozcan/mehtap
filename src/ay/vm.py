@@ -22,6 +22,7 @@ class VirtualMachine:
     emitting_warnings: bool = False
     default_input: BinaryIO = sys.stdin.buffer
     default_output: BinaryIO = sys.stdout.buffer
+    verbose_tb: bool = False
 
     def __init__(self):
         self.globals = create_global_table()
