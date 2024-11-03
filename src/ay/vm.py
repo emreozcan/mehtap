@@ -19,14 +19,18 @@ from ay.values import (
 class VirtualMachine:
     globals: LuaTable
     root_scope: Scope
-    emitting_warnings: bool = False
-    default_input: BinaryIO = sys.stdin.buffer
-    default_output: BinaryIO = sys.stdout.buffer
-    verbose_tb: bool = False
+    emitting_warnings: bool
+    verbose_tb: bool
+    default_input: BinaryIO
+    default_output: BinaryIO
 
     def __init__(self):
         self.globals = create_global_table()
         self.root_scope = Scope(self, None)
+        self.emitting_warnings = False
+        self.default_input = sys.stdin.buffer
+        self.default_output = sys.stdout.buffer
+        self.verbose_tb = False
 
     def eval(self, expr: str):
         return self.root_scope.eval(expr)
