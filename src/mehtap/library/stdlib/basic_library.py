@@ -4,12 +4,12 @@ import sys
 from os.path import basename
 from typing import TYPE_CHECKING
 
-from ay.ast_nodes import UnaryOperation, UnaryOperator
-from ay.ast_transformer import transformer
-from ay.py2lua import PyLuaRet, py2lua
-from ay.library.provider_abc import LibraryProvider
-from ay.py2lua import lua_function
-from ay.values import (
+from mehtap.ast_nodes import UnaryOperation, UnaryOperator
+from mehtap.ast_transformer import transformer
+from mehtap.py2lua import PyLuaRet, py2lua
+from mehtap.library.provider_abc import LibraryProvider
+from mehtap.py2lua import lua_function
+from mehtap.values import (
     LuaTable,
     LuaValue,
     LuaNil,
@@ -20,14 +20,14 @@ from ay.values import (
     LuaFunction,
     LuaIndexableABC, type_of_lv,
 )
-from ay.control_structures import LuaError
-from ay.values import LuaBool
-from ay.parser import chunk_parser, numeral_parser
-from ay.operations import rel_eq, length
+from mehtap.control_structures import LuaError
+from mehtap.values import LuaBool
+from mehtap.parser import chunk_parser, numeral_parser
+from mehtap.operations import rel_eq, length
 
 if TYPE_CHECKING:
-    from ay.scope import Scope
-    from ay.values import LuaNilType
+    from mehtap.scope import Scope
+    from mehtap.values import LuaNilType
 
 
 SYMBOL_METATABLE = LuaString(b"__metatable")
@@ -66,7 +66,7 @@ def lf_collectgarbage(scope: Scope, opt=None, arg=None, /) -> PyLuaRet:
 def basic_collectgarbage(scope: Scope, opt=None, arg=None, /) -> PyLuaRet:
     """collectgarbage ([opt [, arg]])"""
     lf_warn.call(
-        [py2lua("collectgarbage(): ay doesn't have garbage collection")],
+        [py2lua("collectgarbage(): mehtap doesn't have garbage collection")],
         scope,
     )
     return [LuaNil]
@@ -680,7 +680,7 @@ def basic_xpcall(
 
 class BasicLibrary(LibraryProvider):
     def provide(self, global_table: LuaTable) -> None:
-        from ay import __version__
+        from mehtap import __version__
 
         # _VERSION
         #  A global variable (not a function) that holds a string containing the
@@ -688,7 +688,7 @@ class BasicLibrary(LibraryProvider):
         #  The current value of this variable is "Lua 5.4".
         global_table.put(
             LuaString(b"_VERSION"),
-            LuaString(f"ay {__version__}".encode("ascii")),
+            LuaString(f"mehtap {__version__}".encode("ascii")),
         )
 
         # _G

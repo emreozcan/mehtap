@@ -5,8 +5,8 @@ from typing import TYPE_CHECKING
 import attrs
 
 if TYPE_CHECKING:
-    from ay.ast_nodes import Name
-    from ay.values import LuaValue
+    from mehtap.ast_nodes import Name
+    from mehtap.values import LuaValue
 
 
 class LuaError(BaseException):
@@ -24,7 +24,7 @@ class LuaError(BaseException):
         caused_by: Exception | None = None
     ):
         if isinstance(message, str):
-            from ay.values import LuaString
+            from mehtap.values import LuaString
             message = LuaString(message.encode("ascii"))
         self.message = message
         self.level = level

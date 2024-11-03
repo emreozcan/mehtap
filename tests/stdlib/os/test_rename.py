@@ -1,5 +1,5 @@
-from ay.values import LuaBool, LuaString, LuaNil, LuaNumber
-from ay.vm import VirtualMachine
+from mehtap.values import LuaBool, LuaString, LuaNil, LuaNumber
+from mehtap.vm import VirtualMachine
 
 vm = VirtualMachine()
 

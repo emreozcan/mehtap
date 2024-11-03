@@ -1,7 +1,7 @@
 from io import BytesIO
 
-from ay.values import LuaString, LuaNil
-from ay.vm import VirtualMachine
+from mehtap.values import LuaString, LuaNil
+from mehtap.vm import VirtualMachine
 
 
 def test_read_default_input():

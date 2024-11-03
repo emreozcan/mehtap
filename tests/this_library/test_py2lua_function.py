@@ -1,7 +1,7 @@
 import pytest
 
-from ay.py2lua import lua_function
-from ay.values import LuaString, LuaTable, LuaFunction
+from mehtap.py2lua import lua_function
+from mehtap.values import LuaString, LuaTable, LuaFunction
 
 
 def test_preserve_table_sanity_check():

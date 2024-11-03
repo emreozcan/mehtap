@@ -1,5 +1,5 @@
-from ay.operations import str_to_lua_string
-from ay.vm import VirtualMachine
+from mehtap.operations import str_to_lua_string
+from mehtap.vm import VirtualMachine
 
 vm = VirtualMachine()
 

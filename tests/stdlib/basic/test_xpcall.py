@@ -1,6 +1,6 @@
-from ay.py2lua import lua_function, PyLuaRet
-from ay.values import LuaString, Variable, LuaBool, LuaTable
-from ay.vm import VirtualMachine
+from mehtap.py2lua import lua_function, PyLuaRet
+from mehtap.values import LuaString, Variable, LuaBool, LuaTable
+from mehtap.vm import VirtualMachine
 
 
 def test_xpcall_false():

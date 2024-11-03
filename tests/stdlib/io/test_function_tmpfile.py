@@ -1,8 +1,8 @@
 import os.path
 from pathlib import Path
 
-from ay.values import LuaString
-from ay.vm import VirtualMachine
+from mehtap.values import LuaString
+from mehtap.vm import VirtualMachine
 
 
 def test_tmpfile():

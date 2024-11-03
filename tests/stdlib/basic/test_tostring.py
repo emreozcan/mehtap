@@ -1,6 +1,6 @@
-from ay.py2lua import lua_function
-from ay.values import LuaTable, LuaString, Variable, LuaValue
-from ay.vm import VirtualMachine
+from mehtap.py2lua import lua_function
+from mehtap.values import LuaTable, LuaString, Variable, LuaValue
+from mehtap.vm import VirtualMachine
 
 
 def test_tostring_mt_tostring():

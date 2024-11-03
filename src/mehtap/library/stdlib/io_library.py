@@ -7,14 +7,14 @@ from typing import TypeVar, BinaryIO, IO
 
 import attrs
 
-from ay.ast_nodes import Numeral
-from ay.ast_transformer import transformer
-from ay.control_structures import LuaError
-from ay.library.provider_abc import LibraryProvider
-from ay.parser import numeral_parser
-from ay.py2lua import lua_function, PyLuaRet
-from ay.scope import Scope
-from ay.values import (
+from mehtap.ast_nodes import Numeral
+from mehtap.ast_transformer import transformer
+from mehtap.control_structures import LuaError
+from mehtap.library.provider_abc import LibraryProvider
+from mehtap.parser import numeral_parser
+from mehtap.py2lua import lua_function, PyLuaRet
+from mehtap.scope import Scope
+from mehtap.values import (
     LuaTable,
     LuaString,
     LuaNil,

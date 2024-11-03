@@ -1,5 +1,5 @@
-from ay.values import LuaNil, LuaTable, LuaString, Variable
-from ay.vm import VirtualMachine
+from mehtap.values import LuaNil, LuaTable, LuaString, Variable
+from mehtap.vm import VirtualMachine
 
 
 def execute(program):

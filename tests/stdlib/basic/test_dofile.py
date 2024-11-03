@@ -2,10 +2,10 @@ from pathlib import Path
 
 from pytest import raises
 
-from ay.control_structures import LuaError
-from ay.operations import str_to_lua_string
-from ay.values import LuaNumber
-from ay.vm import VirtualMachine
+from mehtap.control_structures import LuaError
+from mehtap.operations import str_to_lua_string
+from mehtap.values import LuaNumber
+from mehtap.vm import VirtualMachine
 
 
 def execute(program):

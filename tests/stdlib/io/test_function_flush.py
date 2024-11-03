@@ -1,4 +1,4 @@
-from ay.vm import VirtualMachine
+from mehtap.vm import VirtualMachine
 
 
 def test_flush_function(tmp_path):

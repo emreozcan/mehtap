@@ -5,14 +5,14 @@ import traceback
 
 import lark.exceptions
 
-from ay import __version__ as __version__
-from ay.control_structures import LuaError
-from ay.library.stdlib.basic_library import basic_print
-from ay.operations import str_to_lua_string
-from ay.vm import VirtualMachine
-from ay.values import LuaValue, LuaTable, LuaNumber, LuaString
+from mehtap import __version__ as __version__
+from mehtap.control_structures import LuaError
+from mehtap.library.stdlib.basic_library import basic_print
+from mehtap.operations import str_to_lua_string
+from mehtap.vm import VirtualMachine
+from mehtap.values import LuaValue, LuaTable, LuaNumber, LuaString
 
-COPYRIGHT_TEXT = f"ay {__version__} Copyright (c) 2024 Emre Özcan"
+COPYRIGHT_TEXT = f"mehtap {__version__} Copyright (c) 2024 Emre Özcan"
 
 
 def main():
@@ -101,8 +101,8 @@ def _main():
 
     if not args.ignore_environment:
         env_vars = [
-            "AY_INIT_" + "_".join(__version__.split(".")),
-            "AY_INIT",
+            "MEHTAP_INIT_" + "_".join(__version__.split(".")),
+            "MEHTAP_INIT",
             "LUA_INIT_5_4",
             "LUA_INIT",
         ]

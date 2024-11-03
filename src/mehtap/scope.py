@@ -8,13 +8,13 @@ from typing import TypeVar, TYPE_CHECKING
 import attrs
 from lark.exceptions import VisitError
 
-from ay.ast_transformer import transformer
-from ay.control_structures import LuaError
-from ay.parser import expr_parser, chunk_parser
-from ay.values import LuaString, Variable, LuaValue
+from mehtap.ast_transformer import transformer
+from mehtap.control_structures import LuaError
+from mehtap.parser import expr_parser, chunk_parser
+from mehtap.values import LuaString, Variable, LuaValue
 
 if TYPE_CHECKING:
-    from ay.vm import VirtualMachine
+    from mehtap.vm import VirtualMachine
 
 
 AnyPath = TypeVar("AnyPath", int, str, bytes, PathLike[str], PathLike[bytes])

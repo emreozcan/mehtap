@@ -2,9 +2,9 @@ from io import BytesIO
 
 import pytest
 
-from ay.control_structures import LuaError
-from ay.values import LuaString, LuaNil
-from ay.vm import VirtualMachine
+from mehtap.control_structures import LuaError
+from mehtap.values import LuaString, LuaNil
+from mehtap.vm import VirtualMachine
 
 
 def test_lines_default_input():

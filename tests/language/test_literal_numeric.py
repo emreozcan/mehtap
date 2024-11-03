@@ -1,5 +1,5 @@
-from ay.vm import VirtualMachine
-from ay.values import LuaNumber
+from mehtap.vm import VirtualMachine
+from mehtap.values import LuaNumber
 
 
 vm = VirtualMachine()

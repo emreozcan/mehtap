@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from typing import Any, overload, Callable, TYPE_CHECKING
 
-from ay.control_structures import LuaError
-from ay.values import (
+from mehtap.control_structures import LuaError
+from mehtap.values import (
     LuaNil,
     LuaBool,
     LuaNumber,
@@ -12,11 +12,11 @@ from ay.values import (
     LuaFunction,
     LuaValue, type_of_lv,
 )
-from ay.vm import VirtualMachine
+from mehtap.vm import VirtualMachine
 
 
 if TYPE_CHECKING:
-    from ay.values import LuaNilType
+    from mehtap.values import LuaNilType
 
 
 @overload
@@ -120,7 +120,7 @@ def _lua2py(lua_val, memos):
             m[py_k] = py_v
         return m
     if isinstance(lua_val, LuaFunction):
-        from ay.py2lua import py2lua
+        from mehtap.py2lua import py2lua
 
         def func(*args):
             return_values = lua_val.call(

@@ -7,12 +7,12 @@ from typing import TYPE_CHECKING, TypeVar
 
 import attrs
 
-from ay.control_structures import LuaError
+from mehtap.control_structures import LuaError
 
 if TYPE_CHECKING:
-    from ay.ast_nodes import Block
-    from ay.scope import Scope
-    from ay.operations import Multires
+    from mehtap.ast_nodes import Block
+    from mehtap.scope import Scope
+    from mehtap.operations import Multires
 
 
 @attrs.define(slots=True, eq=True, repr=False)
@@ -350,9 +350,9 @@ class LuaFunction(LuaObject, LuaCallableABC):
         .. _the rules on adjustment of Lua:
            https://lua.org/manual/5.4/manual.html#3.4.12
         """
-        from ay.control_structures import ReturnException
-        from ay.vm import VirtualMachine
-        from ay.control_structures import LuaError
+        from mehtap.control_structures import ReturnException
+        from mehtap.vm import VirtualMachine
+        from mehtap.control_structures import LuaError
         try:
             self._call(
                 args,
@@ -365,7 +365,7 @@ class LuaFunction(LuaObject, LuaCallableABC):
         except ReturnException as e:
             return e.values if e.values is not None else []
         except Exception as e:
-            from ay.control_structures import LuaError
+            from mehtap.control_structures import LuaError
             s_e = str(e)
             assert s_e
             le = LuaError(
@@ -389,24 +389,24 @@ class LuaFunction(LuaObject, LuaCallableABC):
             param_count = len(self.param_names)
 
             if self.variadic:
-                from ay.operations import adjust_flatten
+                from mehtap.operations import adjust_flatten
 
                 args = adjust_flatten(args)
                 new_scope.varargs = args[param_count:]
                 args = args[:param_count]
-            from ay.operations import adjust
+            from mehtap.operations import adjust
 
             args = adjust(args, param_count)
             for param_name, arg in zip(self.param_names, args):
                 new_scope.put_local_ls(param_name, Variable(arg))
             retvals = self.block.evaluate_without_inner_scope(new_scope)
             if retvals is not None:
-                from ay.control_structures import ReturnException
+                from mehtap.control_structures import ReturnException
 
                 raise ReturnException(retvals)
         else:
             # Function is implemented in Python
-            from ay.operations import adjust_flatten
+            from mehtap.operations import adjust_flatten
 
             args = adjust_flatten(args)
             try:

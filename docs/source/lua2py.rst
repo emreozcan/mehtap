@@ -1,4 +1,4 @@
 Going from Lua to Python
 ========================
 
-.. automodule:: ay.lua2py
+.. automodule:: mehtap.lua2py

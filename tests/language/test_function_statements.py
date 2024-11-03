@@ -1,5 +1,5 @@
-from ay.py2lua import py2lua
-from ay.vm import VirtualMachine
+from mehtap.py2lua import py2lua
+from mehtap.vm import VirtualMachine
 
 
 def run_chunk(chunk, vm):

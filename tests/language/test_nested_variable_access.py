@@ -1,7 +1,7 @@
-from ay.operations import str_to_lua_string
-from ay.py2lua import py2lua
-from ay.values import LuaTable, LuaFunction
-from ay.vm import VirtualMachine
+from mehtap.operations import str_to_lua_string
+from mehtap.py2lua import py2lua
+from mehtap.values import LuaTable, LuaFunction
+from mehtap.vm import VirtualMachine
 
 
 def test_nested_variable_read():

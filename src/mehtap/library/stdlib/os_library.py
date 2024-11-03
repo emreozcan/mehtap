@@ -8,11 +8,11 @@ import tempfile
 import time as py_time
 import datetime
 
-from ay.control_structures import LuaError
-from ay.operations import str_to_lua_string
-from ay.py2lua import lua_function, PyLuaWrapRet, py2lua, PyLuaRet
-from ay.library.provider_abc import LibraryProvider
-from ay.values import (
+from mehtap.control_structures import LuaError
+from mehtap.operations import str_to_lua_string
+from mehtap.py2lua import lua_function, PyLuaWrapRet, py2lua, PyLuaRet
+from mehtap.library.provider_abc import LibraryProvider
+from mehtap.values import (
     LuaTable,
     LuaString,
     LuaNil,
@@ -272,7 +272,7 @@ def lf_os_tmpname() -> PyLuaRet:
 
 
 def os_tmpname() -> PyLuaRet:
-    fd, name = tempfile.mkstemp(prefix="ay_", suffix="_ay")
+    fd, name = tempfile.mkstemp()
     return [str_to_lua_string(name)]
 
 

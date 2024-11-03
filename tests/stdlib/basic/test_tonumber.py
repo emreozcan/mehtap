@@ -1,8 +1,8 @@
 from _pytest.python_api import raises
 
-from ay.control_structures import LuaError
-from ay.values import LuaNumber, LuaNil
-from ay.vm import VirtualMachine
+from mehtap.control_structures import LuaError
+from mehtap.values import LuaNumber, LuaNil
+from mehtap.vm import VirtualMachine
 
 
 def execute(program):

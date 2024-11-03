@@ -1,8 +1,8 @@
 import os
 from os import close
 
-from ay.values import LuaString
-from ay.vm import VirtualMachine
+from mehtap.values import LuaString
+from mehtap.vm import VirtualMachine
 
 vm = VirtualMachine()
 

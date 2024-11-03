@@ -1,6 +1,6 @@
 import pytest
 
-from ay.vm import VirtualMachine
+from mehtap.vm import VirtualMachine
 
 vm = VirtualMachine()
 

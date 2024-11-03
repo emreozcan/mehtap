@@ -2,10 +2,10 @@ from io import SEEK_SET
 
 import pytest
 
-from ay.control_structures import LuaError
-from ay.library.stdlib.io_library import LuaFile
-from ay.values import LuaString
-from ay.vm import VirtualMachine
+from mehtap.control_structures import LuaError
+from mehtap.library.stdlib.io_library import LuaFile
+from mehtap.values import LuaString
+from mehtap.vm import VirtualMachine
 
 
 def test_seek_set(tmp_path):

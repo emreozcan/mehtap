@@ -11,9 +11,9 @@ from typing import (
     TypeVar, ParamSpec, Concatenate,
 )
 
-from ay.operations import str_to_lua_string
-from ay.scope import Scope
-from ay.values import (
+from mehtap.operations import str_to_lua_string
+from mehtap.scope import Scope
+from mehtap.values import (
     LuaValue,
     LuaFunction,
     LuaTable,
@@ -25,7 +25,7 @@ from ay.values import (
 
 
 if TYPE_CHECKING:
-    from ay.values import LuaNilType
+    from mehtap.values import LuaNilType
 
 
 LV = TypeVar("LV", bound=LuaValue, covariant=True)
@@ -337,7 +337,7 @@ def _lua_function(
     wrap_values: bool,
     preserve: bool,
 ):
-    from ay.control_structures import ReturnException
+    from mehtap.control_structures import ReturnException
 
     if preserve and not table:
         raise ValueError(
@@ -376,7 +376,7 @@ def _lua_function(
         if wrap_values:
 
             def new_function(*args: LuaValue) -> None:
-                from ay.lua2py import lua2py
+                from mehtap.lua2py import lua2py
 
                 return_values = func(*(lua2py(v) for v in args))
                 if isinstance(return_values, (list, tuple)):

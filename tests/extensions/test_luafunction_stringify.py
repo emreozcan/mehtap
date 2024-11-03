@@ -1,4 +1,4 @@
-from ay.values import LuaFunction
+from mehtap.values import LuaFunction
 
 
 def noop():

@@ -1,4 +1,4 @@
 Values
 ======
 
-.. automodule:: ay.values
+.. automodule:: mehtap.values

@@ -1,5 +1,5 @@
-from ay.values import LuaString, LuaNil
-from ay.vm import VirtualMachine
+from mehtap.values import LuaString, LuaNil
+from mehtap.vm import VirtualMachine
 
 
 def test_type_open(tmp_path):

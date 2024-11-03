@@ -1,8 +1,8 @@
 from pytest import raises
 
-from ay.control_structures import LuaError
-from ay.values import LuaString, Variable, LuaTable
-from ay.vm import VirtualMachine
+from mehtap.control_structures import LuaError
+from mehtap.values import LuaString, Variable, LuaTable
+from mehtap.vm import VirtualMachine
 
 
 def test_error():

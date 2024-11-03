@@ -11,10 +11,10 @@ sys.path.insert(0, str(Path('..', 'src').resolve()))
 # -- Project information
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = 'ay'
+project = 'mehtap'
 copyright = '2024, Emre Özcan'
 author = 'Emre Özcan'
-version = __import__('ay').__version__
+version = __import__('mehtap').__version__
 
 # -- General configuration
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -44,18 +44,18 @@ autodoc_default_options = {
     'show-inheritance': True,
 }
 autodoc_type_aliases: {
-    'Multires': 'ay.operations.Multires',
-    'PyLuaFunction': 'ay.py2lua.PyLuaFunction',
-    'LuaDecorator': 'ay.py2lua.LuaDecorator',
+    'Multires': 'mehtap.operations.Multires',
+    'PyLuaFunction': 'mehtap.py2lua.PyLuaFunction',
+    'LuaDecorator': 'mehtap.py2lua.LuaDecorator',
 
-    'PyLuaNative': 'ay.py2lua.PyLuaNative',
-    'Py2LuaAccepts': 'ay.py2lua.Py2LuaAccepts',
-    'PyLuaRet': 'ay.py2lua.PyLuaRet',
-    'PyLuaWrapRet': 'ay.py2lua.PyLuaWrapRet',
-    'LuaCallback': 'ay.py2lua.LuaCallback',
-    'LuaScopeCallback': 'ay.py2lua.LuaScopeCallback',
-    'PyCallback': 'ay.py2lua.PyCallback',
-    'PyScopeCallback': 'ay.py2lua.PyScopeCallback',
+    'PyLuaNative': 'mehtap.py2lua.PyLuaNative',
+    'Py2LuaAccepts': 'mehtap.py2lua.Py2LuaAccepts',
+    'PyLuaRet': 'mehtap.py2lua.PyLuaRet',
+    'PyLuaWrapRet': 'mehtap.py2lua.PyLuaWrapRet',
+    'LuaCallback': 'mehtap.py2lua.LuaCallback',
+    'LuaScopeCallback': 'mehtap.py2lua.LuaScopeCallback',
+    'PyCallback': 'mehtap.py2lua.PyCallback',
+    'PyScopeCallback': 'mehtap.py2lua.PyScopeCallback',
 }
 autodoc_typehints = 'both'
 

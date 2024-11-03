@@ -1,6 +1,6 @@
-from ay.py2lua import lua_function
-from ay.values import LuaString, Variable, LuaTable
-from ay.vm import VirtualMachine
+from mehtap.py2lua import lua_function
+from mehtap.values import LuaString, Variable, LuaTable
+from mehtap.vm import VirtualMachine
 
 
 def test_print_one_string(capsys):

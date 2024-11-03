@@ -5,9 +5,9 @@ from typing import BinaryIO
 
 import attrs
 
-from ay.global_table import create_global_table
-from ay.scope import Scope, AnyPath
-from ay.values import (
+from mehtap.global_table import create_global_table
+from mehtap.scope import Scope, AnyPath
+from mehtap.values import (
     LuaTable,
     LuaString,
     Variable,

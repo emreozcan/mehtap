@@ -3,8 +3,8 @@ from collections.abc import Sequence
 import lark
 from lark import Tree
 
-import ay.ast_nodes as nodes
-from ay.ast_nodes import BinaryOperator
+import mehtap.ast_nodes as nodes
+from mehtap.ast_nodes import BinaryOperator
 
 #  The following keywords are reserved and cannot be used as names:
 #      and       break     do        else      elseif    end

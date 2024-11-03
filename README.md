@@ -1,26 +1,26 @@
-# ay
+# mehtap
 
 Lua 5.4 programming language implementation in Pure Python
 
-[![Codacy Grade Badge](https://app.codacy.com/project/badge/Grade/c8799d9203354667a97ba39aca2c75f2)](https://app.codacy.com/gh/EmreOzcan/ay/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
-[![Codacy Coverage Badge](https://app.codacy.com/project/badge/Coverage/c8799d9203354667a97ba39aca2c75f2)](https://app.codacy.com/gh/EmreOzcan/ay/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_coverage)
-[![checks/master](https://img.shields.io/github/check-runs/emreozcan/ay/master?logo=github&label=checks%2Fmaster)](https://github.com/emreozcan/ay/actions/workflows/test.yml)
-[![docs](https://readthedocs.org/projects/ay/badge/?version=latest&style=flat)](https://ay.readthedocs.io/en/latest/)
+[![Codacy Grade Badge](https://app.codacy.com/project/badge/Grade/c8799d9203354667a97ba39aca2c75f2)](https://app.codacy.com/gh/EmreOzcan/mehtap/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
+[![Codacy Coverage Badge](https://app.codacy.com/project/badge/Coverage/c8799d9203354667a97ba39aca2c75f2)](https://app.codacy.com/gh/EmreOzcan/mehtap/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_coverage)
+[![checks/master](https://img.shields.io/github/check-runs/emreozcan/mehtap/master?logo=github&label=checks%2Fmaster)](https://github.com/emreozcan/mehtap/actions/workflows/test.yml)
+[![docs](https://readthedocs.org/projects/mehtap/badge/?version=latest&style=flat)](https://mehtap.readthedocs.io/en/latest/)
 
 ## Status
 
-ay is in an early alpha stage. Since there is active development,
+mehtap is in an early alpha stage. Since there is active development,
 API changes may happen without any special notice.
 Please pin your dependencies using a specific commit hash.
 
-## What does ay have?
+## What does mehtap have?
 
 * Everything in the [Lua 5.4 grammar](https://lua.org/manual/5.4/manual.html#9)
   is supported.
 * There are utility functions to convert values
-  [from Python to Lua](https://ay.readthedocs.io/en/latest/py2lua.html)
+  [from Python to Lua](https://mehtap.readthedocs.io/en/latest/py2lua.html)
   and
-  [from Lua to Python](https://ay.readthedocs.io/en/latest/lua2py.html).
+  [from Lua to Python](https://mehtap.readthedocs.io/en/latest/lua2py.html).
 * Most of the standard library is supported. (100% support is planned.)
 
     <details>

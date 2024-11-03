@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Sequence, MutableSequence
 from typing import TypeAlias
 
-from ay.values import (
+from mehtap.values import (
     LuaBool,
     LuaValue,
     LuaString,
@@ -37,7 +37,7 @@ def rel_eq(a: LuaValue, b: LuaValue, *, raw: bool = False) -> LuaBool:
     # Numbers are equal if they denote the same mathematical value.
     if isinstance(a, LuaNumber):
         return LuaBool(a.value == b.value)
-    # ay extension: All LuaBool(False) _and true_ objects are currently not all
+    # mehtap extension: All LuaBool(False) _and true_ objects are currently not all
     #               the same object :(
     if isinstance(a, LuaBool):
         return LuaBool(a.true == b.true)

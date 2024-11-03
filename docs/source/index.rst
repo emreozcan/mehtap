@@ -1,16 +1,16 @@
-ay Documentation
-================
+mehtap Documentation
+====================
 
 Lua 5.4 programming language implementation in Pure Python
 
 Status
 ------
-ay is in an early alpha stage. Since there is active development,
+mehtap is in an early alpha stage. Since there is active development,
 API changes may happen without any special notice.
 Please pin your dependencies using a specific commit hash.
 
-What does ay have?
-------------------
+What does mehtap have?
+----------------------
 
 * Everything in the `Lua 5.4 grammar`_ is supported.
 * There are utility functions to convert values
@@ -20,7 +20,7 @@ What does ay have?
   See `this issue`_ for progress.
 
 .. _Lua 5.4 grammar: https://lua.org/manual/5.4/manual.html#9
-.. _this issue: https://github.com/emreozcan/ay/issues/11
+.. _this issue: https://github.com/emreozcan/mehtap/issues/11
 
 What's the catch?
 -----------------

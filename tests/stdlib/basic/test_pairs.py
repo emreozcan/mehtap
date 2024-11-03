@@ -1,5 +1,5 @@
-from ay.py2lua import lua_function
-from ay.values import (
+from mehtap.py2lua import lua_function
+from mehtap.values import (
     LuaString,
     Variable,
     LuaTable,
@@ -8,7 +8,7 @@ from ay.values import (
     LuaBool,
     LuaValue,
 )
-from ay.vm import VirtualMachine
+from mehtap.vm import VirtualMachine
 
 
 class CallTracker:

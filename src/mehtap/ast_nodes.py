@@ -9,10 +9,10 @@ from typing import TYPE_CHECKING
 
 import attrs
 
-import ay.values as ay_values
-from ay.control_structures import BreakException, GotoException, \
+import mehtap.values as m_values
+from mehtap.control_structures import BreakException, GotoException, \
     ReturnException, LuaError
-from ay.values import (
+from mehtap.values import (
     LuaNumber,
     LuaValue,
     LuaNumberType,
@@ -21,7 +21,7 @@ from ay.values import (
     LuaTable,
     LuaFunction, LuaIndexableABC, type_of_lv, LuaCallableABC,
 )
-from ay.operations import (
+from mehtap.operations import (
     int_wrap_overflow,
     str_to_lua_string,
     adjust,
@@ -29,10 +29,10 @@ from ay.operations import (
     adjust_to_one,
     adjust_flatten,
 )
-import ay.operations as ay_operations
+import mehtap.operations as m_operations
 
 if TYPE_CHECKING:
-    from ay.scope import Scope
+    from mehtap.scope import Scope
 
 
 def flatten(v: Iterable[LuaValue | Iterable[LuaValue]]) -> list[LuaValue]:
@@ -389,19 +389,19 @@ class LiteralString(Expression):
 @attrs.define(slots=True)
 class LiteralFalse(Expression):
     def _evaluate(self, scope: Scope) -> LuaValue:
-        return ay_values.LuaBool(False)
+        return m_values.LuaBool(False)
 
 
 @attrs.define(slots=True)
 class LiteralTrue(Expression):
     def _evaluate(self, scope: Scope) -> LuaValue:
-        return ay_values.LuaBool(True)
+        return m_values.LuaBool(True)
 
 
 @attrs.define(slots=True)
 class LiteralNil(Expression):
     def _evaluate(self, scope: Scope) -> LuaValue:
-        return ay_values.LuaNil
+        return m_values.LuaNil
 
 
 @attrs.define(slots=True)
@@ -614,10 +614,10 @@ class UnaryOperator(enum.Enum):
 unary_operator_functions: dict[
     UnaryOperator, Callable[[LuaValue], LuaValue]
 ] = {
-    UnaryOperator.NEG: ay_operations.arith_unary_minus,
-    UnaryOperator.NOT: ay_operations.logical_unary_not,
-    UnaryOperator.LENGTH: ay_operations.length,
-    UnaryOperator.BIT_NOT: ay_operations.bitwise_unary_not,
+    UnaryOperator.NEG: m_operations.arith_unary_minus,
+    UnaryOperator.NOT: m_operations.logical_unary_not,
+    UnaryOperator.LENGTH: m_operations.length,
+    UnaryOperator.BIT_NOT: m_operations.bitwise_unary_not,
 }
 
 
@@ -658,25 +658,25 @@ class BinaryOperator(enum.Enum):
 binary_operator_functions: dict[
     BinaryOperator, Callable[[LuaValue, LuaValue], LuaValue]
 ] = {
-    BinaryOperator.LT: ay_operations.rel_lt,
-    BinaryOperator.LE: ay_operations.rel_le,
-    BinaryOperator.GT: ay_operations.rel_gt,
-    BinaryOperator.GE: ay_operations.rel_ge,
-    BinaryOperator.EQ: ay_operations.rel_eq,
-    BinaryOperator.NE: ay_operations.rel_ne,
-    BinaryOperator.BIT_OR: ay_operations.bitwise_or,
-    BinaryOperator.BIT_XOR: ay_operations.bitwise_xor,
-    BinaryOperator.BIT_AND: ay_operations.bitwise_and,
-    BinaryOperator.SHIFT_LEFT: ay_operations.bitwise_shift_left,
-    BinaryOperator.SHIFT_RIGHT: ay_operations.bitwise_shift_right,
-    BinaryOperator.CONCAT: ay_operations.concat,
-    BinaryOperator.ADD: ay_operations.arith_add,
-    BinaryOperator.SUBTRACT: ay_operations.arith_sub,
-    BinaryOperator.MULTIPLY: ay_operations.arith_mul,
-    BinaryOperator.FLOAT_DIV: ay_operations.arith_float_div,
-    BinaryOperator.FLOOR_DIV: ay_operations.arith_floor_div,
-    BinaryOperator.MODULO: ay_operations.arith_mod,
-    BinaryOperator.EXP: ay_operations.arith_exp,
+    BinaryOperator.LT: m_operations.rel_lt,
+    BinaryOperator.LE: m_operations.rel_le,
+    BinaryOperator.GT: m_operations.rel_gt,
+    BinaryOperator.GE: m_operations.rel_ge,
+    BinaryOperator.EQ: m_operations.rel_eq,
+    BinaryOperator.NE: m_operations.rel_ne,
+    BinaryOperator.BIT_OR: m_operations.bitwise_or,
+    BinaryOperator.BIT_XOR: m_operations.bitwise_xor,
+    BinaryOperator.BIT_AND: m_operations.bitwise_and,
+    BinaryOperator.SHIFT_LEFT: m_operations.bitwise_shift_left,
+    BinaryOperator.SHIFT_RIGHT: m_operations.bitwise_shift_right,
+    BinaryOperator.CONCAT: m_operations.concat,
+    BinaryOperator.ADD: m_operations.arith_add,
+    BinaryOperator.SUBTRACT: m_operations.arith_sub,
+    BinaryOperator.MULTIPLY: m_operations.arith_mul,
+    BinaryOperator.FLOAT_DIV: m_operations.arith_float_div,
+    BinaryOperator.FLOOR_DIV: m_operations.arith_floor_div,
+    BinaryOperator.MODULO: m_operations.arith_mod,
+    BinaryOperator.EXP: m_operations.arith_exp,
 }
 
 
@@ -694,7 +694,7 @@ class BinaryOperation(Expression, ABC):
             # The conjunction operator "and" returns its first argument if this
             # value is false or nil;
             l_val = self.lhs.evaluate_single(scope)
-            if l_val is ay_values.LuaNil or l_val == ay_values.LuaBool(False):
+            if l_val is m_values.LuaNil or l_val == m_values.LuaBool(False):
                 return l_val
             # otherwise, and returns its second argument.
             return self.rhs.evaluate_single(scope)
@@ -702,7 +702,7 @@ class BinaryOperation(Expression, ABC):
             # The disjunction operator "or" returns its first argument if this
             # value is different from nil and false;
             l_val = self.lhs.evaluate_single(scope)
-            if l_val is not ay_values.LuaNil and l_val != ay_values.LuaBool(
+            if l_val is not m_values.LuaNil and l_val != m_values.LuaBool(
                 False
             ):
                 return l_val
@@ -870,9 +870,9 @@ class For(Statement):
         if not is_integer_loop:
             # Otherwise, the three values are converted to floats
             # and the loop is done with floats.
-            initial_value = ay_operations.coerce_int_to_float(initial_value)
-            limit = ay_operations.coerce_int_to_float(limit)
-            step = ay_operations.coerce_int_to_float(step)
+            initial_value = m_operations.coerce_int_to_float(initial_value)
+            limit = m_operations.coerce_int_to_float(limit)
+            step = m_operations.coerce_int_to_float(step)
         # After that initialization, the loop body is repeated with the value of
         # the control variable going through an arithmetic progression,
         # starting at the initial value,
@@ -888,7 +888,7 @@ class For(Statement):
         # the body is not executed.
         is_step_negative = step.value < 0
         condition_func = (
-            ay_operations.rel_ge if is_step_negative else ay_operations.rel_le
+            m_operations.rel_ge if is_step_negative else m_operations.rel_le
         )
         # For integer loops, the control variable never wraps around; instead,
         # the loop ends in case of an overflow.
@@ -900,10 +900,10 @@ class For(Statement):
         inner_scope = scope.push(file=self.file, line=self.line)
         while condition_func(control_val, limit).true:
             inner_scope.put_local_ls(
-                control_varname, ay_values.Variable(control_val)
+                control_varname, m_values.Variable(control_val)
             )
             self.block.execute_without_inner_scope(inner_scope)
-            overflow, control_val = ay_operations.overflow_arith_add(
+            overflow, control_val = m_operations.overflow_arith_add(
                 control_val, step
             )
             if overflow and is_integer_loop:
@@ -935,7 +935,7 @@ class ForIn(Statement):
         name_count = len(self.names)
         names = [name.as_lua_string() for name in self.names]
         for name in names:
-            body_scope.put_local_ls(name, ay_values.Variable(ay_values.LuaNil))
+            body_scope.put_local_ls(name, m_values.Variable(m_values.LuaNil))
         # The first of these variables is the control variable.
         control_variable_name = names[0]
         # The loop starts by evaluating explist to produce four values:
@@ -949,12 +949,12 @@ class ForIn(Statement):
         # an initial value for the control variable,
         initial_value = exp_vals[2]
         body_scope.put_local_ls(
-            control_variable_name, ay_values.Variable(initial_value)
+            control_variable_name, m_values.Variable(initial_value)
         )
         # and a closing value.
         closing_value = exp_vals[3]
 
-        nil = ay_values.LuaNil
+        nil = m_values.LuaNil
         while True:
             # Then, at each iteration, Lua calls the iterator function with two
             # arguments: the state and the control variable.
@@ -968,7 +968,7 @@ class ForIn(Statement):
             # The results from this call are then assigned to the loop
             # variables, following the rules of multiple assignments.
             for name, value in zip(names, results):
-                body_scope.put_local_ls(name, ay_values.Variable(value))
+                body_scope.put_local_ls(name, m_values.Variable(value))
             # If the control variable becomes nil, the loop terminates.
             if results[0] is nil:
                 break
@@ -1030,10 +1030,10 @@ class LocalFunctionStatement(Statement):
         # (This only makes a difference
         # when the body of the function contains references to f.)
         name = self.name.as_lua_string()
-        scope.put_local_ls(name, ay_values.Variable(ay_values.LuaNil))
+        scope.put_local_ls(name, m_values.Variable(m_values.LuaNil))
         function = self.body.evaluate(scope)
         function.name = name
-        scope.put_local_ls(name, ay_values.Variable(function))
+        scope.put_local_ls(name, m_values.Variable(function))
         return [function]
 
 
@@ -1053,12 +1053,12 @@ class LocalAssignment(Statement):
             exp_vals = [exp.evaluate(scope) for exp in self.exprs]
             exp_vals = adjust(exp_vals, len(self.names))
         else:
-            exp_vals = [ay_values.LuaNil] * len(self.names)
+            exp_vals = [m_values.LuaNil] * len(self.names)
         used_closed = False
         for attname, exp_val in zip(self.names, exp_vals):
             var_name = attname.name.as_lua_string()
             if attname.attrib is None:
-                scope.put_local_ls(var_name, ay_values.Variable(exp_val))
+                scope.put_local_ls(var_name, m_values.Variable(exp_val))
             else:
                 attrib = attname.attrib.as_lua_string()
                 if attrib.content == b"close":
@@ -1066,11 +1066,11 @@ class LocalAssignment(Statement):
                         raise NotImplementedError()
                     used_closed = True
                     scope.put_local_ls(
-                        var_name, ay_values.Variable(exp_val, to_be_closed=True)
+                        var_name, m_values.Variable(exp_val, to_be_closed=True)
                     )
                 elif attrib.content == b"const":
                     scope.put_local_ls(
-                        var_name, ay_values.Variable(exp_val, constant=True)
+                        var_name, m_values.Variable(exp_val, constant=True)
                     )
                 else:
                     raise LuaError(

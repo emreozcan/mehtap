@@ -1,5 +1,5 @@
-from ay.py2lua import py2lua
-from ay.values import LuaTable
+from mehtap.py2lua import py2lua
+from mehtap.values import LuaTable
 
 
 def get_infinite_luatable():

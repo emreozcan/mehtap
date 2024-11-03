@@ -2,8 +2,8 @@ import os
 
 import pytest
 
-from ay.values import LuaBool, LuaNil, LuaString, LuaNumber
-from ay.vm import VirtualMachine
+from mehtap.values import LuaBool, LuaNil, LuaString, LuaNumber
+from mehtap.vm import VirtualMachine
 
 vm = VirtualMachine()
 

@@ -1,6 +1,6 @@
-from ay.py2lua import lua_function, py2lua
-from ay.values import LuaString, Variable, LuaNumber, LuaNil
-from ay.vm import VirtualMachine
+from mehtap.py2lua import lua_function, py2lua
+from mehtap.values import LuaString, Variable, LuaNumber, LuaNil
+from mehtap.vm import VirtualMachine
 
 
 def run_chunk(chunk, vm):

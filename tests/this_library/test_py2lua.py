@@ -1,7 +1,7 @@
 import pytest
 
-from ay.py2lua import py2lua, PyLuaRet
-from ay.values import LuaBool, LuaNil, LuaNumber, LuaNumberType, LuaString
+from mehtap.py2lua import py2lua, PyLuaRet
+from mehtap.values import LuaBool, LuaNil, LuaNumber, LuaNumberType, LuaString
 
 
 def test_nil():

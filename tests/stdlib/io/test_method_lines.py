@@ -1,6 +1,6 @@
-from ay.library.stdlib.io_library import LuaFile
-from ay.values import LuaString, LuaNil
-from ay.vm import VirtualMachine
+from mehtap.library.stdlib.io_library import LuaFile
+from mehtap.values import LuaString, LuaNil
+from mehtap.vm import VirtualMachine
 
 
 def test_lines_file_input(tmp_path):

@@ -1,6 +1,6 @@
-from ay.lua2py import lua2py
-from ay.py2lua import lua_function, PyLuaRet
-from ay.values import LuaTable, LuaString, LuaNil, LuaBool, LuaNumber
+from mehtap.lua2py import lua2py
+from mehtap.py2lua import lua_function, PyLuaRet
+from mehtap.values import LuaTable, LuaString, LuaNil, LuaBool, LuaNumber
 
 
 def test_recursive():

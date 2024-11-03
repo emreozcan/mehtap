@@ -2,9 +2,9 @@ import os
 from collections.abc import Sequence
 from io import BytesIO
 
-from ay.library.stdlib.io_library import LuaFile
-from ay.values import LuaString
-from ay.vm import VirtualMachine
+from mehtap.library.stdlib.io_library import LuaFile
+from mehtap.values import LuaString
+from mehtap.vm import VirtualMachine
 
 
 def test_input_filename(tmp_path):

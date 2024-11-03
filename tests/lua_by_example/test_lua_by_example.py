@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from ay.vm import VirtualMachine
+from mehtap.vm import VirtualMachine
 
 
 paths = [
