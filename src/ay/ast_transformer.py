@@ -370,7 +370,12 @@ class LuaTransformer(lark.Transformer):
             vararg=False,
         )
 
-    def parlist_vararg(self, namelist) -> nodes.Parlist:
+    def parlist_vararg(self, namelist=None) -> nodes.Parlist:
+        if namelist is None:
+            return nodes.Parlist(
+                names=tuple(),
+                vararg=True,
+            )
         return nodes.Parlist(
             names=namelist,
             vararg=True,
