@@ -1,14 +1,24 @@
+import pytest
+
 from ay.py2lua import py2lua, PyLuaRet
 from ay.values import LuaBool, LuaNil, LuaNumber, LuaNumberType, LuaString
+
+
+def test_nil():
+    assert py2lua(None) == LuaNil
+
+
+def test_protocol():
+    class CustomClass:
+        def __lua__(self) -> LuaNumber:
+            return LuaNumber(42)
+
+    assert py2lua(CustomClass()) == LuaNumber(42)
 
 
 def test_booleans():
     assert py2lua(True) == LuaBool(True)
     assert py2lua(False) == LuaBool(False)
-
-
-def test_nil():
-    assert py2lua(None) == LuaNil
 
 
 def test_numbers():
@@ -23,6 +33,10 @@ def test_numbers():
 
 def test_strings():
     assert py2lua("hello") == LuaString(b"hello")
+
+
+def test_bytes():
+    assert py2lua(b"hello") == LuaString(b"hello")
 
 
 def test_mappings():
@@ -64,3 +78,18 @@ def test_callables():
         [LuaNumber(5), LuaNumber(6)],
         None
     ) == [LuaNumber(11)]
+
+
+def test_recursive():
+    a = {}
+    a["a"] = a
+    lua_table = py2lua(a)
+    assert lua_table.get(LuaString(b"a")) is lua_table
+
+
+def test_unknown():
+    class X:
+        pass
+    with pytest.raises(TypeError) as excinfo:
+        py2lua(X())
+    assert isinstance(excinfo.value, TypeError)

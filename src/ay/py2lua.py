@@ -364,8 +364,8 @@ def _lua_function(
                 continue
             else:
                 raise ValueError(
-                    f"Function {func.__qualname__} has a parameter that is not "
-                    f"positional or variadic"
+                    f"Function {func.__qualname__} has a parameter {param.name}"
+                    f"that is not positional or variadic"
                 )
             callable_argnames.append(param.name)
 

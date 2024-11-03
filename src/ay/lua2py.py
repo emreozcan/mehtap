@@ -20,38 +20,31 @@ if TYPE_CHECKING:
 
 
 @overload
-def lua2py(value: LuaNilType) -> None:
-    pass
+def lua2py(value: LuaNilType) -> None: ...
 
 
 @overload
-def lua2py(value: LuaBool) -> bool:
-    pass
+def lua2py(value: LuaBool) -> bool: ...
 
 
 @overload
-def lua2py(value: LuaNumber) -> int | float:
-    pass
+def lua2py(value: LuaNumber) -> int | float: ...
 
 
 @overload
-def lua2py(value: LuaString) -> bytes:
-    pass
+def lua2py(value: LuaString) -> bytes: ...
 
 
 @overload
-def lua2py(value: LuaTable) -> dict:
-    pass
+def lua2py(value: LuaTable) -> dict: ...
 
 
 @overload
-def lua2py(value: LuaFunction) -> Callable:
-    pass
+def lua2py(value: LuaFunction) -> Callable: ...
 
 
 @overload
-def lua2py(value: LuaValue) -> Any:
-    pass
+def lua2py(value: LuaValue) -> Any: ...
 
 
 def lua2py(value: Any) -> Any:
@@ -130,10 +123,15 @@ def _lua2py(lua_val, obj_map):
         from ay.py2lua import py2lua
 
         def func(*args):
-            return lua2py(lua_val.call(*[py2lua(x) for x in args], None))
+            return_values = lua_val.call(
+                args=[py2lua(x) for x in args],
+                scope=None,
+            )
+            return [lua2py(rv) for rv in return_values]
 
         if lua_val.name is not None:
             func.__name__ = func.__qualname__ = lua_val.name
         else:
             func.__name__ = func.__qualname__ = "<anonymous Lua function>"
         return func
+    raise TypeError(f"unknown LuaValue {lua_val!r}")
