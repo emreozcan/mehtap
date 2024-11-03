@@ -209,8 +209,8 @@ def handle_luaerror(lua_error: LuaError, vm: VirtualMachine | None):
             print(f"caused by: {lua_error.caused_by}", file=sys.stderr)
     if not lua_error.traceback:
         lua_error.traceback.append("no traceback available")
-    print("traceback: (most recent call last)")
-    for entry in reversed(lua_error.traceback):
+    print("traceback: (most recent call first)")
+    for entry in lua_error.traceback:
         print("\t" + entry, file=sys.stderr)
 
 
