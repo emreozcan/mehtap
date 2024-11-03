@@ -38,7 +38,7 @@ def _get_day_number_of_year(date: datetime.date) -> int:
 def _oserror_to_errtuple(e: OSError) -> list[LuaValue]:
     return [
         LuaNil,
-        str_to_lua_string(e.strerror),
+        LuaString(e.strerror.encode("utf-8")),
         LuaNumber(e.errno),
     ]
 
