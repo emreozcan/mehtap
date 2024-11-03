@@ -6,6 +6,7 @@ from os.path import basename
 from typing import TypeVar, TYPE_CHECKING
 
 import attrs
+from lark.exceptions import VisitError
 
 from ay.ast_transformer import transformer
 from ay.control_structures import LuaError
@@ -38,14 +39,22 @@ class Scope:
 
     def eval(self, expr: str):
         parsed_lua = expr_parser.parse(expr)
-        ast = transformer.transform(parsed_lua, filename="<eval>")
+        try:
+            ast = transformer.transform(parsed_lua, filename="<eval>")
+        except VisitError as e:
+            le = LuaError(
+                LuaString(str(e.orig_exc).encode("utf-8")),
+                caused_by=e,
+            )
+            raise le from e
         try:
             r = ast.evaluate(self)
         except Exception as e:
-            raise LuaError(
+            le = LuaError(
                 LuaString(str(e).encode("utf-8")),
                 caused_by=e,
             )
+            raise le from e
         if isinstance(r, LuaValue):
             return [r]
         return r
@@ -53,14 +62,25 @@ class Scope:
     def exec(self, chunk: str, *, filename: str | None = None) \
             -> list[LuaValue]:
         parsed_lua = chunk_parser.parse(chunk)
-        ast = transformer.transform(parsed_lua, filename=filename or "<exec>")
+        try:
+            ast = transformer.transform(
+                parsed_lua,
+                filename=filename or "<exec>"
+            )
+        except VisitError as e:
+            le = LuaError(
+                LuaString(str(e.orig_exc).encode("utf-8")),
+                caused_by=e,
+            )
+            raise le from e
         try:
             r = ast.block.evaluate_without_inner_scope(self)
         except Exception as e:
-            raise LuaError(
+            le = LuaError(
                 LuaString(str(e).encode("utf-8")),
                 caused_by=e,
             )
+            raise le from e
         return r
 
     def exec_file(self, file_path: AnyPath) -> list[LuaValue]:
@@ -76,6 +96,9 @@ class Scope:
                     LuaString(str(e).encode("utf-8")),
                     caused_by=e,
                 )
+            except LuaError as le:
+                le.push_tb("main chunk", file=str(file_path), line=0)
+                raise le
             return r
 
     def __repr__(self):

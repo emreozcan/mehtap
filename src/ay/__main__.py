@@ -204,14 +204,7 @@ def handle_luaerror(lua_error: LuaError, vm: VirtualMachine | None):
         print(f"error:\t{lua_error.message!s}", file=sys.stderr)
     if lua_error.caused_by:
         type_name = lua_error.caused_by.__class__.__name__
-        stringifed = str(lua_error.caused_by)
-        if stringifed:
-            print(
-                f"caused by: {type_name} ({lua_error.caused_by})",
-                file=sys.stderr
-            )
-        else:
-            print(f"caused by: {lua_error.caused_by}", file=sys.stderr)
+        print(f"caused by: {type_name}", file=sys.stderr)
     if not lua_error.traceback_messages:
         lua_error.push_tb(
             "no traceback available",
