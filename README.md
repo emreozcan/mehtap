@@ -105,7 +105,8 @@ They are, only listing language features, excluding the standard library:
 
 - Taking metavalues and metamethods into consideration when doing operations.
 
-## Where is the license?
+Also, since this is a Python implementation, it is ***SLOW***.
 
-Currently, the project is not open source.
-Please contact if you want to use this project for some reason. 
+---
+
+Copyright (c) 2024 Emre Özcan
