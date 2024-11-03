@@ -22,7 +22,7 @@ from ay.values import (
     LuaValue,
     LuaUserdata,
     LuaIndexableABC,
-    LuaFunction, LuaBool,
+    LuaFunction,
 )
 
 FAIL = LuaNil
@@ -90,12 +90,12 @@ def _fsync_io(io: IO, /) -> PyLuaRet:
     return None
 
 
-@lua_function(name="lines")
-def _lf_file_method_lines(self: LuaFile, /, *formats) -> PyLuaRet:
-    return _file_method_lines(self, *formats)
+@lua_function(name="lines", gets_scope=True)
+def _lf_file_method_lines(scope: Scope, self: LuaFile, /, *formats) -> PyLuaRet:
+    return _file_method_lines(scope, self, *formats)
 
 
-def _file_method_lines(self: LuaFile, /, *formats) -> PyLuaRet:
+def _file_method_lines(scope: Scope, self: LuaFile, /, *formats) -> PyLuaRet:
     # When no format is given, uses "l" as a default.
     if not formats:
         formats = (LuaString(b"l"),)
@@ -105,7 +105,7 @@ def _file_method_lines(self: LuaFile, /, *formats) -> PyLuaRet:
     def iterator_function() -> PyLuaRet:
         # each time it is called, reads the file
         # according to the given formats.
-        return _file_method_read(self, *formats)
+        return _file_method_read(scope, self, *formats)
 
     # As an example, the construction
     #     for c in file:lines(1) do body end
@@ -115,7 +115,7 @@ def _file_method_lines(self: LuaFile, /, *formats) -> PyLuaRet:
     return [iterator_function]
 
 
-def _read_format_n(file: LuaFile) -> LuaNumber | FAIL:
+def _read_format_n(scope: Scope, file: LuaFile) -> LuaNumber | FAIL:
     # "n": reads a numeral and returns it as a float or an integer,
     # following the lexical conventions of Lua.
     # (The numeral may have leading whitespaces and a sign.) This format
@@ -124,18 +124,21 @@ def _read_format_n(file: LuaFile) -> LuaNumber | FAIL:
     # (e.g., an empty string, "0x", or "3.4e-") or it is too long
     # (more than 200 characters), it is discarded and the format returns
     # fail.
-    part = file.io.read(200)
+    part = file.io.read(201)
     if not part:
         return FAIL
-    for length in range(201, 1, -1):
+    for length in range(len(part), 0, -1):
         try:
-            parsed = numeral_parser.parse(part[:length])
+            input = part[:length].decode("ascii")
+            parsed = numeral_parser.parse(input)
             transformed: Numeral = transformer.transform(parsed)
-            return transformed.evaluate(scope=None)
+            return transformed.evaluate(scope=scope)
         except Exception:
             continue
         finally:
-            file.io.seek(200 - len(part), SEEK_CUR)
+            file.io.seek(201 - len(part), SEEK_CUR)
+            if length == 201:
+                return FAIL
     file.io.seek(-len(part), SEEK_CUR)
     return FAIL
 
@@ -182,12 +185,14 @@ def _read_format_number(file: LuaFile, number: int) -> LuaString:
     return LuaString(acc)
 
 
-@lua_function(name="read")
-def _lf_file_method_read(self: LuaFile, /, *formats: LuaValue) -> PyLuaRet:
-    return _file_method_read(self, *formats)
+@lua_function(name="read", gets_scope=True)
+def _lf_file_method_read(scope: Scope, self: LuaFile, /, *formats: LuaValue) \
+        -> PyLuaRet:
+    return _file_method_read(scope, self, *formats)
 
 
-def _file_method_read(self: LuaFile, /, *formats: LuaValue) -> PyLuaRet:
+def _file_method_read(scope: Scope, self: LuaFile, /, *formats: LuaValue) \
+        -> PyLuaRet:
     if not formats:
         return [_read_format_l(self)]
     return_vals: list[LuaValue] = []
@@ -195,7 +200,7 @@ def _file_method_read(self: LuaFile, /, *formats: LuaValue) -> PyLuaRet:
         if isinstance(format, LuaNumber):
             return_vals.append(_read_format_number(self, int(format.value)))
         elif format == LuaString(b"n"):
-            return_vals.append(_read_format_n(self))
+            return_vals.append(_read_format_n(scope=scope, file=self))
         elif format == LuaString(b"a"):
             return_vals.append(_read_format_a(self))
         elif format == LuaString(b"l"):
@@ -347,7 +352,7 @@ def io_lines(
     # closes the file.
     @lua_function()
     def iterator_function() -> PyLuaRet:
-        f = _file_method_read(file_handle, *formats)
+        f = _file_method_read(scope, file_handle, *formats)
         if to_close and (
             f is None
             or any(r is LuaNil for r in f)
@@ -362,7 +367,7 @@ def io_lines(
     return [iterator_function, LuaNil, LuaNil, file_handle]
 
 
-@lua_function(name="open", gets_scope=True)
+@lua_function(name="open")
 def lf_io_open(
     filename: LuaString, mode: LuaString | None = None, /
 ) -> PyLuaRet:
@@ -464,7 +469,7 @@ def io_read(scope: Scope, /, *formats) -> PyLuaRet:
     # io.read (···)
     #
     # Equivalent to io.input():read(···).
-    return _file_method_read(lf_io_input(scope))
+    return _file_method_read(scope, io_input(scope)[0])
 
 
 @lua_function(name="tmpfile")
@@ -508,7 +513,7 @@ def io_write(scope: Scope, /, *values: LuaValue) -> PyLuaRet:
     # io.write (···)
     #
     # Equivalent to io.output():write(···).
-    return _file_method_write(scope.vm.default_output, *values)
+    return _file_method_write(LuaFile(scope.vm.default_output), *values)
 
 
 SYMBOL_IO = LuaString(b"io")
