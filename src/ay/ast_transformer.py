@@ -409,6 +409,19 @@ class LuaTransformer(lark.Transformer):
         return nodes.FunctionStatement(name=funcname, body=funcbody)
 
     @staticmethod
+    def stat_while(
+        WHILE,
+        cond: nodes.Expression,
+        DO,
+        block: nodes.Block,
+        END,
+    ):
+        return nodes.While(
+            condition=cond,
+            block=block,
+        )
+
+    @staticmethod
     def stat_for(FOR, name, start, stop, step, DO, block, END):
         return nodes.For(
             name=name,
@@ -431,9 +444,14 @@ class LuaTransformer(lark.Transformer):
         return nodes.Do(block=block)
 
     @staticmethod
-    def stat_if(cond, block, else_block):
+    def elseif(exp: nodes.Expression, block: nodes.Block):
+        return exp, block
+
+    @staticmethod
+    def stat_if(*args):
+        cond, block, *else_ifs, else_block = args
         return nodes.If(
-            blocks=[(cond, block)],
+            blocks=[(cond, block), *else_ifs],
             else_block=else_block,
         )
 
