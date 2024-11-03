@@ -10,7 +10,7 @@ Lua 5.4 programming language implementation in Pure Python
 ## What does ay have?
 
 * Everything in the [Lua 5.4 grammar](https://lua.org/manual/5.4/manual.html#9)
-  except _label_ and _goto_ statements is supported.
+  is supported.
 * There are utility functions to convert Python values to Lua values and
   vice-versa.
 * Most of the standard library is supported. (100% support is planned.)
@@ -94,8 +94,16 @@ reference manual does not specify the behaviour.
 For example, the exact formatting of error messages is not specified in the
 reference manual, so it is allowed to be different.
 
-Currently, the only difference with the specification of the reference manual
-if in garbage collection and frame scope.
+There are some differences with the specification of the reference manual.
+They are:
+
+- garbage collection,
+- frame scope.
+
+There are some things that are not implemented yet.
+They are, only listing language features, excluding the standard library:
+
+- Taking metavalues and metamethods into consideration when doing operations.
 
 ## Where is the license?
 
