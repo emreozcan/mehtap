@@ -126,4 +126,12 @@ WHILE: "while"
 
 %import common.WS
 %ignore WS
+
+# A comment starts with a double hyphen (--) anywhere outside a string.
+# If the text immediately after -- is not an opening long bracket,
+# the comment is a short comment, which runs until the end of the line.
 %ignore /--[^\n]*\n/
+
+# Otherwise, it is a long comment, which runs until the corresponding closing
+# long bracket.
+%ignore /--\[(=*)\[[\s\S]*?\]\1\]/
