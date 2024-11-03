@@ -85,16 +85,6 @@ class LuaValue(ABC):
         if hasattr(self, "_metatable"):
             self._metatable = None
 
-    def call(
-        self,
-        args: Multires,
-        scope: Scope | None,
-        *,
-        modify_tb: bool = True,
-    ) -> NoReturn:
-        from ay.control_structures import LuaError
-        raise LuaError(f"attempt to call {type_of_lv(self)} value")
-
     def __eq__(self, other) -> bool:
         """Compare this value according to Lua's rules on equality."""
         from .operations import rel_eq
@@ -234,8 +224,32 @@ class LuaObject(LuaValue, ABC):
         return repr(self)
 
 
+class LuaCallableABC(ABC):
+    """Abstract base class for objects that can be called.
+
+    If a type that is not a subclass of this class is attempted to be called in
+    execution, a :class:`LuaError` will be raised.
+    """
+    @abstractmethod
+    def call(
+        self,
+        args: Multires,
+        scope: Scope | None,
+        *,
+        modify_tb: bool = True,
+    ) -> list[LuaValue]:
+        """Call this value if it is callable.
+
+        :param args: Arguments to pass.
+        :param scope: The scope of the caller.
+        :param modify_tb: Whether to add an entry to the tracebacks of errors.
+        :return: the list of :class:`LuaValue` objects that the callable returns
+        """
+        ...
+
+
 @attrs.define(slots=True, eq=False)
-class LuaFunction(LuaObject):
+class LuaFunction(LuaObject, LuaCallableABC):
     """Class representing values of the *function* basic type in Lua."""
 
     # TODO: Make param_names not Optional.

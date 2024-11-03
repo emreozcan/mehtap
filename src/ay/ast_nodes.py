@@ -19,7 +19,7 @@ from ay.values import (
     LuaString,
     MAX_INT64,
     LuaTable,
-    LuaFunction, LuaIndexableABC, type_of_lv,
+    LuaFunction, LuaIndexableABC, type_of_lv, LuaCallableABC,
 )
 from ay.operations import (
     int_wrap_overflow,
@@ -546,6 +546,8 @@ class FuncDef(Expression):
 class FuncCallRegular(Expression, Statement):
     def _evaluate(self, scope: Scope) -> list[LuaValue]:
         function = self.name.evaluate(scope)
+        if not isinstance(function, LuaCallableABC):
+            raise LuaError(f"attempt to call {type_of_lv(function)} value")
         args = [arg.evaluate(scope) for arg in self.args]
         try:
             r = function.call(args, scope, modify_tb=False)
@@ -577,6 +579,8 @@ class FuncCallMethod(Expression, Statement):
         if not isinstance(v, LuaIndexableABC):
             raise LuaError(f"attempt to index {type_of_lv(v)} value")
         function = v.get(str_to_lua_string(self.method.name.text))
+        if not isinstance(function, LuaCallableABC):
+            raise LuaError(f"attempt to call {type_of_lv(function)} value")
         args = [v, *(arg.evaluate(scope) for arg in self.args)]
         try:
             r = function.call(args, scope, modify_tb=False)
