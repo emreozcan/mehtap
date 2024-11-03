@@ -70,4 +70,4 @@ def test_open_invalid_mode():
         vm.exec("io.open('test.txt', 'x')")
     assert isinstance(excinfo.value, LuaError)
     assert isinstance(excinfo.value.message, LuaString)
-    assert b"invalid whence" in excinfo.value.message.content
+    assert b"invalid mode" in excinfo.value.message.content
