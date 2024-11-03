@@ -154,6 +154,13 @@ def enter_interactive(vm: VirtualMachine) -> None:
         try:
             line = input(prompt)
             collected_line += line
+        except KeyboardInterrupt as ki:
+            if collected_line:
+                collected_line = ""
+                print()
+                continue
+            else:
+                raise ki
         except EOFError:
             break
         r: list[LuaValue] | None = None
@@ -163,7 +170,6 @@ def enter_interactive(vm: VirtualMachine) -> None:
             try:
                 r = vm.eval(collected_line)
             except lark.exceptions.UnexpectedInput:
-                print_lark_error_shower(collected_line, e, prompt)
                 continue
             except LuaError as lua_error:
                 handle_luaerror(lua_error, vm)
