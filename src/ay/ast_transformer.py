@@ -6,6 +6,19 @@ from lark import Tree
 import ay.ast_nodes as nodes
 from ay.ast_nodes import BinaryOperator
 
+#  The following keywords are reserved and cannot be used as names:
+#      and       break     do        else      elseif    end
+#      false     for       function  goto      if        in
+#      local     nil       not       or        repeat    return
+#      then      true      until     while
+# https://www.lua.org/manual/5.4/manual.html#3.1
+INVALID_NAMES = {
+    "and", "break", "do", "else", "elseif", "end",
+    "false", "for", "function", "goto", "if", "in",
+    "local", "nil", "not", "or", "repeat", "return",
+    "then", "true", "until", "while",
+}
+
 
 @lark.v_args(inline=True)
 class LuaTransformer(lark.Transformer):
@@ -54,9 +67,19 @@ class LuaTransformer(lark.Transformer):
                     recursive_stack.extend(new_candidate)
         return root
 
-
     @staticmethod
     def NAME(token: lark.Token):
+        #  The following keywords are reserved and cannot be used as names:
+        #      and       break     do        else      elseif    end
+        #      false     for       function  goto      if        in
+        #      local     nil       not       or        repeat    return
+        #      then      true      until     while
+        # https://www.lua.org/manual/5.4/manual.html#3.1
+        if token.value in INVALID_NAMES:
+            raise ValueError(
+                f"{token.value!r} is a reserved keyword and "
+                f"cannot be used as a name"
+            )
         return nodes.Name(name=nodes.Terminal(text=token.value))
 
     @staticmethod
