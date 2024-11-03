@@ -2,7 +2,7 @@ import sys
 
 import pytest
 
-from ay.values import LuaBool, LuaNil
+from ay.values import LuaBool, LuaNil, LuaString
 from ay.vm import VirtualMachine
 
 vm = VirtualMachine()
@@ -42,5 +42,7 @@ def test_remove_full_dir(tmp_path):
     r = vm.exec(f'os.remove({path_str!r})')
     assert len(r) == 3
     assert r[0] == LuaNil
+    assert isinstance(r[1], LuaString)
+    assert isinstance(r[2], LuaNil)
 
     assert not dir.exists()
