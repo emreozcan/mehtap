@@ -56,13 +56,13 @@ def lua2py(value: Any) -> Any:
     Sequence tables are not converted to lists, they are also converted to
     dicts having keys *1, 2, ..., n*.
 
-    Functions are converted using a wrapper function,
-    which converts all arguments into LuaValues,
-    calls the function using them,
+    :class:`LuaFunctions <LuaFunction>` are converted using a wrapper function,
+    which converts all arguments into :class:`LuaValues <LuaValue>`,
+    calls the :class:`LuaFunction` using them,
     and then converts the return value back to a Python value.
 
-    This function is implemented using an expansion stack, so it can
-    convert recursive data structures.
+    This function is implemented using memoization,
+    so it can convert recursive data structures.
     """
     return _lua2py(value, {})
 
@@ -70,9 +70,9 @@ def lua2py(value: Any) -> Any:
 PY_SYMBOL = LuaString(b"__py")
 
 
-def _lua2py(lua_val, obj_map):
-    if id(lua_val) in obj_map:
-        return obj_map[id(lua_val)]
+def _lua2py(lua_val, memos):
+    if id(lua_val) in memos:
+        return memos[id(lua_val)]
     if lua_val is LuaNil:
         return None
     if isinstance(lua_val, LuaBool):
@@ -97,7 +97,7 @@ def _lua2py(lua_val, obj_map):
                             [lua_val],
                             metamethod.parent_scope,
                         ),
-                        obj_map,
+                        memos,
                     )
                 else:
                     vm = VirtualMachine()
@@ -106,17 +106,17 @@ def _lua2py(lua_val, obj_map):
                             [lua_val],
                             vm.root_scope,
                         ),
-                        obj_map,
+                        memos,
                     )
-                obj_map[id(lua_val)] = m
+                memos[id(lua_val)] = m
                 return m
         m = {}
-        obj_map[id(lua_val)] = m
+        memos[id(lua_val)] = m
         for k, v in lua_val.map.items():
             if v is LuaNil:
                 continue
-            py_v = _lua2py(v, obj_map)
-            py_k = _lua2py(k, obj_map)
+            py_v = _lua2py(v, memos)
+            py_k = _lua2py(k, memos)
             m[py_k] = py_v
         return m
     if isinstance(lua_val, LuaFunction):

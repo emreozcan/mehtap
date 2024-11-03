@@ -7,12 +7,20 @@ Lua 5.4 programming language implementation in Pure Python
 [![checks/master](https://img.shields.io/github/check-runs/emreozcan/ay/master?logo=github&label=checks%2Fmaster)](https://github.com/emreozcan/ay/actions/workflows/test.yml)
 [![docs](https://readthedocs.org/projects/ay/badge/?version=latest&style=flat)](https://ay.readthedocs.io/en/latest/)
 
+## Status
+
+ay is in an early alpha stage. Since there is active development,
+API changes may happen without any special notice.
+Please pin your dependencies using a specific commit hash.
+
 ## What does ay have?
 
 * Everything in the [Lua 5.4 grammar](https://lua.org/manual/5.4/manual.html#9)
   is supported.
-* There are utility functions to convert Python values to Lua values and
-  vice-versa.
+* There are utility functions to convert values
+  [from Python to Lua](https://ay.readthedocs.io/en/latest/py2lua.html)
+  and
+  [from Lua to Python](https://ay.readthedocs.io/en/latest/lua2py.html).
 * Most of the standard library is supported. (100% support is planned.)
 
     <details>
@@ -84,21 +92,19 @@ Lua 5.4 programming language implementation in Pure Python
     - [x] os.tmpname()
     </details>
 
-## What does ay not have?
-
-**The grammar, syntax and semantics are exactly the same.**
-
-For the most part,
-behaviour differences with the reference implementation are only allowed if the
-reference manual does not specify the behaviour.
-For example, the exact formatting of error messages is not specified in the
-reference manual, so it is allowed to be different.
+## What's the catch?
 
 There are some differences with the specification of the reference manual.
 They are:
 
 - garbage collection,
 - frame scope.
+
+For the most part,
+behaviour differences with the reference implementation are only allowed if the
+reference manual does not specify the behaviour.
+For example, the exact formatting of error messages is not specified in the
+reference manual, so it is allowed to be different.
 
 There are some things that are not implemented yet.
 They are, only listing language features, excluding the standard library:

@@ -32,12 +32,28 @@ LV = TypeVar("LV", bound=LuaValue, covariant=True)
 
 
 class SupportsLua(Protocol[LV]):
-    def __lua__(self) -> LV: ...
+    """SupportsLua(Protocol[LV])
+    Protocol for objects that can be converted to :class:`LuaValue`.
+
+    :func:`py2lua` will call the ``__lua__`` method of the object if it exists.
+    The result is considered the result of the conversion, so it is expected to
+    be a :class:`LuaValue` instance.
+    """
+
+    def __lua__(self) -> LV:
+        """
+        The conversion method that :func:`py2lua` will call, and that supporters
+        must implement.
+        :return: A :class:`LuaValue` instance that represents the object.
+        """
+        pass
 
 
 # This uses Union[A, B] instead of A | B because it is shorter in this case.
 PyLuaNative = Union[None, bool, int, float, str, Mapping, Iterable, Callable]
+"""Types that :func:`py2lua` knows how to convert natively."""
 Py2LuaAccepts = PyLuaNative | SupportsLua[LV]
+"""Types that :func:`py2lua` knows how to convert."""
 
 
 @overload
@@ -76,24 +92,27 @@ def py2lua(value):
     """Convert a plain Python value to a :class:`LuaValue`.
 
     If the value (or a member of the value) has a ``__lua__`` dunder method,
-    (or, in other words implements the :class:`SupportsLua` protocol)
+    (or, in other words implements the
+    :class:`SupportsLua protocol <SupportsLua>`)
     the converter will call it and convert its return value instead.
 
-    Iterables will be converted to sequence tables starting from the index 1.
+    Iterables will be converted to sequence tables starting from the index
+    :data:`1`.
 
-    Functions are converted using ``lua_function(wrap_values=True)``.
+    Functions are converted using ``@lua_function(wrap_values=True)``.
+    See :func:`lua_function` for more information.
 
-    This function is implemented using an expansion stack, so it can
-    convert recursive data structures.
+    This function is implemented using memoization,
+    so it can convert recursive data structures.
 
     :raises TypeError: if the value can't be converted
     """
     return _py2lua(value, {})
 
 
-def _py2lua(py_val, obj_map):
-    if id(py_val) in obj_map:
-        return obj_map[id(py_val)]
+def _py2lua(py_val, memos):
+    if id(py_val) in memos:
+        return memos[id(py_val)]
     if py_val is None:
         return LuaNil
     if hasattr(py_val, "__lua__"):
@@ -108,15 +127,15 @@ def _py2lua(py_val, obj_map):
         return LuaString(py_val)
     if isinstance(py_val, Mapping):
         m = LuaTable()
-        obj_map[id(py_val)] = m
+        memos[id(py_val)] = m
         for k, v in py_val.items():
-            m.put(_py2lua(k, obj_map), _py2lua(v, obj_map))
+            m.put(_py2lua(k, memos), _py2lua(v, memos))
         return m
     if isinstance(py_val, Iterable):
         m = LuaTable()
-        obj_map[id(py_val)] = m
+        memos[id(py_val)] = m
         for i, v in enumerate(py_val, start=1):
-            m.put(LuaNumber(i), _py2lua(v, obj_map))
+            m.put(LuaNumber(i), _py2lua(v, memos))
         return m
     if callable(py_val):
         return lua_function(wrap_values=True)(py_val)
@@ -142,23 +161,6 @@ if TYPE_CHECKING:
     PyScopeCallback = TypeVar(
         "PyScopeCallback",
         bound=Callable[Concatenate[Scope, ...], PyLuaWrapRet],
-    )
-else:
-    LuaCallback = TypeVar(
-        "LuaCallback",
-        bound=Callable[..., PyLuaRet],
-    )
-    LuaScopeCallback = TypeVar(
-        "LuaScopeCallback",
-        bound=Callable[Concatenate[Scope, P], PyLuaRet],
-    )
-    PyCallback = TypeVar(
-        "PyCallback",
-        bound=Callable[..., PyLuaWrapRet],
-    )
-    PyScopeCallback = TypeVar(
-        "PyScopeCallback",
-        bound=Callable[Concatenate[Scope, P], PyLuaWrapRet],
     )
 
 
@@ -267,7 +269,7 @@ def lua_function(
     rename_args: list[str] | None = None,
     preserve: bool | None = False,
 ):
-    """Turns Python functions to :class:`LuaFunction` instances.
+    """Convert a Python callable to a :class:`LuaFunction` instance.
 
     :param table: If provided, the newly created :class:`LuaFunction` will be
                   put into the table with the proper name.
@@ -286,8 +288,8 @@ def lua_function(
 
     The arguments of the decorated function must be positional-only.
     The function may have a variadic parameter as the last one.
-    For example, "``def f(a, b, c, /): ...``" or
-    "``def f(a, b, /, *args): ...``".
+    For example, ``def f(a, b, c, /): ...`` or
+    ``def f(a, b, /, *args): ...``.
 
     If the function throws an exception, it will be caught and a similar error
     will be re-raised in Lua.
@@ -313,6 +315,8 @@ def lua_function(
     length as the number of arguments of the function.
     This change is only cosmetic since only parameter order is used to bind
     arguments to the function.
+
+    If *preserve* is set to True, *table* must not be left empty.
     """
     return _lua_function(
         table=table,

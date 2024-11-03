@@ -45,11 +45,17 @@ autodoc_default_options = {
 }
 autodoc_type_aliases: {
     'Multires': 'ay.operations.Multires',
-    'Py2LuaAccepts': 'ay.py2lua.Py2LuPy2LuaAccepts',
-    'PyLuaRet': 'ay.py2lua.PyLuaRet',
-    'PyLuaWrapRet': 'ay.py2lua.PyLuaWrapRet',
     'PyLuaFunction': 'ay.py2lua.PyLuaFunction',
     'LuaDecorator': 'ay.py2lua.LuaDecorator',
+
+    'PyLuaNative': 'ay.py2lua.PyLuaNative',
+    'Py2LuaAccepts': 'ay.py2lua.Py2LuaAccepts',
+    'PyLuaRet': 'ay.py2lua.PyLuaRet',
+    'PyLuaWrapRet': 'ay.py2lua.PyLuaWrapRet',
+    'LuaCallback': 'ay.py2lua.LuaCallback',
+    'LuaScopeCallback': 'ay.py2lua.LuaScopeCallback',
+    'PyCallback': 'ay.py2lua.PyCallback',
+    'PyScopeCallback': 'ay.py2lua.PyScopeCallback',
 }
 autodoc_typehints = 'both'
 

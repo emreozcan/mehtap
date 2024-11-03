@@ -3,7 +3,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from enum import Enum
-from typing import TYPE_CHECKING, TypeVar, NoReturn
+from typing import TYPE_CHECKING, TypeVar
 
 import attrs
 
@@ -207,17 +207,15 @@ class LuaString(LuaValue):
 
 @attrs.define(slots=True, eq=False)
 class LuaObject(LuaValue, ABC):
-    """Base class that *objects* inherit from.
+    """Base class that *Lua objects* inherit from.
 
     :class:`Tables <LuaTable>`,
     :class:`functions <LuaFunction>`,
     :class:`threads <LuaThread>` and
     :class:`(full) userdata values <LuaUserdata>`
     are objects.
-
-    `Reference Manual 2.1`_.
-
-    .. _Reference Manual 2.1: https://lua.org/manual/5.4/manual.html#2.1
+    See `Lua 5.4 Reference Manual, Section 2.1
+    <https://lua.org/manual/5.4/manual.html#2.1>`_.
     """
 
     def __str__(self):
@@ -238,7 +236,7 @@ class LuaCallableABC(ABC):
         *,
         modify_tb: bool = True,
     ) -> list[LuaValue]:
-        """Call this value if it is callable.
+        """Call this value.
 
         :param args: Arguments to pass.
         :param scope: The scope of the caller.
@@ -416,6 +414,8 @@ class LuaFunction(LuaObject, LuaCallableABC):
                     self.block(*args)
                 else:
                     self.block(scope, *args)
+            # Always add Python functions to tracebacks.
+            # (Ignore the modify_tb parameter of cls.call().)
             except LuaError as le:
                 le.push_tb(str(self), file="<Python>", line=None)
                 raise le
@@ -430,34 +430,61 @@ class LuaFunction(LuaObject, LuaCallableABC):
 
 @attrs.define(slots=True, eq=False)
 class LuaUserdata(LuaObject):
-    """Class representing values of the *userdata* basic type in Lua."""
+    """Class representing values of the *userdata* basic type in Lua.
 
+    Users can define their own userdata types by subclassing this class.
+    An example of a subclass of this class is :class:`LuaFile`.
+    """
     pass
 
 
 @attrs.define(slots=True, eq=False)
 class LuaThread(LuaObject):
     """Class representing values of the *thread* basic type in Lua."""
-
     pass
 
 
 class LuaIndexableABC(ABC):
+    """Abstract base class for objects that can be indexed.
+
+    If a type that is not a subclass of this class is attempted to be indexed in
+    execution, a :class:`LuaError` will be raised.
+    """
     @abstractmethod
     def put(
         self, key: LuaValue, value: LuaValue, *, raw: bool = True
-    ) -> None: ...
+    ) -> None:
+        """Put a key-value pair into the object.
+
+        Represents the operation of ``self[key] = value`` in Lua.
+        """
+        ...
 
     @abstractmethod
-    def get(self, key: LuaValue, *, raw: bool = True) -> LuaValue: ...
+    def get(self, key: LuaValue, *, raw: bool = True) -> LuaValue:
+        """Get the associated value of a key from the object.
+
+        Represents the operation of ``self[key]`` in Lua.
+        """
+        ...
 
     T = TypeVar("T")
 
     @abstractmethod
-    def get_with_fallback(self, key: LuaValue, fallback: T) -> LuaValue | T: ...
+    def get_with_fallback(self, key: LuaValue, fallback: T) -> LuaValue | T:
+        """
+        Get the associated value of a key from the object, or
+        :data:`fallback` if the key isn't associated with any value.
+        """
+        ...
 
     @abstractmethod
-    def has(self, key: LuaValue) -> bool: ...
+    def has(self, key: LuaValue) -> bool:
+        """
+        :return: :data:`True` if the object has a value associated with
+                 :data:`key`, :data:`False` otherwise.
+        """
+        ...
 
 
 @attrs.define(slots=True, eq=False, repr=False)
@@ -500,10 +527,6 @@ class LuaTable(LuaObject, LuaIndexableABC):
 
     # TODO: Change raw's default value to False.
     def put(self, key: LuaValue, value: LuaValue, *, raw: bool = True):
-        """Put a key-value pair into the table.
-
-        :param raw: Whether to follow the rules of ``rawset()``.
-        """
         if not raw:
             raise NotImplementedError()  # todo. (__newindex metavalue)
 
@@ -522,12 +545,6 @@ class LuaTable(LuaObject, LuaIndexableABC):
 
     # TODO: Change raw's default value to False.
     def get(self, key: LuaValue, *, raw: bool = True) -> LuaValue:
-        """Get the associated value of a key from the table.
-
-        :param raw: Whether to follow the rules of ``rawget()``.
-        :returns: The value associated with the key, or :data:`LuaNil`.
-        """
-
         if not raw:
             raise NotImplementedError()  # todo. (__index metavalue)
         if key in self.map:
