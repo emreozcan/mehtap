@@ -1,6 +1,7 @@
 import argparse
 import os
 import sys
+import traceback
 
 import lark.exceptions
 
@@ -213,6 +214,8 @@ def handle_luaerror(lua_error: LuaError, vm: VirtualMachine | None):
     print("traceback: (most recent call first)")
     for entry in lua_error.traceback_messages:
         print("\t" + entry, file=sys.stderr)
+    if vm.verbose_tb:
+        print(traceback.format_exc(), file=sys.stderr)
 
 
 def display_object(val: list[LuaValue]) -> str | None:
