@@ -2,7 +2,7 @@ import sys
 
 import pytest
 
-from ay.values import LuaBool, LuaNil, LuaString
+from ay.values import LuaBool, LuaNil, LuaString, LuaNumber
 from ay.vm import VirtualMachine
 
 vm = VirtualMachine()
@@ -31,7 +31,6 @@ def test_remove_empty_dir(tmp_path):
     assert not dir.exists()
 
 
-@pytest.mark.skipif(sys.platform.startswith("win"), reason="POSIX only")
 def test_remove_full_dir(tmp_path):
     dir = (tmp_path / "dir")
     dir.mkdir()
@@ -43,6 +42,6 @@ def test_remove_full_dir(tmp_path):
     assert len(r) == 3
     assert r[0] == LuaNil
     assert isinstance(r[1], LuaString)
-    assert isinstance(r[2], LuaNil)
+    assert isinstance(r[2], LuaNumber)
 
-    assert not dir.exists()
+    assert dir.exists()
