@@ -1,0 +1,12 @@
+shared:	string is shared	unique: string is unique
+shared:	string is shared	unique: string is unique
+
+shared:	new shared state	unique: string is unique
+shared:	new shared state	unique: string is unique
+
+shared:	overwrite first	unique: overwrite first
+shared:	overwrite second	unique: overwrite second
+
+shared:	overwrite first	unique: overwrite first
+shared:	overwrite second	unique: overwrite second
+shared:	only in inst. c	unique: string is unique

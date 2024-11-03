@@ -1,0 +1,21 @@
+first: 	1
+first: 	2
+first: 	3
+first: 	4
+first: 	5
+loop variable scope is local:	nil
+
+brk: 	1
+brk: 	2
+brk: 	3
+brk: 	4
+brk: 	5
+
+arr: i, v	1	a
+arr: i, v	2	b
+arr: i, v	3	c
+arr: i, v	4	d
+
+odd: 	1
+odd: 	3
+odd: 	5

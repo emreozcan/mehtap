@@ -1,0 +1,3 @@
+json array -> lua    { "Larry", "Curly", "Moe" }
+lua -> json array:     ["a","b","c"]
+lua -> json map:     {"key":"value"}
