@@ -21,9 +21,8 @@ def main():
     except KeyboardInterrupt:
         print("KeyboardInterrupt")
         sys.exit(1)
-    except LuaError as le:
-        handle_luaerror(le, None)
-        sys.exit(2)
+    except LuaError:
+        sys.exit(1)
 
 
 def _main():
@@ -109,10 +108,14 @@ def _main():
         ]
         for env_var in env_vars:
             if env_var in os.environ:
-                if env_var[0] == "@":
-                    vm.exec_file(os.environ[env_var][1:])
-                else:
-                    vm.exec_file(os.environ[env_var])
+                try:
+                    if env_var[0] == "@":
+                        vm.exec_file(os.environ[env_var][1:])
+                    else:
+                        vm.exec_file(os.environ[env_var])
+                except LuaError as le:
+                    handle_luaerror(le, vm)
+                    sys.exit(1)
                 break
 
     if args.show_version:
@@ -122,23 +125,27 @@ def _main():
     if args.enable_warnings:
         vm.emitting_warnings = True
 
-    if args.require_libraries:
-        for lib_spec in args.require_libraries:
-            if "=" in lib_spec:
-                name, mod = lib_spec.split("=")
+    try:
+        if args.require_libraries:
+            for lib_spec in args.require_libraries:
+                if "=" in lib_spec:
+                    name, mod = lib_spec.split("=")
+                else:
+                    name = mod = lib_spec
+                # TODO: Replace this to not depend on the function 'require'
+                vm.exec(f"{name} = require('{mod}')")
+
+        if args.execute_string:
+            vm.exec(args.execute_string)
+
+        if args.script:
+            if args.script != "-":
+                vm.exec_file(args.script)
             else:
-                name = mod = lib_spec
-            # TODO: Replace this to not depend on the function 'require'
-            vm.exec(f"{name} = require('{mod}')")
-
-    if args.execute_string:
-        vm.exec(args.execute_string)
-
-    if args.script:
-        if args.script != "-":
-            vm.exec_file(args.script)
-        else:
-            vm.exec(sys.stdin.read())
+                vm.exec(sys.stdin.read())
+    except LuaError as le:
+        handle_luaerror(le, vm)
+        sys.exit(1)
 
     no_execution = not args.script and not args.execute_string
     if args.enter_interactive or no_execution:
