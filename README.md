@@ -49,8 +49,8 @@ pip install mehtap     # straight pip.pypa.io
     - [x] `_G`
     - [x] `getmetatable()`
     - [x] `ipairs()`
-    - [ ] `load()`
-    - [ ] `loadfile()`
+    - [x] `load()` &mdash; No binary chunks, no upvalues and no _ENV.
+    - [x] `loadfile()` &mdash; see `load()`.
     - [x] `next()`
     - [x] `pairs()`
     - [x] `pcall()`

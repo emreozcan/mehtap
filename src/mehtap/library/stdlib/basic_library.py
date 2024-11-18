@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import sys
+from io import BytesIO
 from os.path import basename
 from typing import TYPE_CHECKING
 
-from mehtap.ast_nodes import UnaryOperation, UnaryOperator
+from mehtap.ast_nodes import UnaryOperation, UnaryOperator, Chunk
 from mehtap.ast_transformer import transformer
 from mehtap.py2lua import PyLuaRet, py2lua
 from mehtap.library.provider_abc import LibraryProvider
@@ -183,46 +184,148 @@ def basic_ipairs(t: LuaTable, /) -> PyLuaRet:
     return [_ipairs_iterator_function, t, LuaNumber(0)]
 
 
-@lua_function(name="load")
+@lua_function(name="load", gets_scope=True)
 def lf_load(
+    scope: Scope,
     chunk: LuaString | LuaFunction,
     chunk_name: LuaString | None = None,
     mode: LuaString | None = None,
     env: LuaTable | None = None,
     /,
 ) -> PyLuaRet:
-    return basic_load(chunk, chunk_name, mode, env)
+    return basic_load(scope, chunk, chunk_name, mode, env)
 
 
 def basic_load(
+    scope: Scope,
     chunk: LuaString | LuaFunction,
-    chunk_name: LuaString | None = None,
+    chunkname: LuaString | None = None,
     mode: LuaString | None = None,
     env: LuaTable | None = None,
     /,
 ) -> PyLuaRet:
     """load (chunk [, chunkname [, mode [, env]]])"""
-    raise NotImplementedError()  # todo.
+    # Loads a chunk.
+    #
+    chunk_content = BytesIO()
+    # If chunk is a string, the chunk is this string.
+    if isinstance(chunk, LuaString):
+        # chunkname is used as the name of the chunk for error messages and
+        # debug information (see §4.7). When absent, it defaults to chunk,
+        # if chunk is a string, or to "=(load)" otherwise.
+        if chunkname is None:
+            chunkname = LuaString(b"chunk")
+        chunk_content.write(chunk.content)
+        chunk_content.seek(0)
+    # If chunk is a function, load calls it repeatedly to get the chunk pieces.
+    elif isinstance(chunk, LuaFunction):
+        # chunkname is used as the name of the chunk for error messages and
+        # debug information (see §4.7). When absent, it defaults to chunk,
+        # if chunk is a string, or to "=(load)" otherwise.
+        if chunkname is None:
+            chunkname = LuaString(b"=(load)")
+        while True:
+            # Each call to chunk must return a string that concatenates with
+            # previous results.
+            # A return of an empty string, nil, or no value signals the end of
+            # the chunk.
+            chunk_piece = call(chunk, [], scope=None)
+            if (
+                not chunk_piece
+                or chunk_piece[0] is LuaNil
+                or (
+                    isinstance(chunk_piece[0], LuaString)
+                    and not chunk_piece[0].content
+                )
+            ):
+                break
+            if not isinstance(chunk_piece[0], LuaString):
+                raise LuaError("load: chunk() must return a string")
+            chunk_content.write(chunk_piece[0].content)
+        chunk_content.seek(0)
+    else:
+        raise LuaError("load: chunk must be a string or a function")
+    # If there are no syntactic errors, load returns the compiled chunk as a
+    # function; otherwise, it returns fail plus the error message.
+    try:
+        chunk_name_str = chunkname.content.decode("utf-8")
+        parsed_chunk = chunk_parser.parse(chunk_content.read().decode("utf-8"))
+        chunk_node: Chunk = transformer.transform(
+            parsed_chunk, filename=chunk_name_str
+        )
+        from mehtap.scope import Scope
+
+        return LuaFunction(
+            param_names=[],
+            variadic=False,
+            parent_scope=Scope(scope.vm, None),
+            block=chunk_node.block,
+            gets_scope=False,
+        )
+    except Exception as e:
+        return [FAIL, py2lua(str(e))]
+    # TODO: The following is not implemented:
+    # When you load a main chunk, the resulting function will always have
+    # exactly one upvalue, the _ENV variable (see §2.2). However, when you load
+    # a binary chunk created from a function (see string.dump), the resulting
+    # function can have an arbitrary number of upvalues, and there is no
+    # guarantee that its first upvalue will be the _ENV variable. (A non-main
+    # function may not even have an _ENV upvalue.)
+    #
+    # Regardless, if the resulting function has any upvalues, its first upvalue
+    # is set to the value of env, if that parameter is given, or to the value of
+    # the global environment. Other upvalues are initialized with nil. All
+    # upvalues are fresh, that is, they are not shared with any other function.
+    #
+    # The string mode controls whether the chunk can be text or binary (that is,
+    # a precompiled chunk). It may be the string "b" (only binary chunks), "t"
+    # (only text chunks), or "bt" (both binary and text). The default is "bt".
+    #
+    # It is safe to load malformed binary chunks; load signals an appropriate
+    # error. However, Lua does not check the consistency of the code inside
+    # binary chunks; running maliciously crafted bytecode can crash the
+    # interpreter.
 
 
-@lua_function(name="loadfile")
+@lua_function(name="loadfile", gets_scope=True)
 def lf_loadfile(
+    scope: Scope,
     filename: LuaString | None = None,
     mode: LuaString | None = None,
     env: LuaTable | None = None,
     /,
 ) -> PyLuaRet:
-    return basic_loadfile(filename, mode, env)
+    return basic_loadfile(scope, filename, mode, env)
 
 
 def basic_loadfile(
+    scope: Scope,
     filename: LuaString | None = None,
     mode: LuaString | None = None,
     env: LuaTable | None = None,
     /,
 ) -> PyLuaRet:
     """loadfile ([filename [, mode [, env]]])"""
-    raise NotImplementedError()  # todo.
+    # Similar to load, but gets the chunk from file filename
+    # or from the standard input, if no file name is given.
+    try:
+        if filename is None:
+            return basic_load(
+                scope,
+                LuaString(input().encode("utf-8")),
+                LuaString(b"stdin"), mode, env,
+            )
+        if not isinstance(filename, LuaString):
+            raise LuaError("bad argument #1 to 'loadfile' (string expected)")
+        with open(filename.content, "rb") as f:
+            return basic_load(
+                scope,
+                LuaString(f.read()),
+                filename,
+                mode, env,
+            )
+    except Exception as e:
+        return [FAIL, py2lua(str(e))]
 
 
 @lua_function(name="next")
