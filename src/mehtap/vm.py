@@ -28,8 +28,14 @@ class VirtualMachine:
         self.globals = create_global_table()
         self.root_scope = Scope(self, None)
         self.emitting_warnings = False
-        self.default_input = sys.stdin.buffer
-        self.default_output = sys.stdout.buffer
+        if hasattr(sys.stdin, "buffer"):
+            self.default_input = sys.stdin.buffer
+        else:
+            self.default_input = sys.stdin
+        if hasattr(sys.stdout, "buffer"):
+            self.default_output = sys.stdout.buffer
+        else:
+            self.default_output = sys.stdout
         self.verbose_tb = False
 
     def eval(self, expr: str):
