@@ -664,7 +664,11 @@ SYMBOL__INDEX = LuaString(b"__index")
 
 def index(a: LuaValue, b: LuaValue) -> LuaValue:
     mv = a.get_metamethod(SYMBOL__INDEX)
-    if isinstance(a, LuaIndexableABC) and a.has(b) or mv is None:
+    if mv is None:
+        if isinstance(a, LuaIndexableABC):
+            return a.rawget(b)
+        raise LuaError(f"attempt to index a {type_of_lv(a)} value")
+    if isinstance(a, LuaIndexableABC) and a.has(b):
         return a.rawget(b)
     allowed_mv = (LuaFunction, LuaIndexableABC)
     if not (isinstance(mv, allowed_mv) or mv.has_metamethod(SYMBOL__INDEX)):
@@ -682,7 +686,12 @@ SYMBOL__NEWINDEX = LuaString(b"__newindex")
 
 def new_index(a: LuaValue, b: LuaValue, c: LuaValue):
     mv = a.get_metamethod(SYMBOL__NEWINDEX)
-    if isinstance(a, LuaIndexableABC) and a.has(b) or mv is None:
+    if mv is None:
+        if isinstance(a, LuaIndexableABC):
+            a.rawput(b, c)
+            return
+        raise LuaError(f"attempt to index a {type_of_lv(a)} value")
+    if isinstance(a, LuaIndexableABC) and a.has(b):
         a.rawput(b, c)
         return
     allowed_mv = (LuaFunction, LuaIndexableABC)
@@ -710,6 +719,8 @@ def call(
     if isinstance(function, LuaCallableABC):
         return function.rawcall(args, scope=scope, modify_tb=modify_tb)
     mv = function.get_metamethod(SYMBOL__CALL)
+    if mv is None:
+        raise LuaError(f"attempt to call {type_of_lv(function)} value")
     if not isinstance(mv, LuaCallableABC):
         raise LuaError(f"attempt to call {type_of_lv(mv)} value")
     return mv.rawcall([function, *args], scope=scope, modify_tb=modify_tb)
