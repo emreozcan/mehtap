@@ -68,4 +68,4 @@ def test_rawset():
     obj = LuaTable()
     vm = get_vm(m2={LuaNumber(1): obj})
     vm.eval("rawset(o1, 1, o2[1])")
-    assert vm.get_ls(LuaString(b"o1")).get(LuaNumber(1)) is obj
+    assert vm.get_ls(LuaString(b"o1")).rawget(LuaNumber(1)) is obj

@@ -53,7 +53,7 @@ class VirtualMachine:
     def get_ls(self, key: LuaString):
         if self.root_scope.has_ls(key):
             return self.root_scope.get_ls(key)
-        return self.globals.get(key)
+        return self.globals.rawget(key)
 
     def put_local_ls(self, key: LuaString, variable: Variable):
         self.root_scope.put_local_ls(key, variable)
@@ -62,10 +62,10 @@ class VirtualMachine:
         if isinstance(variable, Variable):
             assert not variable.constant
             assert not variable.to_be_closed
-            self.globals.put(key, variable.value)
+            self.globals.rawput(key, variable.value)
             return
         elif isinstance(variable, LuaValue):
-            self.globals.put(key, variable)
+            self.globals.rawput(key, variable)
             return
         else:
             raise TypeError(f"invalid key type {type(variable)}")

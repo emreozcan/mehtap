@@ -90,14 +90,14 @@ def _main():
 
     arg_table = LuaTable()
     if args.script:
-        arg_table.put(LuaNumber(1), str_to_lua_string(args.script))
+        arg_table.rawput(LuaNumber(1), str_to_lua_string(args.script))
         for i, arg in enumerate(args.args, start=2):
-            arg_table.put(LuaNumber(i), str_to_lua_string(arg))
+            arg_table.rawput(LuaNumber(i), str_to_lua_string(arg))
         vm.root_scope.varargs = [str_to_lua_string(arg) for arg in args.args]
     else:
         for i, arg in enumerate(sys.argv, start=1):
-            arg_table.put(LuaNumber(i), str_to_lua_string(arg))
-    vm.globals.put(LuaString(b"arg"), arg_table)
+            arg_table.rawput(LuaNumber(i), str_to_lua_string(arg))
+    vm.globals.rawput(LuaString(b"arg"), arg_table)
 
     if not args.ignore_environment:
         env_vars = [

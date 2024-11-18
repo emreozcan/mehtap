@@ -446,28 +446,20 @@ class LuaThread(LuaObject):
     pass
 
 
-class LuaIndexableABC(ABC):
+class LuaIndexableABC(LuaValue, ABC):
     """Abstract base class for objects that can be indexed.
 
     If a type that is not a subclass of this class is attempted to be indexed in
     execution, a :class:`LuaError` will be raised.
     """
     @abstractmethod
-    def put(
-        self, key: LuaValue, value: LuaValue, *, raw: bool = True
-    ) -> None:
-        """Put a key-value pair into the object.
-
-        Represents the operation of ``self[key] = value`` in Lua.
-        """
+    def rawput(self, key: LuaValue, value: LuaValue) -> None:
+        """Put a key-value pair into the object."""
         ...
 
     @abstractmethod
-    def get(self, key: LuaValue, *, raw: bool = True) -> LuaValue:
-        """Get the associated value of a key from the object.
-
-        Represents the operation of ``self[key]`` in Lua.
-        """
+    def rawget(self, key: LuaValue) -> LuaValue:
+        """Get the associated value of a key from the object."""
         ...
 
     T = TypeVar("T")
@@ -527,11 +519,7 @@ class LuaTable(LuaObject, LuaIndexableABC):
             pair_list.append((key_str, value_str))
         return "{" + ", ".join(f"({k})=({v})" for k, v in pair_list) + "}"
 
-    # TODO: Change raw's default value to False.
-    def put(self, key: LuaValue, value: LuaValue, *, raw: bool = True):
-        if not raw:
-            raise NotImplementedError()  # todo. (__newindex metavalue)
-
+    def rawput(self, key: LuaValue, value: LuaValue):
         # Warning: Do not optimize by deleting keys that are assigned LuaNil,
         # as Lua allows you to set existing fields in a table to nil while
         # traversing it by using next().
@@ -545,10 +533,7 @@ class LuaTable(LuaObject, LuaIndexableABC):
 
         self.map[key] = value
 
-    # TODO: Change raw's default value to False.
-    def get(self, key: LuaValue, *, raw: bool = True) -> LuaValue:
-        if not raw:
-            raise NotImplementedError()  # todo. (__index metavalue)
+    def rawget(self, key: LuaValue):
         if key in self.map:
             return self.map[key]
         return LuaNil

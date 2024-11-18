@@ -4,7 +4,7 @@ from mehtap.values import LuaTable
 
 def get_infinite_luatable():
     turtle = LuaTable()
-    turtle.put(py2lua("turtle"), turtle)
+    turtle.rawput(py2lua("turtle"), turtle)
     return turtle
 
 

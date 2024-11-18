@@ -44,8 +44,8 @@ def test_mappings():
 
     lua_table = py2lua(country_codes)
 
-    assert lua_table.get(LuaString(b"US")) == LuaString(b"United States")
-    assert lua_table.get(LuaString(b"CA")) == LuaString(b"Canada")
+    assert lua_table.rawget(LuaString(b"US")) == LuaString(b"United States")
+    assert lua_table.rawget(LuaString(b"CA")) == LuaString(b"Canada")
 
 
 def test_iterables():
@@ -53,9 +53,9 @@ def test_iterables():
 
     lua_table = py2lua(numbers)
 
-    assert lua_table.get(LuaNumber(1)) == LuaNumber(200)
-    assert lua_table.get(LuaNumber(2)) == LuaNumber(500)
-    assert lua_table.get(LuaNumber(3)) == LuaNumber(900)
+    assert lua_table.rawget(LuaNumber(1)) == LuaNumber(200)
+    assert lua_table.rawget(LuaNumber(2)) == LuaNumber(500)
+    assert lua_table.rawget(LuaNumber(3)) == LuaNumber(900)
 
 
 def test_callables():
@@ -84,7 +84,7 @@ def test_recursive():
     a = {}
     a["a"] = a
     lua_table = py2lua(a)
-    assert lua_table.get(LuaString(b"a")) is lua_table
+    assert lua_table.rawget(LuaString(b"a")) is lua_table
 
 
 def test_unknown():

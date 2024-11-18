@@ -440,7 +440,10 @@ class VarIndex(Variable):
         table = self.base.evaluate(scope)
         if not isinstance(table, LuaIndexableABC):
             raise LuaError(f"attempt to index {type_of_lv(table)} value")
-        return table.get(self.index.evaluate_single(scope))
+        return m_operations.index(
+            a=table,
+            b=self.index.evaluate_single(scope)
+        )
 
     base: Expression
     index: Expression
@@ -473,23 +476,23 @@ class TableConstructor(Expression):
                     key = field.key.evaluate_single(scope)
                 else:
                     raise ValueError(f"{type(field.key)=}")
-                table.put(key, field.value.evaluate_single(scope))
+                table.rawput(key, field.value.evaluate_single(scope))
             elif isinstance(field, FieldCounterKey):
                 key = LuaNumber(counter, LuaNumberType.INTEGER)
                 counter += 1
-                table.put(key, field.value.evaluate_single(scope))
+                table.rawput(key, field.value.evaluate_single(scope))
             else:
                 raise ValueError(f"{type(field)=}")
         if last_field and isinstance(last_field, FieldCounterKey):
             last_field_value = last_field.value.evaluate(scope)
             if isinstance(last_field_value, Sequence):
                 for counter, val in enumerate(last_field_value, start=counter):
-                    table.put(
+                    table.rawput(
                         LuaNumber(counter, LuaNumberType.INTEGER),
                         val,
                     )
             else:
-                table.put(
+                table.rawput(
                     LuaNumber(counter, LuaNumberType.INTEGER),
                     last_field_value,
                 )
@@ -578,7 +581,10 @@ class FuncCallMethod(Expression, Statement):
         v = self.object.evaluate(scope)
         if not isinstance(v, LuaIndexableABC):
             raise LuaError(f"attempt to index {type_of_lv(v)} value")
-        function = v.get(str_to_lua_string(self.method.name.text))
+        function = m_operations.index(
+            a=v,
+            b=str_to_lua_string(self.method.name.text)
+        )
         if not isinstance(function, LuaCallableABC):
             raise LuaError(f"attempt to call {type_of_lv(function)} value")
         args = [v, *(arg.evaluate(scope) for arg in self.args)]
@@ -741,7 +747,11 @@ class Assignment(Statement):
                     raise LuaError(
                         f"attempt to index {type_of_lv(table)} value"
                     )
-                table.put(variable.index.evaluate(scope), value)
+                m_operations.new_index(
+                    a=table,
+                    b=variable.index.evaluate(scope),
+                    c=value,
+                )
             else:
                 raise ValueError(f"{type(variable)=}")
         return values
@@ -1005,13 +1015,16 @@ class FunctionStatement(Statement):
         else:
             table = scope.get_ls(self.name.names[0].as_lua_string())
             for name in self.name.names[1:-1]:
-                table = table.get(name.as_lua_string())
-                if not isinstance(table, LuaIndexableABC):
-                    raise LuaError(
-                        f"attempt to index {type_of_lv(table)} value"
-                    )
+                table = m_operations.index(
+                    a=table,
+                    b=name.as_lua_string()
+                )
             function.name = self.name.names[-1].as_lua_string()
-            table.put(function.name, function)
+            m_operations.new_index(
+                a=table,
+                b=function.name,
+                c=function,
+            )
         return [function]
 
 

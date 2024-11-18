@@ -129,13 +129,13 @@ def _py2lua(py_val, memos):
         m = LuaTable()
         memos[id(py_val)] = m
         for k, v in py_val.items():
-            m.put(_py2lua(k, memos), _py2lua(v, memos))
+            m.rawput(_py2lua(k, memos), _py2lua(v, memos))
         return m
     if isinstance(py_val, Iterable):
         m = LuaTable()
         memos[id(py_val)] = m
         for i, v in enumerate(py_val, start=1):
-            m.put(LuaNumber(i), _py2lua(v, memos))
+            m.rawput(LuaNumber(i), _py2lua(v, memos))
         return m
     if callable(py_val):
         return lua_function(wrap_values=True)(py_val)
@@ -418,7 +418,7 @@ def _lua_function(
             min_req=minimum_required,
         )
         if table is not None:
-            table.put(py2lua(used_name), lf)
+            table.rawput(py2lua(used_name), lf)
 
         if preserve:
             return func

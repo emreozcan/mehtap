@@ -5,7 +5,7 @@ from mehtap.values import LuaTable, LuaString, LuaNil, LuaBool, LuaNumber
 
 def test_recursive():
     t = LuaTable()
-    t.put(LuaString(b"t"), t)
+    t.rawput(LuaString(b"t"), t)
 
     d = lua2py(t)
     assert d[b"t"] is d
@@ -35,7 +35,7 @@ def test_string():
 
 def test_table():
     t = LuaTable()
-    t.put(LuaString(b"hello"), LuaString(b"world"))
+    t.rawput(LuaString(b"hello"), LuaString(b"world"))
 
     d = lua2py(t)
     assert d == {b"hello": b"world"}
@@ -50,7 +50,7 @@ def test_table_metamethod():
     def py_function(self, /) -> PyLuaRet:
         return LuaString(b"hello")
 
-    mt.put(LuaString(b"__py"), py_function)
+    mt.rawput(LuaString(b"__py"), py_function)
 
     d = lua2py(t)
     assert d == b"hello"

@@ -635,6 +635,53 @@ def length(a: LuaValue, *, raw: bool = False) -> LuaValue:
     raise LuaError(f"attempt to get length of a {type_string} value")
 
 
+SYMBOL__INDEX = LuaString(b"__index")
+
+
+def index(a: LuaValue, b: LuaValue, *, raw: bool = False) -> LuaValue:
+    if raw:
+        if not isinstance(a, LuaIndexableABC):
+            raise LuaError(f"attempt to index {type_of_lv(a)} value")
+        return a.rawget(b)
+    mv = a.get_metamethod(SYMBOL__INDEX)
+    if isinstance(a, LuaIndexableABC) and a.has(b) or mv is None:
+        return a.rawget(b)
+    allowed_mv = (LuaFunction, LuaIndexableABC)
+    if not (isinstance(mv, allowed_mv) or mv.has_metamethod(SYMBOL__INDEX)):
+        raise LuaError(
+            f"metavalue for '__index' must be a function, table, or a value "
+            f"with an '__index' metavalue"
+        )
+    if isinstance(mv, LuaFunction):
+        return adjust_to_one(mv.call(args=[a, b], scope=None))
+    return index(mv, b, raw=False)
+
+
+SYMBOL__NEWINDEX = LuaString(b"__newindex")
+
+
+def new_index(a: LuaValue, b: LuaValue, c: LuaValue, *, raw: bool = False):
+    if raw:
+        if not isinstance(a, LuaIndexableABC):
+            raise LuaError(f"attempt to set index on {type_of_lv(a)} value")
+        a.rawput(b, c)
+        return
+    mv = a.get_metamethod(SYMBOL__NEWINDEX)
+    if isinstance(a, LuaIndexableABC) and a.has(b) or mv is None:
+        a.rawput(b, c)
+        return
+    allowed_mv = (LuaFunction, LuaIndexableABC)
+    if not (isinstance(mv, allowed_mv) or mv.has_metamethod(SYMBOL__NEWINDEX)):
+        raise LuaError(
+            f"metavalue for '__newindex' must be a function, table, or a value "
+            f"with a '__newindex' metavalue"
+        )
+    if isinstance(mv, LuaFunction):
+        mv.call(args=[a, b, c], scope=None)
+        return
+    new_index(mv, b, c, raw=False)
+
+
 Multires: TypeAlias = "Sequence[LuaValue | Multires]"
 """
 A list where each element is either a :class:`LuaValue` or

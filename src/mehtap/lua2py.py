@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any, overload, Callable, TYPE_CHECKING
 
 from mehtap.control_structures import LuaError
+from mehtap.operations import index
 from mehtap.values import (
     LuaNil,
     LuaBool,
@@ -84,7 +85,7 @@ def _lua2py(lua_val, memos):
     if isinstance(lua_val, LuaTable):
         mt = lua_val.get_metatable()
         if mt is not LuaNil:
-            metamethod = mt.get(PY_SYMBOL)
+            metamethod = index(mt, PY_SYMBOL)
             if metamethod is not LuaNil:
                 if not isinstance(metamethod, LuaFunction):
                     raise LuaError(

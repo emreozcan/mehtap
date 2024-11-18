@@ -17,4 +17,4 @@ def test_global():
     assert isinstance(table, LuaTable)
     x = LuaString(b"x")
     assert table.has(x)
-    assert table.get(x, raw=True) == LuaNumber(1)
+    assert table.rawget(x) == LuaNumber(1)

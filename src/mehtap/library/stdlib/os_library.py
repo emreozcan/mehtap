@@ -279,13 +279,13 @@ def os_tmpname() -> PyLuaRet:
 class OSLibrary(LibraryProvider):
     def provide(self, global_table: LuaTable) -> None:
         os_table = LuaTable()
-        global_table.put(LuaString(b"os"), os_table)
+        global_table.rawput(LuaString(b"os"), os_table)
 
         for name_of_global, value_of_global in globals().items():
             if name_of_global.startswith("lf_os_"):
                 assert isinstance(value_of_global, LuaFunction)
                 assert value_of_global.name
-                os_table.put(
+                os_table.rawput(
                     LuaString(value_of_global.name.encode("ascii")),
                     value_of_global,
                 )

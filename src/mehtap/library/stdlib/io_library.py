@@ -32,10 +32,10 @@ FAIL = LuaNil
 class LuaFile(LuaUserdata, LuaIndexableABC):
     io: BinaryIO
 
-    def put(self, key: LuaValue, value: LuaValue, *, raw: bool = True) -> None:
+    def rawput(self, key: LuaValue, value: LuaValue, *, raw: bool = True) -> None:
         raise LuaError("attempt to set index on a file value")
 
-    def get(self, key: LuaValue, *, raw: bool = True) -> LuaValue:
+    def rawget(self, key: LuaValue, *, raw: bool = True) -> LuaValue:
         if not isinstance(key, LuaString):
             raise LuaError("invalid index to a file value")
         match key.content:
@@ -59,7 +59,7 @@ class LuaFile(LuaUserdata, LuaIndexableABC):
     T = TypeVar("T")
 
     def get_with_fallback(self, key: LuaValue, fallback: T) -> LuaValue | T:
-        return self.get(key)
+        return self.rawget(key)
 
     def has(self, key: LuaValue) -> bool:
         return isinstance(key, LuaString) and key.content in (
@@ -522,13 +522,13 @@ SYMBOL_IO = LuaString(b"io")
 class IOLibrary(LibraryProvider):
     def provide(self, global_table: LuaTable) -> None:
         io_table = LuaTable()
-        global_table.put(SYMBOL_IO, io_table)
+        global_table.rawput(SYMBOL_IO, io_table)
 
         for name_of_global, value_of_global in globals().items():
             if name_of_global.startswith("lf_io_"):
                 assert isinstance(value_of_global, LuaFunction)
                 assert value_of_global.name
-                io_table.put(
+                io_table.rawput(
                     LuaString(value_of_global.name.encode("ascii")),
                     value_of_global,
                 )

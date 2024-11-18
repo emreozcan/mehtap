@@ -86,5 +86,5 @@ def test_preserve():
 
     assert not isinstance(f, LuaFunction)
     assert callable(f)
-    t_f = t.get(LuaString(b"f"))
+    t_f = t.rawget(LuaString(b"f"))
     assert isinstance(t_f, LuaFunction)

@@ -37,7 +37,7 @@ def test_getmetatable_meta_metatable():
     source_object = LuaTable()
 
     metatable = LuaTable()
-    metatable.put(LuaString(b"__metatable"), source_object)
+    metatable.rawput(LuaString(b"__metatable"), source_object)
     table = LuaTable()
     table.set_metatable(metatable)
     vm.put_nonlocal_ls(LuaString(b"example_table"), Variable(table))

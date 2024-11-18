@@ -26,7 +26,7 @@ def test_ipairs():
             for k, v in enumerate(["a", "b", "c", "d", "e"], start=1)
         }
     )
-    table.put(LuaNumber(7), LuaString(b"g"))
+    table.rawput(LuaNumber(7), LuaString(b"g"))
     vm.put_nonlocal_ls(LuaString(b"t"), Variable(table))
 
     assert (

@@ -172,7 +172,7 @@ def basic_ipairs(t: LuaTable, /) -> PyLuaRet:
         if index > MAX_INT64:
             return None
         index_val = LuaNumber(index, LuaNumberType.INTEGER)
-        value = t.get(index_val)
+        value = t.rawget(index_val)
         if value is LuaNil:
             return None
         return [index_val, value]
@@ -383,7 +383,7 @@ def basic_rawget(
     # table must be a table; index may be any value.
     if not isinstance(table, LuaTable):
         raise LuaError("'table' must be a table")
-    return [table.get(index, raw=True)]
+    return [table.rawget(index)]
 
 
 @lua_function(name="rawlen")
@@ -415,7 +415,7 @@ def basic_rawset(
     #  and value any Lua value.
     #
     # This function returns table.
-    table.put(index, value, raw=True)
+    table.rawput(index, value)
     return [table]
 
 
@@ -689,7 +689,7 @@ class BasicLibrary(LibraryProvider):
         #  A global variable (not a function) that holds a string containing the
         #  running Lua version.
         #  The current value of this variable is "Lua 5.4".
-        global_table.put(
+        global_table.rawput(
             LuaString(b"_VERSION"),
             LuaString(f"mehtap {__version__}".encode("ascii")),
         )
@@ -699,13 +699,13 @@ class BasicLibrary(LibraryProvider):
         # (see §2.2).
         # Lua itself does not use this variable; changing its value does not
         # affect any environment, nor vice versa.
-        global_table.put(LuaString(b"_G"), global_table)
+        global_table.rawput(LuaString(b"_G"), global_table)
 
         for name_of_global, value_of_global in globals().items():
             if name_of_global.startswith("lf_"):
                 assert isinstance(value_of_global, LuaFunction)
                 assert value_of_global.name
-                global_table.put(
+                global_table.rawput(
                     LuaString(value_of_global.name.encode("ascii")),
                     value_of_global,
                 )

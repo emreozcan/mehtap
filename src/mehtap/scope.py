@@ -144,6 +144,6 @@ class Scope:
             self.locals[key] = Variable(value)
             return
         if self.parent is None:
-            self.vm.globals.put(key, value)
+            self.vm.globals.rawput(key, value)
             return
         return self.parent.put_nonlocal_ls(key, value)
