@@ -316,7 +316,7 @@ def arith_float_div(a: LuaValue, b: LuaValue) -> LuaValue:
     # Exponentiation and float division (/) always convert their operands to
     # floats and the result is always a float.
     a_float = coerce_int_to_float(a).value
-    b_float = coerce_float_to_int(b).value
+    b_float = coerce_int_to_float(b).value
     if b_float == 0:
         if a_float == 0:
             return LuaNumber(float("nan"), LuaNumberType.FLOAT)
