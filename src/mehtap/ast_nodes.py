@@ -643,6 +643,8 @@ class BinaryOperator(enum.Enum):
     GE = ">="
     EQ = "=="
     NE = "~="
+    NE_C = "!="
+    NE_SQL = "<>"
     BIT_OR = "|"
     BIT_XOR = "~"
     BIT_AND = "&"
@@ -667,6 +669,8 @@ binary_operator_functions: dict[
     BinaryOperator.GE: m_operations.rel_ge,
     BinaryOperator.EQ: m_operations.rel_eq,
     BinaryOperator.NE: m_operations.rel_ne,
+    BinaryOperator.NE_C: m_operations.rel_ne,
+    BinaryOperator.NE_SQL: m_operations.rel_ne,
     BinaryOperator.BIT_OR: m_operations.bitwise_or,
     BinaryOperator.BIT_XOR: m_operations.bitwise_xor,
     BinaryOperator.BIT_AND: m_operations.bitwise_and,

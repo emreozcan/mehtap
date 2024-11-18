@@ -87,7 +87,7 @@ field: "[" exp "]" "=" exp -> field_with_key
      | exp -> field_counter_key
 fieldsep: "," | ";"
 
-!cmp_op: "<" | "<=" | ">" | ">=" | "==" | "~="
+!cmp_op: "<" | "<=" | ">" | ">=" | "==" | "~=" | "!=" | "<>"
 !shift_op: ">>" | "<<"
 !sumop: "+" | "-"
 !productop: "*" | "/" | "//" | "%"
