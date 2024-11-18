@@ -1,3 +1,6 @@
+import pytest
+
+from mehtap.control_structures import LuaError
 from mehtap.py2lua import py2lua
 from mehtap.vm import VirtualMachine
 
@@ -90,6 +93,29 @@ def test_function_vararg_reference_manual(capsys):
     run_chunk("g(5, r())", vm)
     assert capsys.readouterr().out == "a\t5\nb\t1\n...\t2\t3\n"
 
+
+def test_vararg_outside_function():
+    vm = VirtualMachine()
+    with pytest.raises(LuaError) as excinfo:
+        vm.exec(
+            """
+                function f()
+                    return ...
+                end
+                f()
+            """
+        )
+    assert str(excinfo.value) == "cannot use '...' outside a vararg function"
+
+
+def test_main_chunk_vararg():
+    vm = VirtualMachine()
+    assert run_chunk(
+        """
+            return ...
+        """,
+        vm,
+    ) == []
 
 
 def test_method():

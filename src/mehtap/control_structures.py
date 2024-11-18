@@ -35,6 +35,9 @@ class LuaError(BaseException):
     def __repr__(self):
         return f"<error level {self.level}: {self.message}>"
 
+    def __str__(self):
+        return str(self.message)
+
     def push_tb(
         self,
         tb: str,

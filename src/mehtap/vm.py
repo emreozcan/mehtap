@@ -26,7 +26,7 @@ class VirtualMachine:
 
     def __init__(self):
         self.globals = create_global_table()
-        self.root_scope = Scope(self, None)
+        self.root_scope = Scope(self, None, varargs=[])
         self.emitting_warnings = False
         if hasattr(sys.stdin, "buffer"):
             self.default_input = sys.stdin.buffer

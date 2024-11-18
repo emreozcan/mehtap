@@ -111,13 +111,9 @@ class Scope:
             return f"<{cls_name} locals=[{values}], varargs=[{varargs}]>"
 
     def get_varargs(self) -> list[LuaValue] | None:
-        # TODO: Figure this out.
-        #       Do function closures include varargs?
-        if self.varargs is not None:
-            return self.varargs
-        if self.parent is None:
-            return None
-        return self.parent.get_varargs()
+        if self.varargs is None:
+            raise LuaError("cannot use '...' outside a vararg function")
+        return self.varargs
 
     def has_ls(self, key: LuaString) -> bool:
         if key in self.locals:
