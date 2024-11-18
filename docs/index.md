@@ -1,15 +1,6 @@
-# mehtap
+# mehtap Documentation
 
 Lua 5.4 programming language implementation in Pure Python
-
-
-[![Latest version on PyPI](https://img.shields.io/pypi/v/mehtap)](https://pypi.org/project/mehtap/)
-[![Supported Python versions](https://img.shields.io/pypi/pyversions/mehtap)](https://pypi.org/project/mehtap/)
-
-[![Codacy Grade Badge](https://app.codacy.com/project/badge/Grade/c8799d9203354667a97ba39aca2c75f2)](https://app.codacy.com/gh/EmreOzcan/mehtap/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
-[![Codacy Coverage Badge](https://app.codacy.com/project/badge/Coverage/c8799d9203354667a97ba39aca2c75f2)](https://app.codacy.com/gh/EmreOzcan/mehtap/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_coverage)
-[![checks/master](https://img.shields.io/github/check-runs/emreozcan/mehtap/master?logo=github&label=checks%2Fmaster)](https://github.com/emreozcan/mehtap/actions/workflows/test.yml)
-[![docs](https://readthedocs.org/projects/mehtap/badge/?version=latest&style=flat)](https://mehtap.readthedocs.io/en/latest/)
 
 ## Status
 
@@ -22,22 +13,34 @@ Please pin your dependencies using a specific commit hash.
 mehtap is supported on Python 3.10+.
 First, make sure you have a Python environment set up.
 
+:::{tab} poetry
 ```bash
 # in the shell
-poetry add mehtap      # if using python-poetry.org
-pipenv install mehtap  # if using pipenv.pypa.io
-pip install mehtap     # straight pip.pypa.io
+poetry add mehtap
 ```
+:::
+:::{tab} pipenv
+```bash
+# in the shell
+pipenv install mehtap
+```
+:::
+:::{tab} pip
+```bash
+# in the shell
+pip install mehtap
+```
+:::
 
 ## What does mehtap have?
 
 * Everything in the [Lua 5.4 grammar](https://lua.org/manual/5.4/manual.html#9)
   is supported.
 * There are utility functions to convert values
-  [from Python to Lua](https://mehtap.readthedocs.io/en/latest/py2lua.html)
-  and
-  [from Lua to Python](https://mehtap.readthedocs.io/en/latest/lua2py.html).
+  {doc}`from Python to Lua <py2lua>` and
+  {doc}`from Lua to Python <lua2py>`.
 * Most of the standard library is supported. (100% support is planned.)
+  See [this issue](https://github.com/emreozcan/mehtap/issues/11) for progress.
 
     <details>
     <summary>Basic Functions (22/25)</summary>
@@ -143,3 +146,13 @@ I want to hereby thank the following people for their
 ---
 
 Copyright (c) 2024 Emre Özcan
+
+```{toctree}
+:maxdepth: 2
+:caption: Contents:
+
+dev_guide
+values
+py2lua
+lua2py
+```

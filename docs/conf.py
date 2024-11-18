@@ -1,7 +1,4 @@
-import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path('..', 'src').resolve()))
+import dunamai
 
 # Configuration file for the Sphinx documentation builder.
 #
@@ -14,7 +11,7 @@ sys.path.insert(0, str(Path('..', 'src').resolve()))
 project = 'mehtap'
 copyright = '2024, Emre Özcan'
 author = 'Emre Özcan'
-version = __import__('mehtap').__version__
+release = dunamai.Version.from_git().serialize()
 
 # -- General configuration
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -22,17 +19,36 @@ version = __import__('mehtap').__version__
 extensions = [
     'sphinx.ext.intersphinx',
     'sphinx.ext.autodoc',
+    'myst_parser',
+    'sphinx_copybutton',
+    'sphinx_inline_tabs',
+    'sphinx_tippy',
 ]
 
 templates_path = ['_templates']
 exclude_patterns = []
 
+# -- MystParser
 
+myst_enable_extensions = [
+    'attrs_block',
+    'colon_fence',
+    'fieldlist',
+    "tasklist",
+]
+myst_heading_anchors = 3
+myst_enable_checkboxes = True
 
-# -- Options for HTML output
+# -- Internationalization
+# https://www.sphinx-doc.org/en/master/usage/configuration.html#confval-gettext_uuid
+
+gettext_uuid = True
+gettext_compact = False
+
+# -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
-html_theme = "furo"
+html_theme = 'furo'
 html_static_path = ['_static']
 
 # -- Options for autodoc
