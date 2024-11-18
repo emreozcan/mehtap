@@ -7,6 +7,7 @@ block: stat* [retstat]
      | functioncall
      | label
      | BREAK -> stat_break
+     | BREAK digits -> stat_break_fancy
      | GOTO NAME -> stat_goto
      | DO block END -> stat_do
      | WHILE exp DO block END -> stat_while

@@ -350,6 +350,10 @@ class LuaTransformer(lark.Transformer):
         return nodes.EmptyStatement()
 
     @staticmethod
+    def stat_break_fancy(BREAK, digits: nodes.Terminal):
+        return nodes.Break(int(digits.text))
+
+    @staticmethod
     def stat_break(BREAK):
         return nodes.Break()
 

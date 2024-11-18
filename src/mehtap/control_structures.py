@@ -64,7 +64,7 @@ class FlowControlException(BaseException):
 
 @attrs.define(slots=True)
 class BreakException(FlowControlException):
-    pass
+    level: int = 1
 
 
 @attrs.define(slots=True)

@@ -775,8 +775,10 @@ class Label(Statement):
 
 @attrs.define(slots=True)
 class Break(Statement):
+    level: int = 1
+
     def _execute(self, scope: Scope) -> None:
-        raise BreakException()
+        raise BreakException(level=self.level)
 
 
 @attrs.define(slots=True)
@@ -802,8 +804,9 @@ class While(Statement):
         try:
             while coerce_to_bool(self.condition.evaluate_single(scope)).true:
                 self.block.execute_without_inner_scope(new_vm)
-        except BreakException:
-            pass
+        except BreakException as be:
+            if be.level != 1:
+                raise BreakException(be.level - 1)
 
     condition: Expression
     block: Block
@@ -818,8 +821,9 @@ class Repeat(Statement):
                 self.block.execute_without_inner_scope(new_vm)
                 if coerce_to_bool(self.condition.evaluate_single(new_vm)).true:
                     break
-        except BreakException:
-            pass
+        except BreakException as be:
+            if be.level != 1:
+                raise BreakException(be.level - 1)
 
     block: Block
     condition: Expression
@@ -850,8 +854,9 @@ class For(Statement):
     def _execute(self, scope: Scope) -> None:
         try:
             self._execute_internal(scope)
-        except BreakException:
-            pass
+        except BreakException as be:
+            if be.level != 1:
+                raise BreakException(be.level - 1)
 
     def _execute_internal(self, scope: Scope) -> None:
         # This for loop is the "numerical" for loop explained in 3.3.5.
@@ -934,8 +939,9 @@ class ForIn(Statement):
     def _execute(self, scope: Scope) -> None:
         try:
             self._execute_internal(scope)
-        except BreakException:
-            pass
+        except BreakException as be:
+            if be.level != 1:
+                raise BreakException(be.level - 1)
 
     def _execute_internal(self, outer_scope: Scope) -> None:
         # The generic for statement works over functions, called iterators.
