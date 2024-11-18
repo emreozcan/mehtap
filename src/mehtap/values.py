@@ -319,10 +319,14 @@ class LuaFunction(LuaObject, LuaCallableABC):
         return f"({param_list})"
 
     def __str__(self):
+        native = "native " if callable(self.block) else ""
         if not self.name:
-            return f"function{self._stringify_params()}: {hex(id(self))}"
+            return (
+                f"{native}function{self._stringify_params()}: {hex(id(self))}"
+            )
         return (
-            f"function {self.name}{self._stringify_params()}: {hex(id(self))}"
+            f"{native}function {self.name}{self._stringify_params()}: "
+            f"{hex(id(self))}"
         )
 
     def call(
@@ -385,7 +389,6 @@ class LuaFunction(LuaObject, LuaCallableABC):
         if not callable(self.block):
             # Function is implemented in Lua
             new_scope = self.parent_scope.push()
-            assert self.param_names is not None
             param_count = len(self.param_names)
 
             if self.variadic:
