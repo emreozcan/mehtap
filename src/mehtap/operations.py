@@ -475,7 +475,10 @@ def length(a: LuaValue, *, raw: bool = True) -> LuaNumber:
                 break
         return LuaNumber(border, LuaNumberType.INTEGER)
 
-    raise NotImplementedError()  # TODO.
+    from mehtap.values import type_of_lv
+    from mehtap.control_structures import LuaError
+    type_string = type_of_lv(a)
+    raise LuaError(f"attempt to get length of a {type_string} value")
 
 
 Multires: TypeAlias = "Sequence[LuaValue | Multires]"
