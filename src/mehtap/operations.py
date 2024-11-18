@@ -638,11 +638,7 @@ def length(a: LuaValue, *, raw: bool = False) -> LuaValue:
 SYMBOL__INDEX = LuaString(b"__index")
 
 
-def index(a: LuaValue, b: LuaValue, *, raw: bool = False) -> LuaValue:
-    if raw:
-        if not isinstance(a, LuaIndexableABC):
-            raise LuaError(f"attempt to index {type_of_lv(a)} value")
-        return a.rawget(b)
+def index(a: LuaValue, b: LuaValue) -> LuaValue:
     mv = a.get_metamethod(SYMBOL__INDEX)
     if isinstance(a, LuaIndexableABC) and a.has(b) or mv is None:
         return a.rawget(b)
@@ -654,18 +650,13 @@ def index(a: LuaValue, b: LuaValue, *, raw: bool = False) -> LuaValue:
         )
     if isinstance(mv, LuaFunction):
         return adjust_to_one(call(mv, args=[a, b], scope=None))
-    return index(mv, b, raw=False)
+    return index(mv, b)
 
 
 SYMBOL__NEWINDEX = LuaString(b"__newindex")
 
 
-def new_index(a: LuaValue, b: LuaValue, c: LuaValue, *, raw: bool = False):
-    if raw:
-        if not isinstance(a, LuaIndexableABC):
-            raise LuaError(f"attempt to set index on {type_of_lv(a)} value")
-        a.rawput(b, c)
-        return
+def new_index(a: LuaValue, b: LuaValue, c: LuaValue):
     mv = a.get_metamethod(SYMBOL__NEWINDEX)
     if isinstance(a, LuaIndexableABC) and a.has(b) or mv is None:
         a.rawput(b, c)
@@ -679,7 +670,7 @@ def new_index(a: LuaValue, b: LuaValue, c: LuaValue, *, raw: bool = False):
     if isinstance(mv, LuaFunction):
         call(mv, args=[a, b, c], scope=None)
         return
-    new_index(mv, b, c, raw=False)
+    new_index(mv, b, c)
 
 
 SYMBOL__CALL = LuaString(b"__call")
@@ -691,12 +682,7 @@ def call(
     scope: Scope | None,
     *,
     modify_tb: bool = True,
-    raw: bool = False,
 ) -> list[LuaValue]:
-    if raw:
-        if not isinstance(function, LuaCallableABC):
-            raise LuaError(f"attempt to call {type_of_lv(function)} value")
-        return function.rawcall(args, scope=scope, modify_tb=modify_tb)
     if isinstance(function, LuaCallableABC):
         return function.rawcall(args, scope=scope, modify_tb=modify_tb)
     mv = function.get_metamethod(SYMBOL__CALL)
