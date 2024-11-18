@@ -40,7 +40,7 @@ pip install mehtap     # straight pip.pypa.io
 * Most of the standard library is supported. (100% support is planned.)
 
     <details>
-    <summary>Basic Functions (22/25)</summary>
+    <summary>Basic Functions (25/25)</summary>
 
     - [x] `assert()`
     - [x] `collectgarbage()` &mdash; Does nothing.

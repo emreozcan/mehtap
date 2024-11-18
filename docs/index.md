@@ -43,7 +43,7 @@ pip install mehtap
   See [this issue](https://github.com/emreozcan/mehtap/issues/11) for progress.
 
     <details>
-    <summary>Basic Functions (22/25)</summary>
+    <summary>Basic Functions (25/25)</summary>
 
     - [x] `assert()`
     - [x] `collectgarbage()` &mdash; Does nothing.
