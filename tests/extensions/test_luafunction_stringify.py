@@ -41,7 +41,7 @@ def test_native_functions():
     native_f.min_req = 0
     assert str(native_f).startswith("native function([a[, b[, ...]]]): 0x")
 
-    native_f.param_names = None
+    native_f.param_names = []
     assert str(native_f).startswith(f"native function([...]): 0x")
 
     native_f.name = "noop"
@@ -83,7 +83,7 @@ def test_lua_functions():
     lua_f.min_req = 0
     assert str(lua_f).startswith("function([a[, b[, ...]]]): 0x")
 
-    lua_f.param_names = None
+    lua_f.param_names = []
     assert str(lua_f).startswith(f"function([...]): 0x")
 
     lua_f.name = "noop"

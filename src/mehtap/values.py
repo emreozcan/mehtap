@@ -250,8 +250,7 @@ class LuaCallableABC(ABC):
 class LuaFunction(LuaObject, LuaCallableABC):
     """Class representing values of the *function* basic type in Lua."""
 
-    # TODO: Make param_names not Optional.
-    param_names: list[LuaString] | None
+    param_names: list[LuaString]
     """The names of the parameters of the function.
 
     Used when binding given arguments to the block scope when calling the
