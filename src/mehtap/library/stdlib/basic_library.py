@@ -97,9 +97,12 @@ def basic_dofile(
     #  (That is, dofile does not run in protected mode.)
     parsed_chunk = chunk_parser.parse(infile.read())
     chunk_node = transformer.transform(parsed_chunk, filename=filename_str)
-    # TODO: Figure this out.
-    #       Chunks are normally compiled as vararg functions in Lua.
-    r = chunk_node.block.evaluate(scope)
+    from mehtap.scope import Scope
+    new_scope = Scope(
+        vm=scope.vm,
+        parent=None,
+    )
+    r = chunk_node.block.evaluate(new_scope)
     return r
 
 

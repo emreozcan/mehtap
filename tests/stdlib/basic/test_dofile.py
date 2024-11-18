@@ -1,3 +1,4 @@
+import io
 from pathlib import Path
 
 from pytest import raises
@@ -39,3 +40,34 @@ def test_dofile_error():
         )
 
     assert excinfo.value.message == str_to_lua_string("i am in another file")
+
+
+def test_dofile_scope_global(monkeypatch, capsys):
+    monkeypatch.setattr("sys.stdin", io.StringIO(
+        "print(x)"
+    ))
+
+    execute(
+        f"""
+            x = 42
+            dofile()
+        """
+    )
+    assert capsys.readouterr().out == "42\n"
+
+
+def test_dofile_scope_local(monkeypatch, capsys):
+    monkeypatch.setattr("sys.stdin", io.StringIO(
+        "print(x)"
+    ))
+
+    execute(
+        f"""
+            function scoped()
+                local x = 42
+                dofile()
+            end
+            scoped()
+        """
+    )
+    assert capsys.readouterr().out == "nil\n"
