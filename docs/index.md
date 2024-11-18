@@ -54,7 +54,7 @@ pip install mehtap
     - [x] `ipairs()`
     - [ ] `load()`
     - [ ] `loadfile()`
-    - [ ] `next()`
+    - [x] `next()`
     - [x] `pairs()`
     - [x] `pcall()`
     - [x] `print()`

@@ -51,7 +51,7 @@ pip install mehtap     # straight pip.pypa.io
     - [x] `ipairs()`
     - [ ] `load()`
     - [ ] `loadfile()`
-    - [ ] `next()`
+    - [x] `next()`
     - [x] `pairs()`
     - [x] `pcall()`
     - [x] `print()`

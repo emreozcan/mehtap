@@ -158,6 +158,19 @@ def lf_ipairs(t: LuaTable, /) -> PyLuaRet:
     return basic_ipairs(t)
 
 
+@lua_function()
+def _ipairs_iterator_function(state, control_variable: LuaNumber, /) \
+        -> PyLuaRet:
+    index = control_variable.value + 1
+    if index > MAX_INT64:
+        return None
+    index_val = LuaNumber(index, LuaNumberType.INTEGER)
+    value = state.rawget(index_val)
+    if value is LuaNil:
+        return None
+    return [index_val, value]
+
+
 def basic_ipairs(t: LuaTable, /) -> PyLuaRet:
     """ipairs (t)"""
 
@@ -166,22 +179,8 @@ def basic_ipairs(t: LuaTable, /) -> PyLuaRet:
     #      for i,v in ipairs(t) do body end
     # will iterate over the key–value pairs (1,t[1]), (2,t[2]), ..., up
     # to the first absent index.
-    @lua_function()
-    def iterator_function(state, control_variable: LuaNumber, /) -> PyLuaRet:
-        index = control_variable.value + 1
-        if index > MAX_INT64:
-            return None
-        index_val = LuaNumber(index, LuaNumberType.INTEGER)
-        value = t.rawget(index_val)
-        if value is LuaNil:
-            return None
-        return [index_val, value]
 
-    return [
-        iterator_function,
-        t,
-        LuaNumber(0, LuaNumberType.INTEGER),
-    ]
+    return [_ipairs_iterator_function, t, LuaNumber(0)]
 
 
 @lua_function(name="load")
@@ -254,7 +253,32 @@ def basic_next(table: LuaTable, index: LuaValue = LuaNil, /) -> PyLuaRet:
     # during its traversal.
     # You may however modify existing fields.
     # In particular, you may set existing fields to nil.
-    raise NotImplementedError()  # todo.
+    if not isinstance(table, LuaTable):
+        table_type = type_of_lv(table)
+        raise LuaError(
+            f"bad argument #1 to 'next' (table expected, got {table_type})"
+        )
+    if index is LuaNil:
+        iterator = iter(table.map.items())
+        try:
+            k, v = next(iterator)
+        except StopIteration:
+            return [LuaNil]
+        return [k, v]
+    iterator = iter(table.map.items())
+    for k, v in iterator:
+        if rel_eq(k, index).true:
+            break
+    else:
+        return [LuaNil]
+    # return the next pair for which v isn't nil
+    while True:
+        try:
+            k, v = next(iterator)
+        except StopIteration:
+            return [LuaNil]
+        if v is not LuaNil:
+            return [k, v]
 
 
 @lua_function(name="pairs", gets_scope=True)
@@ -273,22 +297,7 @@ def basic_pairs(scope: Scope, t: LuaTable, /) -> list[LuaValue] | None:
     # nil, so that the construction
     #      for k,v in pairs(t) do body end
     # will iterate over all key–value pairs of table t.
-    items = iter(t.map.items())
-
-    # TODO: Implement this function in a way that uses state.
-    @lua_function()
-    def iterator_function(state, control_variable, /) -> PyLuaRet:
-        try:
-            key, value = next(items)
-        except StopIteration:
-            return None
-        return [key, value]
-
-    return [
-        iterator_function,
-        t,
-        LuaNil,
-    ]
+    return [lf_next, t, LuaNil]
 
 
 @lua_function(name="pcall", gets_scope=True)
