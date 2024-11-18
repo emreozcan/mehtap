@@ -51,6 +51,8 @@ explist: explist_entry ("," explist_entry)*
     | literalstring
     | "..." -> exp_vararg
     | "function" funcbody -> exp_functiondef
+    | "|" [parlist] "|" exp -> exp_lambda
+    | "(" [parlist] ")" "=>" exp -> exp_lambda
     | tableconstructor
     | exp "or" exp -> exp_logical_or
     | exp "and" exp -> exp_logical_and

@@ -405,6 +405,23 @@ class LuaTransformer(lark.Transformer):
         return nodes.FuncDef(body=funcbody)
 
     @staticmethod
+    def exp_lambda(parlist, exp: nodes.Expression) -> nodes.FuncBody:
+        block = nodes.Block(
+            statements=tuple(),
+            return_statement=nodes.ReturnStatement(values=(exp,)),
+        )
+        if parlist is None:
+            return nodes.FuncBody(
+                params=tuple(),
+                body=block,
+            )
+        return nodes.FuncBody(
+            params=parlist.names,
+            body=block,
+            vararg=parlist.vararg,
+        )
+
+    @staticmethod
     def funcname(*names) -> nodes.FuncName:
         method = names[-1]
         if method is not None:
