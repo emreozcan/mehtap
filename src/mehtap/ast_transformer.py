@@ -173,8 +173,9 @@ class LuaTransformer(lark.Transformer):
 
     @staticmethod
     def fieldlist(*children) -> Sequence[nodes.Field]:
-        *fields, fieldsep = children
-        return fields
+        if children[-1] is None:
+            return children[:-1]
+        return children
 
     @staticmethod
     def block(*children) -> nodes.Block:
