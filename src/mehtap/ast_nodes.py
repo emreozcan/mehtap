@@ -11,7 +11,7 @@ import attrs
 
 import mehtap.values as m_values
 from mehtap.control_structures import BreakException, GotoException, \
-    ReturnException, LuaError
+    ReturnException, LuaError, ContinueException
 from mehtap.values import (
     LuaNumber,
     LuaValue,
@@ -790,6 +790,12 @@ class Goto(Statement):
 
 
 @attrs.define(slots=True)
+class Continue(Statement):
+    def _execute(self, scope: Scope) -> None:
+        raise ContinueException()
+
+
+@attrs.define(slots=True)
 class Do(Statement):
     def _execute(self, scope: Scope) -> None:
         self.block.execute(scope)
@@ -803,7 +809,10 @@ class While(Statement):
         new_vm = scope.push(file=self.file, line=self.line)
         try:
             while coerce_to_bool(self.condition.evaluate_single(scope)).true:
-                self.block.execute_without_inner_scope(new_vm)
+                try:
+                    self.block.execute_without_inner_scope(new_vm)
+                except ContinueException:
+                    pass
         except BreakException as be:
             if be.level != 1:
                 raise BreakException(be.level - 1)
@@ -818,7 +827,10 @@ class Repeat(Statement):
         new_vm = scope.push(file=self.file, line=self.line)
         try:
             while True:
-                self.block.execute_without_inner_scope(new_vm)
+                try:
+                    self.block.execute_without_inner_scope(new_vm)
+                except ContinueException:
+                    pass
                 if coerce_to_bool(self.condition.evaluate_single(new_vm)).true:
                     break
         except BreakException as be:
@@ -922,7 +934,10 @@ class For(Statement):
             inner_scope.put_local_ls(
                 control_varname, m_values.Variable(control_val)
             )
-            self.block.execute_without_inner_scope(inner_scope)
+            try:
+                self.block.execute_without_inner_scope(inner_scope)
+            except ContinueException:
+                pass
             overflow, control_val = m_operations.overflow_arith_add(
                 control_val, step
             )
@@ -994,7 +1009,10 @@ class ForIn(Statement):
                 break
             # Otherwise, the body is executed and the loop goes to the next
             # iteration.
-            self.block.execute_without_inner_scope(body_scope)
+            try:
+                self.block.execute_without_inner_scope(body_scope)
+            except ContinueException:
+                pass
             continue
         if closing_value is not nil:
             # The closing value behaves like a to-be-closed variable,

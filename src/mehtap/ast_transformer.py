@@ -358,6 +358,10 @@ class LuaTransformer(lark.Transformer):
         return nodes.Break()
 
     @staticmethod
+    def stat_continue(CONTINUE):
+        return nodes.Continue()
+
+    @staticmethod
     def stat_goto(GOTO, name: nodes.Name):
         return nodes.Goto(name=name)
 

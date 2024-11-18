@@ -6,6 +6,7 @@ block: stat* [retstat]
      | varlist "=" explist -> stat_assignment
      | functioncall
      | label
+     | CONTINUE -> stat_continue
      | BREAK -> stat_break
      | BREAK digits -> stat_break_fancy
      | GOTO NAME -> stat_goto
@@ -124,6 +125,7 @@ THEN: "then"
 TRUE: "true"
 UNTIL: "until"
 WHILE: "while"
+CONTINUE: "continue"
 
 %import common.WS
 %ignore WS
