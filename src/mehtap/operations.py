@@ -18,7 +18,7 @@ from mehtap.values import (
     LuaTable,
     LuaFunction,
     LuaThread,
-    LuaUserdata, LuaIndexableABC, LuaCallableABC,
+    LuaUserdata, LuaIndexableABC, LuaCallableABC, type_of_lv,
 )
 
 
@@ -465,7 +465,10 @@ def str_to_lua_string(s: str) -> LuaString:
     return LuaString(s.encode("ascii"))
 
 
-def concat(a: LuaValue, b: LuaValue) -> LuaString:
+SYMBOL__CONCAT = LuaString(b"__concat")
+
+
+def concat(a: LuaValue, b: LuaValue) -> LuaValue:
     """
     :return: The result of ``a .. b`` in Lua.
     """
@@ -480,7 +483,12 @@ def concat(a: LuaValue, b: LuaValue) -> LuaString:
             b = str_to_lua_string(str(b))
         return LuaString(a.content + b.content)
     # Otherwise, the __concat metamethod is called (see §2.4).
-    raise NotImplementedError()  # TODO.
+    mm_res = check_metamethod_binary(a, b, SYMBOL__CONCAT)
+    if mm_res is None:
+        a_type = type_of_lv(a)
+        b_type = type_of_lv(b)
+        raise LuaError(f"attempt to concatenate {a_type} and {b_type} values")
+    return mm_res
 
 
 def length(a: LuaValue, *, raw: bool = False) -> LuaNumber:
@@ -495,7 +503,6 @@ def length(a: LuaValue, *, raw: bool = False) -> LuaNumber:
         mm_result = check_metamethod_unary(a, SYMBOL__LEN)
         if mm_result is not None:
             if not isinstance(mm_result, LuaNumber):
-                from mehtap.control_structures import LuaError
                 raise LuaError(f"metamethod '__len' must return a number")
             return coerce_float_to_int(mm_result)
 
@@ -507,8 +514,6 @@ def length(a: LuaValue, *, raw: bool = False) -> LuaNumber:
                 break
         return LuaNumber(border, LuaNumberType.INTEGER)
 
-    from mehtap.values import type_of_lv
-    from mehtap.control_structures import LuaError
     type_string = type_of_lv(a)
     raise LuaError(f"attempt to get length of a {type_string} value")
 
