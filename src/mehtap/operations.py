@@ -186,13 +186,20 @@ def coerce_int_to_float(value: LuaNumber) -> LuaNumber:
     return LuaNumber(float(value.value), LuaNumberType.FLOAT)
 
 
-def arith_add(a, b):
+SYMBOL__ADD = LuaString(b"__add")
+
+
+def arith_add(a: LuaValue, b: LuaValue) -> LuaValue:
     """
     :return: The result of ``a + b`` in Lua.
-    :raises NotImplementedError: if ``a`` or ``b`` isn't a :class:`LuaNumber`.
     """
     if not isinstance(a, LuaNumber) or not isinstance(b, LuaNumber):
-        raise NotImplementedError()  # TODO.
+        mm_res = check_metamethod_binary(a, b, SYMBOL__ADD)
+        if mm_res is not None:
+            return mm_res
+        a_type = type_of_lv(a)
+        b_type = type_of_lv(b)
+        raise LuaError(f"attempt to add {a_type} and {b_type} values")
     # If both operands are integers,
     if a.type == LuaNumberType.INTEGER and b.type == LuaNumberType.INTEGER:
         # the operation is performed over integers and the result is an integer.
@@ -208,14 +215,15 @@ def arith_add(a, b):
     )
 
 
-def overflow_arith_add(a, b) -> tuple[bool, LuaNumber]:
+def overflow_arith_add(a: LuaValue, b: LuaValue) -> tuple[bool, LuaNumber]:
     """
     :return: a tuple *(o, r)* where *o* is a boolean indicating whether the
              addition overflows and *r* is the result of ``a + b`` in Lua.
-    :raises NotImplementedError: if ``a`` or ``b`` isn't a :class:`LuaNumber`.
     """
     if not isinstance(a, LuaNumber) or not isinstance(b, LuaNumber):
-        raise NotImplementedError()  # TODO.
+        type_a = type_of_lv(a)
+        type_b = type_of_lv(b)
+        raise LuaError(f"attempt to add {type_a} and {type_b} values")
     if a.type == LuaNumberType.INTEGER and b.type == LuaNumberType.INTEGER:
         summed = a.value + b.value
         wrapped = int_wrap_overflow(summed)
@@ -226,13 +234,20 @@ def overflow_arith_add(a, b) -> tuple[bool, LuaNumber]:
     )
 
 
-def arith_sub(a, b):
+SYMBOL__SUB = LuaString(b"__sub")
+
+
+def arith_sub(a: LuaValue, b: LuaValue) -> LuaValue:
     """
     :return: The result of ``a - b`` in Lua.
-    :raises NotImplementedError: if ``a`` or ``b`` isn't a :class:`LuaNumber`.
     """
     if not isinstance(a, LuaNumber) or not isinstance(b, LuaNumber):
-        raise NotImplementedError()  # TODO.
+        mm_res = check_metamethod_binary(a, b, SYMBOL__SUB)
+        if mm_res is not None:
+            return mm_res
+        a_type = type_of_lv(a)
+        b_type = type_of_lv(b)
+        raise LuaError(f"attempt to subtract {a_type} and {b_type} values")
     if a.type == LuaNumberType.INTEGER and b.type == LuaNumberType.INTEGER:
         return int_wrap_overflow(a.value - b.value)
     return LuaNumber(
@@ -241,13 +256,20 @@ def arith_sub(a, b):
     )
 
 
-def arith_mul(a, b):
+SYMBOL__MUL = LuaString(b"__mul")
+
+
+def arith_mul(a: LuaValue, b: LuaValue) -> LuaValue:
     """
     :return: The result of ``a * b`` in Lua.
-    :raises NotImplementedError: if ``a`` or ``b`` isn't a :class:`LuaNumber`.
     """
     if not isinstance(a, LuaNumber) or not isinstance(b, LuaNumber):
-        raise NotImplementedError()  # TODO.
+        mm_res = check_metamethod_binary(a, b, SYMBOL__MUL)
+        if mm_res is not None:
+            return mm_res
+        a_type = type_of_lv(a)
+        b_type = type_of_lv(b)
+        raise LuaError(f"attempt to multiply {a_type} and {b_type} values")
     if a.type == LuaNumberType.INTEGER and b.type == LuaNumberType.INTEGER:
         return int_wrap_overflow(a.value * b.value)
     return LuaNumber(
@@ -256,13 +278,20 @@ def arith_mul(a, b):
     )
 
 
-def arith_float_div(a, b):
+SYMBOL__DIV = LuaString(b"__div")
+
+
+def arith_float_div(a: LuaValue, b: LuaValue) -> LuaValue:
     """
     :return: The result of ``a / b`` in Lua, which is always a float.
-    :raises NotImplementedError: if ``a`` or ``b`` isn't a :class:`LuaNumber`.
     """
     if not isinstance(a, LuaNumber) or not isinstance(b, LuaNumber):
-        raise NotImplementedError()  # TODO.
+        mm_res = check_metamethod_binary(a, b, SYMBOL__DIV)
+        if mm_res is not None:
+            return mm_res
+        a_type = type_of_lv(a)
+        b_type = type_of_lv(b)
+        raise LuaError(f"attempt to divide {a_type} and {b_type} values")
     # Exponentiation and float division (/) always convert their operands to
     # floats and the result is always a float.
     a_float = coerce_int_to_float(a).value
@@ -276,17 +305,24 @@ def arith_float_div(a, b):
     return LuaNumber(a_float / b_float, LuaNumberType.FLOAT)
 
 
-def arith_floor_div(a, b):
+SYMBOL__IDIV = LuaString(b"__idiv")
+
+
+def arith_floor_div(a: LuaValue, b: LuaValue) -> LuaValue:
     """
     :return: The result of ``a // b`` in Lua.
 
              The result of floor division of *a* by *b* is defined as the result
              of the division of *a* by *b*
              rounded towards minus infinity.
-    :raises NotImplementedError: if ``a`` or ``b`` isn't a :class:`LuaNumber`.
     """
     if not isinstance(a, LuaNumber) or not isinstance(b, LuaNumber):
-        raise NotImplementedError()  # TODO.
+        mm_res = check_metamethod_binary(a, b, SYMBOL__IDIV)
+        if mm_res is not None:
+            return mm_res
+        a_type = type_of_lv(a)
+        b_type = type_of_lv(b)
+        raise LuaError(f"attempt to floor divide {a_type} and {b_type} values")
     # Floor division (//) is a division that rounds the quotient towards minus
     # infinity, resulting in the floor of the division of its operands.
     if a.type == LuaNumberType.INTEGER and b.type == LuaNumberType.INTEGER:
@@ -297,16 +333,23 @@ def arith_floor_div(a, b):
     )
 
 
-def arith_mod(a, b):
+SYMBOL__MOD = LuaString(b"__mod")
+
+
+def arith_mod(a: LuaValue, b: LuaValue) -> LuaValue:
     """
     :return: The result of ``a % b`` in Lua.
 
              The result of modulo is defined as the remainder of a division that
              rounds the quotient towards minus infinity (floor division).
-    :raises NotImplementedError: if ``a`` or ``b`` isn't a :class:`LuaNumber`.
     """
     if not isinstance(a, LuaNumber) or not isinstance(b, LuaNumber):
-        raise NotImplementedError()  # TODO.
+        mm_res = check_metamethod_binary(a, b, SYMBOL__MOD)
+        if mm_res is not None:
+            return mm_res
+        a_type = type_of_lv(a)
+        b_type = type_of_lv(b)
+        raise LuaError(f"attempt to modulo {a_type} and {b_type} values")
     # Modulo is defined as the remainder of a division that rounds the quotient
     # towards minus infinity (floor division).
     if a.type == LuaNumberType.INTEGER and b.type == LuaNumberType.INTEGER:
@@ -317,7 +360,10 @@ def arith_mod(a, b):
     )
 
 
-def arith_exp(a, b):
+SYMBOL__POW = LuaString(b"__pow")
+
+
+def arith_exp(a: LuaValue, b: LuaValue) -> LuaValue:
     """
     :return: The result of ``a ^ b`` in Lua, which is always a float.
     """
@@ -325,18 +371,32 @@ def arith_exp(a, b):
     # floats and the result is always a float.
     # Exponentiation uses the ISO C function pow,
     # so that it works for non-integer exponents too.
+    if not isinstance(a, LuaNumber) or not isinstance(b, LuaNumber):
+        mm_res = check_metamethod_binary(a, b, SYMBOL__POW)
+        if mm_res is not None:
+            return mm_res
+        a_type = type_of_lv(a)
+        b_type = type_of_lv(b)
+        raise LuaError(f"attempt to exponentiate {a_type} and {b_type} values")
     return LuaNumber(
         coerce_int_to_float(a).value ** coerce_int_to_float(b).value,
         LuaNumberType.FLOAT,
     )
 
 
-def arith_unary_minus(a):
+SYMBOL__UNM = LuaString(b"__unm")
+
+
+def arith_unary_minus(a: LuaValue) -> LuaValue:
     """
     :return: The result of ``-a`` in Lua.
     """
     if not isinstance(a, LuaNumber):
-        raise NotImplementedError()  # TODO.
+        mm_res = check_metamethod_unary(a, SYMBOL__UNM)
+        if mm_res is not None:
+            return mm_res
+        a_type = type_of_lv(a)
+        raise LuaError(f"attempt to negate a {a_type} value")
     return LuaNumber(-a.value, a.type)
 
 
@@ -354,40 +414,80 @@ def _python_int_to_int64_luanumber(x: int) -> LuaNumber:
     return LuaNumber(x, LuaNumberType.INTEGER)
 
 
-def bitwise_or(a, b) -> LuaNumber:
+SYMBOL__BOR = LuaString(b"__bor")
+
+
+def bitwise_or(a: LuaValue, b: LuaValue) -> LuaValue:
     """
     :return: The result of ``a | b`` in Lua.
     """
     #  All bitwise operations convert its operands to integers (see §3.4.3),
     #  operate on all bits of those integers,
     #  and result in an integer.
+    if not isinstance(a, LuaNumber) or not isinstance(b, LuaNumber):
+        mm_res = check_metamethod_binary(a, b, SYMBOL__BOR)
+        if mm_res is not None:
+            return mm_res
+        a_type = type_of_lv(a)
+        b_type = type_of_lv(b)
+        raise LuaError(f"attempt to bitwise or {a_type} and {b_type} values")
     a = coerce_float_to_int(a)
     b = coerce_float_to_int(b)
     return _python_int_to_int64_luanumber(a.value | b.value)
 
 
-def bitwise_xor(a, b) -> LuaNumber:
+SYMBOL__BXOR = LuaString(b"__bxor")
+
+
+def bitwise_xor(a: LuaValue, b: LuaValue) -> LuaValue:
     """
     :return: The result of ``a ~ b`` in Lua.
     """
+    if not isinstance(a, LuaNumber) or not isinstance(b, LuaNumber):
+        mm_res = check_metamethod_binary(a, b, SYMBOL__BXOR)
+        if mm_res is not None:
+            return mm_res
+        a_type = type_of_lv(a)
+        b_type = type_of_lv(b)
+        raise LuaError(f"attempt to bitwise xor {a_type} and {b_type} values")
     a = coerce_float_to_int(a)
     b = coerce_float_to_int(b)
     return _python_int_to_int64_luanumber(a.value ^ b.value)
 
 
-def bitwise_and(a, b) -> LuaNumber:
+SYMBOL__BAND = LuaString(b"__band")
+
+
+def bitwise_and(a: LuaValue, b: LuaValue) -> LuaValue:
     """
     :return: The result of ``a & b`` in Lua.
     """
+    if not isinstance(a, LuaNumber) or not isinstance(b, LuaNumber):
+        mm_res = check_metamethod_binary(a, b, SYMBOL__BAND)
+        if mm_res is not None:
+            return mm_res
+        a_type = type_of_lv(a)
+        b_type = type_of_lv(b)
+        raise LuaError(f"attempt to bitwise and {a_type} and {b_type} values")
     a = coerce_float_to_int(a)
     b = coerce_float_to_int(b)
     return _python_int_to_int64_luanumber(a.value & b.value)
 
 
-def bitwise_shift_left(a, b) -> LuaNumber:
+SYMBOL__SHL = LuaString(b"__shl")
+
+
+def bitwise_shift_left(a: LuaValue, b: LuaValue) -> LuaValue:
     """
     :return: The result of ``a << b`` in Lua.
     """
+    if not isinstance(a, LuaNumber) or not isinstance(b, LuaNumber):
+        mm_res = check_metamethod_binary(a, b, SYMBOL__SHL)
+        if mm_res is not None:
+            return mm_res
+        a_type = type_of_lv(a)
+        b_type = type_of_lv(b)
+        raise LuaError(f"attempt to shift left {a_type} and {b_type} values")
     a = coerce_float_to_int(a)
     b = coerce_float_to_int(b)
     # Both right and left shifts fill the vacant bits with zeros.
@@ -401,10 +501,20 @@ def bitwise_shift_left(a, b) -> LuaNumber:
     return _python_int_to_int64_luanumber(a.value << b.value)
 
 
-def bitwise_shift_right(a, b) -> LuaNumber:
+SYMBOL__SHR = LuaString(b"__shr")
+
+
+def bitwise_shift_right(a: LuaValue, b: LuaValue) -> LuaValue:
     """
     :return: The result of ``a >> b`` in Lua.
     """
+    if not isinstance(a, LuaNumber) or not isinstance(b, LuaNumber):
+        mm_res = check_metamethod_binary(a, b, SYMBOL__SHR)
+        if mm_res is not None:
+            return mm_res
+        a_type = type_of_lv(a)
+        b_type = type_of_lv(b)
+        raise LuaError(f"attempt to shift right {a_type} and {b_type} values")
     a = coerce_float_to_int(a)
     b = coerce_float_to_int(b)
     if b.value < 0:
@@ -414,10 +524,19 @@ def bitwise_shift_right(a, b) -> LuaNumber:
     return _python_int_to_int64_luanumber(a.value >> b.value)
 
 
-def bitwise_unary_not(a) -> LuaNumber:
+SYMBOL__BNOT = LuaString(b"__bnot")
+
+
+def bitwise_unary_not(a: LuaValue) -> LuaValue:
     """
     :return: The result of ``~a`` in Lua.
     """
+    if not isinstance(a, LuaNumber):
+        mm_res = check_metamethod_unary(a, SYMBOL__BNOT)
+        if mm_res is not None:
+            return mm_res
+        a_type = type_of_lv(a)
+        raise LuaError(f"attempt to bitwise not a {a_type} value")
     a = coerce_float_to_int(a)
     return _python_int_to_int64_luanumber(~a.value)
 
@@ -491,7 +610,7 @@ def concat(a: LuaValue, b: LuaValue) -> LuaValue:
     return mm_res
 
 
-def length(a: LuaValue, *, raw: bool = False) -> LuaNumber:
+def length(a: LuaValue, *, raw: bool = False) -> LuaValue:
     """
     :return: The result of ``#a`` in Lua.
     """
@@ -502,9 +621,7 @@ def length(a: LuaValue, *, raw: bool = False) -> LuaNumber:
     if a.has_metamethod(SYMBOL__LEN) and not raw:
         mm_result = check_metamethod_unary(a, SYMBOL__LEN)
         if mm_result is not None:
-            if not isinstance(mm_result, LuaNumber):
-                raise LuaError(f"metamethod '__len' must return a number")
-            return coerce_float_to_int(mm_result)
+            return mm_result
 
     if isinstance(a, LuaIndexableABC):
         border = 0
