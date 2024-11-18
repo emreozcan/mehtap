@@ -438,8 +438,6 @@ class VarName(Variable):
 class VarIndex(Variable):
     def _evaluate(self, scope: Scope) -> LuaValue:
         table = self.base.evaluate(scope)
-        if not isinstance(table, LuaIndexableABC):
-            raise LuaError(f"attempt to index {type_of_lv(table)} value")
         return m_operations.index(
             a=table,
             b=self.index.evaluate_single(scope)
@@ -549,8 +547,6 @@ class FuncDef(Expression):
 class FuncCallRegular(Expression, Statement):
     def _evaluate(self, scope: Scope) -> list[LuaValue]:
         function = self.name.evaluate(scope)
-        if not isinstance(function, LuaCallableABC):
-            raise LuaError(f"attempt to call {type_of_lv(function)} value")
         args = [arg.evaluate(scope) for arg in self.args]
         try:
             r = m_operations.call(function, args, scope, modify_tb=False)
@@ -579,14 +575,10 @@ class FuncCallMethod(Expression, Statement):
         # A call v:name(args) is syntactic sugar for v.name(v,args),
         # except that v is evaluated only once.
         v = self.object.evaluate(scope)
-        if not isinstance(v, LuaIndexableABC):
-            raise LuaError(f"attempt to index {type_of_lv(v)} value")
         function = m_operations.index(
             a=v,
             b=str_to_lua_string(self.method.name.text)
         )
-        if not isinstance(function, LuaCallableABC):
-            raise LuaError(f"attempt to call {type_of_lv(function)} value")
         args = [v, *(arg.evaluate(scope) for arg in self.args)]
         try:
             r = m_operations.call(function, args, scope, modify_tb=False)
@@ -952,8 +944,6 @@ class ForIn(Statement):
         exp_vals = adjust([exp.evaluate(outer_scope) for exp in self.exprs], 4)
         # an iterator function,
         iterator_function = exp_vals[0]
-        if not isinstance(iterator_function, LuaFunction):
-            raise LuaError("the iterator function must be a function")
         # a state,
         state = exp_vals[1]
         # an initial value for the control variable,

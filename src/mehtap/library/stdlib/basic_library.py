@@ -268,8 +268,6 @@ def basic_pairs(scope: Scope, t: LuaTable, /) -> list[LuaValue] | None:
     # returns the first three results from the call.
     metamethod = t.get_metamethod(SYMBOL_PAIRS)
     if metamethod is not None:
-        if not isinstance(metamethod, LuaFunction):
-            raise LuaError("'__pairs' metavalue must be a function")
         return call(metamethod, [t], scope)
     # Otherwise, returns three values: the next function, the table t, and
     # nil, so that the construction
@@ -395,7 +393,7 @@ def basic_rawlen(v: LuaTable | LuaString, /) -> PyLuaRet:
     """rawlen (v)"""
     # Returns the length of the object v, which must be a table or a string,
     # without invoking the __len metamethod. Returns an integer.
-    if not isinstance(v, (LuaIndexableABC, LuaString)):
+    if not isinstance(v, (LuaTable, LuaString)):
         raise LuaError("'v' must be a table or a string")
     return [length(v, raw=True)]
 
@@ -463,8 +461,6 @@ def basic_setmetatable(
 ) -> PyLuaRet:
     """setmetatable (table, metatable)"""
     # Sets the metatable for the given table.
-    if not isinstance(table, LuaTable):
-        raise LuaError("'table' must be a table")
     # If the original metatable has a __metatable field, raises an error.
     if table.has_metamethod(SYMBOL_METATABLE):
         raise LuaError("cannot change a protected metatable")
@@ -573,8 +569,6 @@ def basic_tostring(scope: Scope, v: LuaValue, /) -> PyLuaRet:
     if tostring_field is not None:
         # then tostring calls the corresponding value with v as argument,
         # and uses the result of the call as its result.
-        if not isinstance(tostring_field, LuaFunction):
-            raise LuaError("'__tostring' metavalue must be a function")
         return call(tostring_field, [v], scope)
     # Otherwise, if the metatable of v has a __name field with a string
     # value,
