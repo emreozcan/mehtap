@@ -24,7 +24,7 @@ def test_length_table():
 
     assert vm.exec(
         """
-            return #{1, 2, 3}
+            return #{1, 2, 3, [5]=5}
         """
     ) == [LuaNumber(3)]
 
@@ -39,3 +39,17 @@ def test_length_error():
         )
 
     assert str(excinfo.value) == "attempt to get length of a number value"
+
+
+def test_length_metamethod():
+    vm = VirtualMachine()
+    vm.exec(
+        """
+            t = {1, 2, 3}
+            mt = {__len = function() return 42 end}
+            setmetatable(t, mt)
+        """
+    )
+
+    assert vm.exec("return #t") == [LuaNumber(42)]
+

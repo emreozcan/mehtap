@@ -23,6 +23,7 @@ from mehtap.values import (
 
 
 SYMBOL__EQ = LuaString(b"__eq")
+SYMBOL__LEN = LuaString(b"__len")
 
 
 def check_metamethod_binary(a: LuaValue, b: LuaValue, mm_name: LuaString) \
@@ -36,6 +37,16 @@ def check_metamethod_binary(a: LuaValue, b: LuaValue, mm_name: LuaString) \
     if not isinstance(mm, LuaCallableABC):
         raise LuaError(f"metavalue '{mm_name.content.decode()}' isn't callable")
     return adjust_to_one(mm.call(args=[a, b], scope=None))
+
+
+def check_metamethod_unary(a: LuaValue, mm_name: LuaString) \
+        -> LuaValue | None:
+    mm = a.get_metamethod(mm_name)
+    if mm is None:
+        return None
+    if not isinstance(mm, LuaCallableABC):
+        raise LuaError(f"metavalue '{mm_name.content.decode()}' isn't callable")
+    return adjust_to_one(mm.call(args=[a], scope=None))
 
 
 def rel_eq(a: LuaValue, b: LuaValue, *, raw: bool = False) -> LuaBool:
@@ -472,8 +483,7 @@ def concat(a: LuaValue, b: LuaValue) -> LuaString:
     raise NotImplementedError()  # TODO.
 
 
-# TODO: Change the default value of raw to False.
-def length(a: LuaValue, *, raw: bool = True) -> LuaNumber:
+def length(a: LuaValue, *, raw: bool = False) -> LuaNumber:
     """
     :return: The result of ``#a`` in Lua.
     """
@@ -481,16 +491,15 @@ def length(a: LuaValue, *, raw: bool = True) -> LuaNumber:
     if isinstance(a, LuaString):
         return LuaNumber(len(a.content), LuaNumberType.INTEGER)
 
-    # A program can modify the behavior of the length operator for any value but
-    # strings through the __len metamethod (see §2.4).
-    # TODO.
-
-    if a.has_metamethod(LuaString(b"__len")) and not raw:
-        raise NotImplementedError()  # TODO.
+    if a.has_metamethod(SYMBOL__LEN) and not raw:
+        mm_result = check_metamethod_unary(a, SYMBOL__LEN)
+        if mm_result is not None:
+            if not isinstance(mm_result, LuaNumber):
+                from mehtap.control_structures import LuaError
+                raise LuaError(f"metamethod '__len' must return a number")
+            return coerce_float_to_int(mm_result)
 
     if isinstance(a, LuaIndexableABC):
-        if not a.map:
-            return LuaNumber(0, LuaNumberType.INTEGER)
         border = 0
         while a.has(LuaNumber(border + 1, LuaNumberType.INTEGER)):
             border += 1
