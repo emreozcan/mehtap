@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import Sequence, MutableSequence
 from typing import TypeAlias
 
+from mehtap.control_structures import LuaError
 from mehtap.values import (
     LuaBool,
     LuaValue,
@@ -17,8 +18,24 @@ from mehtap.values import (
     LuaTable,
     LuaFunction,
     LuaThread,
-    LuaUserdata, LuaIndexableABC,
+    LuaUserdata, LuaIndexableABC, LuaCallableABC,
 )
+
+
+SYMBOL__EQ = LuaString(b"__eq")
+
+
+def check_metamethod_binary(a: LuaValue, b: LuaValue, mm_name: LuaString) \
+        -> LuaValue | None:
+    mm = a.get_metamethod(mm_name)
+    if mm is None:
+        mm = b.get_metamethod(mm_name)
+        if mm is None:
+            return None
+    # mm is not None
+    if not isinstance(mm, LuaCallableABC):
+        raise LuaError(f"metavalue '{mm_name.content.decode()}' isn't callable")
+    return adjust_to_one(mm.call(args=[a, b], scope=None))
 
 
 def rel_eq(a: LuaValue, b: LuaValue, *, raw: bool = False) -> LuaBool:
@@ -37,19 +54,20 @@ def rel_eq(a: LuaValue, b: LuaValue, *, raw: bool = False) -> LuaBool:
     # Numbers are equal if they denote the same mathematical value.
     if isinstance(a, LuaNumber):
         return LuaBool(a.value == b.value)
-    # mehtap extension: All LuaBool(False) _and true_ objects are currently not all
-    #               the same object :(
+    # mehtap extension: All LuaBool(False) _and true_ objects are currently not
+    #                   all the same object :(
     if isinstance(a, LuaBool):
         return LuaBool(a.true == b.true)
     # Tables, userdata, and threads are compared by reference:
     # two objects are considered equal only if they are the same object.
-    if a is b or raw:
-        return LuaBool(True)
     # You can change the way that Lua compares tables and userdata by using the
     # __eq metamethod (see §2.4).
-    if not raw:
-        raise NotImplementedError()
-    return LuaBool(a is b)  # TODO.
+    mt_types = (LuaTable, LuaUserdata)
+    if isinstance(a, mt_types) and isinstance(b, mt_types) and not raw:
+        mm_res = check_metamethod_binary(a, b, SYMBOL__EQ)
+        if mm_res is not None:
+            return coerce_to_bool(mm_res)
+    return LuaBool(a is b)
 
 
 def rel_ne(a: LuaValue, b: LuaValue, *, raw: bool = False) -> LuaBool:
@@ -236,10 +254,15 @@ def arith_float_div(a, b):
         raise NotImplementedError()  # TODO.
     # Exponentiation and float division (/) always convert their operands to
     # floats and the result is always a float.
-    return LuaNumber(
-        coerce_int_to_float(a).value / coerce_int_to_float(b).value,
-        LuaNumberType.FLOAT,
-    )
+    a_float = coerce_int_to_float(a).value
+    b_float = coerce_float_to_int(b).value
+    if b_float == 0:
+        if a_float == 0:
+            return LuaNumber(float("nan"), LuaNumberType.FLOAT)
+        if a_float < 0:
+            return LuaNumber(float("-inf"), LuaNumberType.FLOAT)
+        return LuaNumber(float("inf"), LuaNumberType.FLOAT)
+    return LuaNumber(a_float / b_float, LuaNumberType.FLOAT)
 
 
 def arith_floor_div(a, b):

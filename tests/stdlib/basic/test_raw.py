@@ -40,7 +40,15 @@ def expr_value(t, vm):
 def test_rawequal():
     v = expr_value("rawequal(o1, o2)", get_vm())
     assert isinstance(v, LuaBool)
-    assert v.true
+    assert not v.true
+
+    vm = VirtualMachine()
+    assert vm.exec(
+        """
+            m = {}
+            return rawequal(m, m)
+        """
+    ) == [LuaBool(True)]
 
 
 def test_rawget():
