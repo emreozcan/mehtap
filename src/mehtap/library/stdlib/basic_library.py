@@ -23,7 +23,7 @@ from mehtap.values import (
 from mehtap.control_structures import LuaError
 from mehtap.values import LuaBool
 from mehtap.parser import chunk_parser, numeral_parser
-from mehtap.operations import rel_eq, length
+from mehtap.operations import rel_eq, length, call
 
 if TYPE_CHECKING:
     from mehtap.scope import Scope
@@ -270,7 +270,7 @@ def basic_pairs(scope: Scope, t: LuaTable, /) -> list[LuaValue] | None:
     if metamethod is not None:
         if not isinstance(metamethod, LuaFunction):
             raise LuaError("'__pairs' metavalue must be a function")
-        return metamethod.call([t], scope)
+        return call(metamethod, [t], scope)
     # Otherwise, returns three values: the next function, the table t, and
     # nil, so that the construction
     #      for k,v in pairs(t) do body end
@@ -320,7 +320,7 @@ def basic_pcall(
     #  In case of any error, pcall returns false plus the error object.
     #  Note that errors caught by pcall do not call a message handler.
     try:
-        return_vals = f.call(list(args), scope)
+        return_vals = call(f, list(args), scope)
     except LuaError as lua_error:
         return [LuaBool(False), lua_error.message]
     else:
@@ -575,7 +575,7 @@ def basic_tostring(scope: Scope, v: LuaValue, /) -> PyLuaRet:
         # and uses the result of the call as its result.
         if not isinstance(tostring_field, LuaFunction):
             raise LuaError("'__tostring' metavalue must be a function")
-        return tostring_field.call([v], scope)
+        return call(tostring_field, [v], scope)
     # Otherwise, if the metatable of v has a __name field with a string
     # value,
     name_field = v.get_metamethod(SYMBOL_NAME)
@@ -658,7 +658,7 @@ def basic_xpcall(
     #  This function is similar to pcall, except that it sets a new message
     #  handler msgh.
     try:
-        return_vals = f.call(list(args), scope)
+        return_vals = call(f, list(args), scope)
     except LuaError as lua_error:
         # Any error inside f is not propagated;
         # instead, xpcall catches the error,
@@ -668,7 +668,7 @@ def basic_xpcall(
             # In case of any error, xpcall returns false
             LuaBool(False),
             # plus the result from msgh.
-            *msgh.call([lua_error.message], scope),
+            *call(msgh, [lua_error.message], scope),
         ]
     else:
         return [

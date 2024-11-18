@@ -229,7 +229,7 @@ class LuaCallableABC(ABC):
     execution, a :class:`LuaError` will be raised.
     """
     @abstractmethod
-    def call(
+    def rawcall(
         self,
         args: Multires,
         scope: Scope | None,
@@ -328,7 +328,7 @@ class LuaFunction(LuaObject, LuaCallableABC):
             f"{hex(id(self))}"
         )
 
-    def call(
+    def rawcall(
         self,
         args: Multires,
         scope: Scope | None,

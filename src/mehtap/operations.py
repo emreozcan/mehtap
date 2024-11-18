@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence, MutableSequence
-from typing import TypeAlias
+from typing import TypeAlias, TYPE_CHECKING
 
 from mehtap.control_structures import LuaError
 from mehtap.values import (
@@ -22,6 +22,10 @@ from mehtap.values import (
 )
 
 
+if TYPE_CHECKING:
+    from mehtap.scope import Scope
+
+
 SYMBOL__EQ = LuaString(b"__eq")
 SYMBOL__LEN = LuaString(b"__len")
 
@@ -34,9 +38,7 @@ def check_metamethod_binary(a: LuaValue, b: LuaValue, mm_name: LuaString) \
         if mm is None:
             return None
     # mm is not None
-    if not isinstance(mm, LuaCallableABC):
-        raise LuaError(f"metavalue '{mm_name.content.decode()}' isn't callable")
-    return adjust_to_one(mm.call(args=[a, b], scope=None))
+    return adjust_to_one(call(mm, args=[a, b], scope=None))
 
 
 def check_metamethod_unary(a: LuaValue, mm_name: LuaString) \
@@ -44,9 +46,7 @@ def check_metamethod_unary(a: LuaValue, mm_name: LuaString) \
     mm = a.get_metamethod(mm_name)
     if mm is None:
         return None
-    if not isinstance(mm, LuaCallableABC):
-        raise LuaError(f"metavalue '{mm_name.content.decode()}' isn't callable")
-    return adjust_to_one(mm.call(args=[a], scope=None))
+    return adjust_to_one(call(mm, args=[a], scope=None))
 
 
 def rel_eq(a: LuaValue, b: LuaValue, *, raw: bool = False) -> LuaBool:
@@ -653,7 +653,7 @@ def index(a: LuaValue, b: LuaValue, *, raw: bool = False) -> LuaValue:
             f"with an '__index' metavalue"
         )
     if isinstance(mv, LuaFunction):
-        return adjust_to_one(mv.call(args=[a, b], scope=None))
+        return adjust_to_one(call(mv, args=[a, b], scope=None))
     return index(mv, b, raw=False)
 
 
@@ -677,9 +677,32 @@ def new_index(a: LuaValue, b: LuaValue, c: LuaValue, *, raw: bool = False):
             f"with a '__newindex' metavalue"
         )
     if isinstance(mv, LuaFunction):
-        mv.call(args=[a, b, c], scope=None)
+        call(mv, args=[a, b, c], scope=None)
         return
     new_index(mv, b, c, raw=False)
+
+
+SYMBOL__CALL = LuaString(b"__call")
+
+
+def call(
+    function: LuaValue,
+    args: Multires,
+    scope: Scope | None,
+    *,
+    modify_tb: bool = True,
+    raw: bool = False,
+) -> list[LuaValue]:
+    if raw:
+        if not isinstance(function, LuaCallableABC):
+            raise LuaError(f"attempt to call {type_of_lv(function)} value")
+        return function.rawcall(args, scope=scope, modify_tb=modify_tb)
+    if isinstance(function, LuaCallableABC):
+        return function.rawcall(args, scope=scope, modify_tb=modify_tb)
+    mv = function.get_metamethod(SYMBOL__CALL)
+    if not isinstance(mv, LuaCallableABC):
+        raise LuaError(f"attempt to call {type_of_lv(mv)} value")
+    return mv.rawcall([function, *args], scope=scope, modify_tb=modify_tb)
 
 
 Multires: TypeAlias = "Sequence[LuaValue | Multires]"

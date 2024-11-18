@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any, overload, Callable, TYPE_CHECKING
 
 from mehtap.control_structures import LuaError
-from mehtap.operations import index
+from mehtap.operations import index, call
 from mehtap.values import (
     LuaNil,
     LuaBool,
@@ -94,7 +94,8 @@ def _lua2py(lua_val, memos):
                     )
                 if metamethod.parent_scope or not metamethod.gets_scope:
                     m = _lua2py(
-                        metamethod.call(
+                        call(
+                            metamethod,
                             [lua_val],
                             metamethod.parent_scope,
                         ),
@@ -103,7 +104,8 @@ def _lua2py(lua_val, memos):
                 else:
                     vm = VirtualMachine()
                     m = _lua2py(
-                        metamethod.call(
+                        call(
+                            metamethod,
                             [lua_val],
                             vm.root_scope,
                         ),
@@ -124,7 +126,8 @@ def _lua2py(lua_val, memos):
         from mehtap.py2lua import py2lua
 
         def func(*args):
-            return_values = lua_val.call(
+            return_values = call(
+                lua_val,
                 args=[py2lua(x) for x in args],
                 scope=None,
             )

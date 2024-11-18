@@ -553,7 +553,7 @@ class FuncCallRegular(Expression, Statement):
             raise LuaError(f"attempt to call {type_of_lv(function)} value")
         args = [arg.evaluate(scope) for arg in self.args]
         try:
-            r = function.call(args, scope, modify_tb=False)
+            r = m_operations.call(function, args, scope, modify_tb=False)
         except LuaError as le:
             le.push_tb(
                 f"call of {function}",
@@ -589,7 +589,7 @@ class FuncCallMethod(Expression, Statement):
             raise LuaError(f"attempt to call {type_of_lv(function)} value")
         args = [v, *(arg.evaluate(scope) for arg in self.args)]
         try:
-            r = function.call(args, scope, modify_tb=False)
+            r = m_operations.call(function, args, scope, modify_tb=False)
         except LuaError as le:
             le.push_tb(
                 f"method call of {function}",
@@ -969,7 +969,8 @@ class ForIn(Statement):
             # Then, at each iteration, Lua calls the iterator function with two
             # arguments: the state and the control variable.
             results = adjust(
-                iterator_function.call(
+                m_operations.call(
+                    iterator_function,
                     [state, body_scope.get_ls(control_variable_name)],
                     outer_scope,
                 ),

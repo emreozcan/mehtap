@@ -66,15 +66,15 @@ def test_callables():
 
     lua_function = py2lua(add)
 
-    assert lua_function.call(
+    assert lua_function.rawcall(
         [LuaNumber(1), LuaNumber(2)],
         None
     ) == [LuaNumber(3)]
-    assert lua_function.call(
+    assert lua_function.rawcall(
         [LuaNumber(3), LuaNumber(4)],
         None
     ) == [LuaNumber(7)]
-    assert lua_function.call(
+    assert lua_function.rawcall(
         [LuaNumber(5), LuaNumber(6)],
         None
     ) == [LuaNumber(11)]
