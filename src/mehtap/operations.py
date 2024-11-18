@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence, MutableSequence
+from locale import strcoll
 from typing import TypeAlias, TYPE_CHECKING
 
 from mehtap.control_structures import LuaError
@@ -90,6 +91,9 @@ def rel_ne(a: LuaValue, b: LuaValue, *, raw: bool = False) -> LuaBool:
     return LuaBool(not rel_eq(a, b, raw=raw).true)
 
 
+SYMBOL__LT = LuaString(b"__lt")
+
+
 def rel_lt(a: LuaValue, b: LuaValue) -> LuaBool:
     """
     :return: The result of ``a < b`` in Lua.
@@ -102,8 +106,15 @@ def rel_lt(a: LuaValue, b: LuaValue) -> LuaBool:
         return LuaBool(a.value < b.value)
     # Otherwise, if both arguments are strings,
     # then their values are compared according to the current locale.
+    if isinstance(a, LuaString) and isinstance(b, LuaString):
+        return LuaBool(strcoll(a.content, b.content) < 0)
     # Otherwise, Lua tries to call the __lt or the __le metamethod (see §2.4).
-    raise NotImplementedError()  # TODO.
+    mm_res = check_metamethod_binary(a, b, SYMBOL__LT)
+    if mm_res is not None:
+        return coerce_to_bool(mm_res)
+    a_type = type_of_lv(a)
+    b_type = type_of_lv(b)
+    raise LuaError(f"attempt to compare {a_type} with {b_type}")
 
 
 def rel_gt(a: LuaValue, b: LuaValue) -> LuaBool:
@@ -112,6 +123,9 @@ def rel_gt(a: LuaValue, b: LuaValue) -> LuaBool:
     """
     # a > b is translated to b < a
     return rel_lt(b, a)
+
+
+SYMBOL__LE = LuaString(b"__le")
 
 
 def rel_le(a: LuaValue, b: LuaValue) -> LuaBool:
@@ -126,8 +140,15 @@ def rel_le(a: LuaValue, b: LuaValue) -> LuaBool:
         return LuaBool(a.value <= b.value)
     # Otherwise, if both arguments are strings,
     # then their values are compared according to the current locale.
+    if isinstance(a, LuaString) and isinstance(b, LuaString):
+        return LuaBool(strcoll(a.content, b.content) <= 0)
     # Otherwise, Lua tries to call the __lt or the __le metamethod (see §2.4).
-    raise NotImplementedError()  # TODO.
+    mm_res = check_metamethod_binary(a, b, SYMBOL__LE)
+    if mm_res is not None:
+        return coerce_to_bool(mm_res)
+    a_type = type_of_lv(a)
+    b_type = type_of_lv(b)
+    raise LuaError(f"attempt to compare {a_type} with {b_type}")
 
 
 def rel_ge(a: LuaValue, b: LuaValue) -> LuaBool:
