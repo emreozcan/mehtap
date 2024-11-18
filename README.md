@@ -110,11 +110,6 @@ reference manual does not specify the behaviour.
 For example, the exact formatting of error messages is not specified in the
 reference manual, so it is allowed to be different.
 
-There are some things that are not implemented yet.
-They are, only listing language features, excluding the standard library:
-
-- Taking metavalues and metamethods into consideration when doing operations.
-
 Also, since this is a Python implementation, it is ***SLOW***.
 
 ---
