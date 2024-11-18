@@ -39,7 +39,7 @@ def test_setmetatable_clear():
         """,
     )
 
-    assert t.get_metamethod(LuaString(b"hello")) == LuaString(b"hello")
+    assert t.get_metavalue(LuaString(b"hello")) == LuaString(b"hello")
 
     (t,) = vm.exec(
         """

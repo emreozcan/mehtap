@@ -199,7 +199,7 @@ def print_lark_error_shower(collected_line, e, prompt):
 def handle_luaerror(lua_error: LuaError, vm: VirtualMachine | None):
     if (
         not isinstance(lua_error.message, LuaString)
-        and lua_error.message.has_metamethod(LuaString(b"__tostring"))
+        and lua_error.message.has_metavalue(LuaString(b"__tostring"))
         and vm is not None
     ):
         save = sys.stdout

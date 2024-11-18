@@ -46,7 +46,7 @@ class LuaValue(ABC):
             return self._metatable
         return LuaNil
 
-    def has_metamethod(self, name: LuaString) -> bool:
+    def has_metavalue(self, name: LuaString) -> bool:
         """
         :param name: The name of the metavalue to check for.
         :return: Whether the value has a metavalue with this key.
@@ -56,7 +56,7 @@ class LuaValue(ABC):
             return False
         return metatable.has(name)
 
-    def get_metamethod(self, name: LuaString) -> LuaValue | None:
+    def get_metavalue(self, name: LuaString) -> LuaValue | None:
         """
         :param name: The name of the metavalue to get.
         :return: The metavalue, or :data:`None` if the value doesn't have a

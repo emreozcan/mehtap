@@ -33,9 +33,9 @@ SYMBOL__LEN = LuaString(b"__len")
 
 def check_metamethod_binary(a: LuaValue, b: LuaValue, mm_name: LuaString) \
         -> LuaValue | None:
-    mm = a.get_metamethod(mm_name)
+    mm = a.get_metavalue(mm_name)
     if mm is None:
-        mm = b.get_metamethod(mm_name)
+        mm = b.get_metavalue(mm_name)
         if mm is None:
             return None
     # mm is not None
@@ -44,7 +44,7 @@ def check_metamethod_binary(a: LuaValue, b: LuaValue, mm_name: LuaString) \
 
 def check_metamethod_unary(a: LuaValue, mm_name: LuaString) \
         -> LuaValue | None:
-    mm = a.get_metamethod(mm_name)
+    mm = a.get_metavalue(mm_name)
     if mm is None:
         return None
     return adjust_to_one(call(mm, args=[a], scope=None))
@@ -642,7 +642,7 @@ def length(a: LuaValue, *, raw: bool = False) -> LuaValue:
     if isinstance(a, LuaString):
         return LuaNumber(len(a.content), LuaNumberType.INTEGER)
 
-    if a.has_metamethod(SYMBOL__LEN) and not raw:
+    if a.has_metavalue(SYMBOL__LEN) and not raw:
         mm_result = check_metamethod_unary(a, SYMBOL__LEN)
         if mm_result is not None:
             return mm_result
@@ -663,7 +663,7 @@ SYMBOL__INDEX = LuaString(b"__index")
 
 
 def index(a: LuaValue, b: LuaValue) -> LuaValue:
-    mv = a.get_metamethod(SYMBOL__INDEX)
+    mv = a.get_metavalue(SYMBOL__INDEX)
     if mv is None:
         if isinstance(a, LuaIndexableABC):
             return a.rawget(b)
@@ -671,7 +671,7 @@ def index(a: LuaValue, b: LuaValue) -> LuaValue:
     if isinstance(a, LuaIndexableABC) and a.has(b):
         return a.rawget(b)
     allowed_mv = (LuaFunction, LuaIndexableABC)
-    if not (isinstance(mv, allowed_mv) or mv.has_metamethod(SYMBOL__INDEX)):
+    if not (isinstance(mv, allowed_mv) or mv.has_metavalue(SYMBOL__INDEX)):
         raise LuaError(
             f"metavalue for '__index' must be a function, table, or a value "
             f"with an '__index' metavalue"
@@ -685,7 +685,7 @@ SYMBOL__NEWINDEX = LuaString(b"__newindex")
 
 
 def new_index(a: LuaValue, b: LuaValue, c: LuaValue):
-    mv = a.get_metamethod(SYMBOL__NEWINDEX)
+    mv = a.get_metavalue(SYMBOL__NEWINDEX)
     if mv is None:
         if isinstance(a, LuaIndexableABC):
             a.rawput(b, c)
@@ -695,7 +695,7 @@ def new_index(a: LuaValue, b: LuaValue, c: LuaValue):
         a.rawput(b, c)
         return
     allowed_mv = (LuaFunction, LuaIndexableABC)
-    if not (isinstance(mv, allowed_mv) or mv.has_metamethod(SYMBOL__NEWINDEX)):
+    if not (isinstance(mv, allowed_mv) or mv.has_metavalue(SYMBOL__NEWINDEX)):
         raise LuaError(
             f"metavalue for '__newindex' must be a function, table, or a value "
             f"with a '__newindex' metavalue"
@@ -718,7 +718,7 @@ def call(
 ) -> list[LuaValue]:
     if isinstance(function, LuaCallableABC):
         return function.rawcall(args, scope=scope, modify_tb=modify_tb)
-    mv = function.get_metamethod(SYMBOL__CALL)
+    mv = function.get_metavalue(SYMBOL__CALL)
     if mv is None:
         raise LuaError(f"attempt to call {type_of_lv(function)} value")
     if not isinstance(mv, LuaCallableABC):

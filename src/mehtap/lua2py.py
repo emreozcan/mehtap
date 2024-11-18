@@ -89,7 +89,7 @@ def _lua2py(lua_val, memos):
             if metamethod is not LuaNil:
                 if not isinstance(metamethod, LuaFunction):
                     raise LuaError(
-                        f"metamethod __py if a {type_of_lv(metamethod)}, "
+                        f"metavalue __py is a {type_of_lv(metamethod)}, "
                         f"not a function"
                     )
                 if metamethod.parent_scope or not metamethod.gets_scope:

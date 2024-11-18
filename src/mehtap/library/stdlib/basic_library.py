@@ -393,7 +393,7 @@ def basic_pairs(scope: Scope, t: LuaTable, /) -> list[LuaValue] | None:
     """pairs (t)"""
     # If t has a metamethod __pairs, calls it with t as argument and
     # returns the first three results from the call.
-    metamethod = t.get_metamethod(SYMBOL_PAIRS)
+    metamethod = t.get_metavalue(SYMBOL_PAIRS)
     if metamethod is not None:
         return call(metamethod, [t], scope)
     # Otherwise, returns three values: the next function, the table t, and
@@ -574,7 +574,7 @@ def basic_setmetatable(
     """setmetatable (table, metatable)"""
     # Sets the metatable for the given table.
     # If the original metatable has a __metatable field, raises an error.
-    if table.has_metamethod(SYMBOL_METATABLE):
+    if table.has_metavalue(SYMBOL_METATABLE):
         raise LuaError("cannot change a protected metatable")
     # If metatable is nil, removes the metatable of the given table.
     if metatable is LuaNil:
@@ -677,14 +677,14 @@ def basic_tostring(scope: Scope, v: LuaValue, /) -> PyLuaRet:
     # human-readable format.
     #
     # If the metatable of v has a __tostring field,
-    tostring_field = v.get_metamethod(SYMBOL_TOSTRING)
+    tostring_field = v.get_metavalue(SYMBOL_TOSTRING)
     if tostring_field is not None:
         # then tostring calls the corresponding value with v as argument,
         # and uses the result of the call as its result.
         return call(tostring_field, [v], scope)
     # Otherwise, if the metatable of v has a __name field with a string
     # value,
-    name_field = v.get_metamethod(SYMBOL_NAME)
+    name_field = v.get_metavalue(SYMBOL_NAME)
     if name_field is not None and isinstance(name_field, LuaString):
         # tostring may use that string in its final result.
         decoded_name = name_field.content.decode("utf-8")
