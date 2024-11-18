@@ -175,8 +175,11 @@ def int_wrap_overflow(value: int) -> LuaNumber:
 def coerce_float_to_int(value: LuaNumber) -> LuaNumber:
     """Coerce a number to an integer :class:`LuaNumber` if possible.
 
-    :raises NotImplementedError: if the conversion fails.
+    :raises LuaError: if the conversion fails.
     """
+    if not isinstance(value, LuaNumber):
+        value_type = type_of_lv(value)
+        raise LuaError(f"can't coerce {value_type} value to an integer")
     if value.type is LuaNumberType.INTEGER:
         return value
     # The conversion from float to integer checks whether the float has an exact
@@ -188,7 +191,7 @@ def coerce_float_to_int(value: LuaNumber) -> LuaNumber:
         # If it does, that representation is the result.
         return LuaNumber(int(v), LuaNumberType.INTEGER)
     # Otherwise, the conversion fails.
-    raise NotImplementedError()  # TODO.
+    raise LuaError("number has no integer representation")
 
 
 def coerce_int_to_float(value: LuaNumber) -> LuaNumber:
