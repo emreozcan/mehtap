@@ -383,8 +383,8 @@ class LuaFunction(LuaObject, LuaCallableABC):
         scope: Scope,
     ):
         if not callable(self.block):
-            new_scope = scope.push()
             # Function is implemented in Lua
+            new_scope = self.parent_scope.push()
             assert self.param_names is not None
             param_count = len(self.param_names)
 
