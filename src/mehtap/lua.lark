@@ -114,6 +114,7 @@ numeral_dec: digits ["." digits] [("e" | "E") [sign] digits]
 
 AND: "and"
 BREAK: "break"
+CONTINUE: "continue"
 DO: "do"
 ELSE: "else"
 ELSEIF: "elseif"
@@ -134,7 +135,6 @@ THEN: "then"
 TRUE: "true"
 UNTIL: "until"
 WHILE: "while"
-CONTINUE: "continue"
 
 %import common.WS
 %ignore WS
