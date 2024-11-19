@@ -595,6 +595,21 @@ class LuaTransformer(lark.Transformer):
         )
 
     @staticmethod
+    def stat_with(
+        WITH,
+        namelist,
+        explist,
+        DO,
+        block,
+        END
+    ):
+        return nodes.ContextManagerEntry(
+            explist=explist,
+            namelist=namelist,
+            block=block
+        )
+
+    @staticmethod
     def literalstring(terminal: nodes.Terminal) -> nodes.LiteralString:
         return nodes.LiteralString(text=terminal)
 

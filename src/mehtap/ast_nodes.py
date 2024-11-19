@@ -5,6 +5,7 @@ import io
 import string
 from abc import ABC, abstractmethod
 from collections.abc import Sequence, Iterable, Callable
+from itertools import zip_longest
 from typing import TYPE_CHECKING, NoReturn
 
 import attrs
@@ -604,6 +605,51 @@ class FuncCallMethod(Expression, Statement):
     object: Expression
     method: Name
     args: Sequence[Expression]
+
+
+SYMBOL__ENTER = LuaString(b"__enter")
+SYMBOL__EXIT = LuaString(b"__exit")
+
+
+@attrs.define(slots=True)
+class ContextManagerEntry(Statement):
+    explist: Sequence[Expression]
+    namelist: Sequence[Name]
+    block: Block
+
+    def _execute(self, scope: Scope) -> Sequence[LuaValue] | None:
+        managers = [exp.evaluate(scope) for exp in self.explist]
+        completed_exits = False
+        try:
+            inner_scope = scope.push(file=self.file, line=self.line)
+            for manager, name in zip_longest(managers, self.namelist):
+                res = m_operations.call(
+                    manager.get_metavalue(SYMBOL__ENTER),
+                    [],
+                    scope
+                )
+                if name is not None:
+                    inner_scope.put_local_ls(
+                        name.as_lua_string(),
+                        m_values.Variable(adjust_to_one(res))
+                    )
+            return self.block.execute_without_inner_scope(inner_scope)
+        except LuaError as le:
+            for manager in managers:
+                m_operations.call(
+                    manager.get_metavalue(SYMBOL__EXIT),
+                    [le.message],
+                    scope
+                )
+            completed_exits = True
+        finally:
+            if not completed_exits:
+                for manager in managers:
+                    m_operations.call(
+                        manager.get_metavalue(SYMBOL__EXIT),
+                        [m_values.LuaNil],
+                        scope
+                    )
 
 
 class UnaryOperator(enum.Enum):

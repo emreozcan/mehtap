@@ -19,6 +19,7 @@ block: stat* [retstat]
      | FUNCTION funcname funcbody -> stat_function
      | LOCAL FUNCTION NAME funcbody -> stat_localfunction
      | LOCAL attnamelist ["=" explist] -> stat_localassignment
+     | WITH namelist "=" explist DO block END -> stat_with
 
 stat_if: "if" exp "then" block elseif* [else] "end"
 elseif: "elseif" exp "then" block
@@ -135,6 +136,7 @@ THEN: "then"
 TRUE: "true"
 UNTIL: "until"
 WHILE: "while"
+WITH: "with"
 
 %import common.WS
 %ignore WS
