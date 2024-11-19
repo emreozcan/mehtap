@@ -860,6 +860,120 @@ class If(Statement):
 
 
 @attrs.define(slots=True)
+class NumericComprehension(Expression):
+    key_exp: Expression | None
+    value_exp: Expression
+    name: Name
+    start: Expression
+    stop: Expression
+    step: Expression | None
+
+    def _evaluate(self, scope: Scope) -> LuaValue:
+        control_varname = self.name.as_lua_string()
+        initial_value = adjust_to_one(self.start.evaluate(scope))
+        if not isinstance(initial_value, LuaNumber):
+            raise LuaError("the initial value must be a number")
+        limit = adjust_to_one(self.stop.evaluate(scope))
+        if not isinstance(limit, LuaNumber):
+            raise LuaError("the limit value must be a number")
+        if self.step:
+            step = adjust_to_one(self.step.evaluate(scope))
+            if not isinstance(step, LuaNumber):
+                raise LuaError("the step value must be a number")
+        else:
+            step = LuaNumber(1, LuaNumberType.INTEGER)
+        is_integer_loop = (
+            initial_value.type == LuaNumberType.INTEGER
+            and step.type == LuaNumberType.INTEGER
+        )
+        if not is_integer_loop:
+            initial_value = m_operations.coerce_int_to_float(initial_value)
+            limit = m_operations.coerce_int_to_float(limit)
+            step = m_operations.coerce_int_to_float(step)
+        if step.value == 0:
+            raise LuaError("step must not be zero")
+        is_step_negative = step.value < 0
+        condition_func = (
+            m_operations.rel_ge if is_step_negative else m_operations.rel_le
+        )
+        control_val = initial_value
+        inner_scope = scope.push(file=self.file, line=self.line)
+        table = LuaTable()
+        counter = 1
+        while condition_func(control_val, limit).true:
+            inner_scope.put_local_ls(
+                control_varname, m_values.Variable(control_val)
+            )
+            value = self.value_exp.evaluate_single(inner_scope)
+            if self.key_exp is None:
+                table.rawput(LuaNumber(counter), value)
+                counter += 1
+            else:
+                key = self.key_exp.evaluate_single(inner_scope)
+                table.rawput(key, value)
+            overflow, control_val = m_operations.overflow_arith_add(
+                control_val, step
+            )
+            if overflow and is_integer_loop:
+                break
+        return table
+
+
+@attrs.define(slots=True)
+class GenericComprehension(Expression):
+    key_exp: Expression | None
+    value_exp: Expression
+    names: Sequence[Name]
+    exprs: Sequence[Expression]
+
+    def _evaluate(self, scope: Scope) -> LuaValue:
+        inner_scope = scope.push(file=self.file, line=self.line)
+        name_count = len(self.names)
+        names = [name.as_lua_string() for name in self.names]
+        for name in names:
+            inner_scope.put_local_ls(name, m_values.Variable(m_values.LuaNil))
+        control_variable_name = names[0]
+        exp_vals = adjust([exp.evaluate(scope) for exp in self.exprs], 4)
+        iterator_function = exp_vals[0]
+        state = exp_vals[1]
+        initial_value = exp_vals[2]
+        inner_scope.put_local_ls(
+            control_variable_name, m_values.Variable(initial_value)
+        )
+        closing_value = exp_vals[3]
+
+        nil = m_values.LuaNil
+        table = LuaTable()
+        counter = 1
+        while True:
+            results = adjust(
+                m_operations.call(
+                    iterator_function,
+                    [state, inner_scope.get_ls(control_variable_name)],
+                    scope,
+                ),
+                name_count,
+            )
+            for name, value in zip(names, results):
+                inner_scope.put_local_ls(name, m_values.Variable(value))
+            if results[0] is nil:
+                break
+            value = self.value_exp.evaluate_single(inner_scope)
+            if self.key_exp is None:
+                table.rawput(LuaNumber(counter), value)
+                counter += 1
+            else:
+                key = self.key_exp.evaluate_single(inner_scope)
+                table.rawput(key, value)
+        if closing_value is not nil:
+            # The closing value behaves like a to-be-closed variable,
+            # which can be used to release resources when the loop ends.
+            # Otherwise, it does not interfere with the loop.
+            raise NotImplementedError()
+        return table
+
+
+@attrs.define(slots=True)
 class For(Statement):
     name: Name
     start: Expression
