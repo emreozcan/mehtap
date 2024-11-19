@@ -10,7 +10,7 @@ vm = VirtualMachine()
 def test_tmpname(tmp_path):
     os.chdir(tmp_path)
 
-    r = vm.exec('os.tmpname()')
+    r = vm.eval('os.tmpname()')
     assert len(r) == 1
     assert isinstance(r[0], LuaString)
 

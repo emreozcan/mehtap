@@ -12,9 +12,9 @@ def test_getenv():
     assert "MEHTAP_TEST" not in os.environ
 
     os.environ["MEHTAP_TEST"] = "950aaaa"
-    r = vm.exec(r'''os.getenv("MEHTAP_TEST")''')
+    r = vm.eval(r'''os.getenv("MEHTAP_TEST")''')
     assert r == [LuaString(b"950aaaa")]
 
     del os.environ["MEHTAP_TEST"]
-    r = vm.exec(r'''os.getenv("MEHTAP_TEST")''')
+    r = vm.eval(r'''os.getenv("MEHTAP_TEST")''')
     assert r == [LuaNil]

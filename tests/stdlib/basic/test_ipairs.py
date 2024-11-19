@@ -29,15 +29,12 @@ def test_ipairs():
     table.rawput(LuaNumber(7), LuaString(b"g"))
     vm.put_nonlocal_ls(LuaString(b"t"), Variable(table))
 
-    assert (
-        vm.exec(
-            """
-                for i, v in ipairs(t) do
-                    f(i, v)
-                end
-            """,
-        )
-        == []
+    vm.exec(
+        """
+            for i, v in ipairs(t) do
+                f(i, v)
+            end
+        """,
     )
 
     assert tracker.calls == [

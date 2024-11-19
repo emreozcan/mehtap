@@ -4,9 +4,9 @@ from mehtap.vm import VirtualMachine
 
 def test_fields_with_keys():
     vm = VirtualMachine()
-    t, = vm.exec(
+    t, = vm.eval(
         """
-        return {
+        {
             [0+1] = "one",
             [1+1] = "two",
             [2+1] = "three",
@@ -23,9 +23,9 @@ def test_fields_with_keys():
 
 def test_fields_counter():
     vm = VirtualMachine()
-    t, = vm.exec(
+    t, = vm.eval(
         """
-        return {
+        {
             "one",
             "two",
             "three",
@@ -42,9 +42,9 @@ def test_fields_counter():
 
 def test_trailing_separator():
     vm = VirtualMachine()
-    t, = vm.exec(
+    t, = vm.eval(
         """
-        return {
+        {
             "one",
             "two",
             "three",
@@ -61,9 +61,9 @@ def test_trailing_separator():
 
 def test_mixed():
     vm = VirtualMachine()
-    t, = vm.exec(
+    t, = vm.eval(
         """
-        return {
+        {
             "one";
             "two",
             "three";

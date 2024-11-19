@@ -12,7 +12,7 @@ def test_rename_file(tmp_path):
 
     path_str = str(file)
     new_path_str = str(new_file)
-    r = vm.exec(f'os.rename({path_str!r}, {new_path_str!r})')
+    r = vm.eval(f'os.rename({path_str!r}, {new_path_str!r})')
     assert r == [LuaBool(True)]
 
     assert not file.exists()
@@ -26,7 +26,7 @@ def test_rename_file_fail(tmp_path):
     file.write_text("hello world")
 
     path_str = str(file)
-    r = vm.exec(f'os.rename({path_str!r}, "")')
+    r = vm.eval(f'os.rename({path_str!r}, "")')
     assert len(r) == 3
     assert r[0] == LuaNil
     assert isinstance(r[1], LuaString)

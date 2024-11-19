@@ -15,11 +15,11 @@ def test_lines_default_input():
     assert vm.get_ls(LuaString(b"fh")).io is input_file
     assert vm.get_ls(LuaString(b"nil1")) is LuaNil
     assert vm.get_ls(LuaString(b"nil2")) is LuaNil
-    assert vm.exec("iterator_function()") == [LuaString(b"abc")]
-    assert vm.exec("iterator_function()") == [LuaString(b"def")]
-    assert vm.exec("iterator_function()") == [LuaString(b"ghi")]
-    assert vm.exec("iterator_function()") == [LuaNil]
-    assert vm.exec("iterator_function()") == [LuaNil]
+    assert vm.eval("iterator_function()") == [LuaString(b"abc")]
+    assert vm.eval("iterator_function()") == [LuaString(b"def")]
+    assert vm.eval("iterator_function()") == [LuaString(b"ghi")]
+    assert vm.eval("iterator_function()") == [LuaNil]
+    assert vm.eval("iterator_function()") == [LuaNil]
     assert not vm.default_input.closed
 
 
@@ -34,14 +34,14 @@ def test_lines_file_input(tmp_path):
     assert fh.io.name == bytes(test_file_path)
     assert vm.get_ls(LuaString(b"nil1")) is LuaNil
     assert vm.get_ls(LuaString(b"nil2")) is LuaNil
-    assert vm.exec("iterator_function()") == [LuaString(b"abc")]
-    assert vm.exec("iterator_function()") == [LuaString(b"def")]
-    assert vm.exec("iterator_function()") == [LuaString(b"ghi")]
+    assert vm.eval("iterator_function()") == [LuaString(b"abc")]
+    assert vm.eval("iterator_function()") == [LuaString(b"def")]
+    assert vm.eval("iterator_function()") == [LuaString(b"ghi")]
     assert not fh.io.closed
-    assert vm.exec("iterator_function()") == [LuaNil]
+    assert vm.eval("iterator_function()") == [LuaNil]
     assert fh.io.closed
     with pytest.raises(LuaError):
-        assert vm.exec("iterator_function()") == [LuaNil]
+        assert vm.eval("iterator_function()") == [LuaNil]
     assert fh.io.closed
     assert test_file_path.exists()
     assert test_file_path.read_bytes() == b"abc\ndef\nghi\n"

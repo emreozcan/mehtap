@@ -58,15 +58,12 @@ def test_ipairs():
     table = LuaTable(src_map.copy())
     vm.put_nonlocal_ls(LuaString(b"t"), Variable(table))
 
-    assert (
-        vm.exec(
-            """
-                for k, v in pairs(t) do
-                    f(k, v)
-                end
-            """,
-        )
-        == []
+    vm.exec(
+        """
+            for k, v in pairs(t) do
+                f(k, v)
+            end
+        """,
     )
 
     assert tracker.calls == [(k, v) for k, v in src_map.items()]

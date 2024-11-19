@@ -10,11 +10,11 @@ def test_lines_file_input(tmp_path):
     fh = LuaFile(open(path, "rb"))
     vm.put_nonlocal_ls(LuaString(b"fh"), fh)
     vm.exec(f"iterator_function = fh:lines()")
-    assert vm.exec("iterator_function()") == [LuaString(b"abc")]
-    assert vm.exec("iterator_function()") == [LuaString(b"def")]
-    assert vm.exec("iterator_function()") == [LuaString(b"ghi")]
+    assert vm.eval("iterator_function()") == [LuaString(b"abc")]
+    assert vm.eval("iterator_function()") == [LuaString(b"def")]
+    assert vm.eval("iterator_function()") == [LuaString(b"ghi")]
     assert not fh.io.closed
-    assert vm.exec("iterator_function()") == [LuaNil]
+    assert vm.eval("iterator_function()") == [LuaNil]
     assert not fh.io.closed
     assert path.exists()
     assert path.read_bytes() == b"abc\ndef\nghi\n"

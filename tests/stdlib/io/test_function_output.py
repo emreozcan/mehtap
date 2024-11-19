@@ -30,7 +30,7 @@ def test_output_filehandle(tmp_path):
 def test_output_empty():
     vm = VirtualMachine()
     vm.default_output = BytesIO()
-    r = vm.exec("io.output()")
+    r = vm.eval("io.output()")
     assert isinstance(r, Sequence)
     assert isinstance(r[0], LuaFile)
     assert r[0].io == vm.default_output

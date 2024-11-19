@@ -5,7 +5,7 @@ import io
 import string
 from abc import ABC, abstractmethod
 from collections.abc import Sequence, Iterable, Callable
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, NoReturn
 
 import attrs
 
@@ -154,21 +154,18 @@ class Block(Statement, Expression):
             scope.push(file=self.file, line=self.line)
         )
 
-    # TODO: Handle errors
     def evaluate_without_inner_scope(self, scope: Scope) -> list[LuaValue]:
-        r = self.execute_without_inner_scope(scope)
-        return (
-            flatten(
-                expr.evaluate(scope) for expr in self.return_statement.values
-            )
-            if self.return_statement
-            else r if r else []
-        )
+        try:
+            r = self.execute_without_inner_scope(scope)
+        except ReturnException as re:
+            if re.values:
+                return re.values
+            return []
+        return r
 
-    # TODO: Handle errors
     def execute_without_inner_scope(
         self, scope: Scope
-    ) -> Sequence[LuaValue] | None:
+    ) -> NoReturn | list[LuaValue]:
         v = None
         index = 0
         try:
@@ -187,7 +184,11 @@ class Block(Statement, Expression):
                     break
             if not found:
                 raise ge
-        return v
+        if self.return_statement:
+            self.return_statement.execute(scope)
+        if v is not None:
+            return v
+        return []
 
     statements: Sequence[Statement]
     return_statement: ReturnStatement | None = None
@@ -713,7 +714,15 @@ class BinaryOperation(Expression, ABC):
 
 
 @attrs.define(slots=True)
-class ReturnStatement(NonTerminal):
+class ReturnStatement(Statement):
+    def _execute(self, scope: Scope) -> NoReturn:
+        raise ReturnException(
+            flatten(
+                expr.evaluate(scope)
+                for expr in self.values
+            )
+        )
+
     values: Sequence[Expression]
 
 

@@ -23,11 +23,7 @@ def test_tostring_mt_tostring():
     vm = VirtualMachine()
     vm.put_nonlocal_ls(LuaString(b"o"), Variable(lua_object))
 
-    (lua_string,) = vm.exec(
-        """
-            return tostring(o)
-        """,
-    )
+    (lua_string,) = vm.eval("tostring(o)")
 
     assert lua_string == LuaString(b"yay :D")
     assert called[0]
