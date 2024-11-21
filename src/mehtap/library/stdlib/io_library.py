@@ -74,6 +74,17 @@ class LuaFile(LuaUserdata, LuaIndexableABC):
             b"write",
         )
 
+    def _name(self) -> str:
+        if hasattr(self.io, "name"):
+            name = self.io.name
+            if isinstance(name, bytes):
+                return name.decode("utf-8")
+            return str(self.io.name)
+        return repr(self.io)
+
+    def __str__(self):
+        return f"file: {self._name()} ({hex(id(self))})"
+
 
 @lua_function(name="close")
 def _lf_file_method_close(self: LuaFile, /) -> PyLuaRet:
