@@ -257,7 +257,7 @@ def basic_load(
 
         return LuaFunction(
             param_names=[],
-            variadic=False,
+            variadic=True,
             parent_scope=Scope(scope.vm, None),
             block=chunk_node.block,
             gets_scope=False,
