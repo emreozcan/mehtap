@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from io import FileIO, SEEK_CUR, SEEK_SET, SEEK_END, BytesIO
+import subprocess
+from io import SEEK_CUR, SEEK_SET, SEEK_END
 from os import fsync
 from tempfile import TemporaryFile
 from typing import TypeVar, BinaryIO, IO
@@ -23,6 +24,7 @@ from mehtap.values import (
     LuaUserdata,
     LuaIndexableABC,
     LuaFunction,
+    type_of_lv,
 )
 
 FAIL = LuaNil
@@ -444,12 +446,12 @@ def io_output(
         raise LuaError(f"io.output(): {e!s}")
 
 
-@lua_function(name="popen", gets_scope=True)
-def lf_io_popen() -> PyLuaRet:
-    return io_popen()
+@lua_function(name="popen")
+def lf_io_popen(prog, mode=None, /) -> PyLuaRet:
+    return io_popen(prog, mode)
 
 
-def io_popen():
+def io_popen(prog, mode=None, /):
     # io.popen (prog [, mode])
     # This function is system dependent and is not available on all
     # platforms.
@@ -457,7 +459,35 @@ def io_popen():
     # handle that you can use to read data from this program
     # (if mode is "r", the default) or to write data to this program
     # (if mode is "w").
-    raise NotImplementedError()
+    if not isinstance(prog, LuaString):
+        type_of_prog = type_of_lv(prog)
+        raise LuaError(
+            f"bad argument #1 to 'popen' "
+            f"(string expected, got {type_of_prog})"
+        )
+    if mode is not None:
+        if not isinstance(mode, LuaString):
+            type_of_mode = type_of_lv(mode)
+            raise LuaError(
+                f"bad argument #2 to 'popen' "
+                f"(string expected, got {type_of_mode})"
+            )
+        if mode.content not in (b"r", b"w"):
+            raise LuaError(
+                f"invalid argument #2 to popen ('r' or 'w' expected)"
+            )
+        mode_str = mode.content.decode("ascii")
+    else:
+        mode_str = "r"
+    popen = subprocess.Popen(
+        prog.content,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=False,
+    )
+    if mode_str == "r":
+        return [LuaFile(popen.stdout)]
+    return [LuaFile(popen.stdin)]
 
 
 @lua_function(name="read", gets_scope=True)
