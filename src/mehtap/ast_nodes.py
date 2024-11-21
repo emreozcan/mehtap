@@ -139,7 +139,7 @@ class ParenExpression(Expression):
     exp: Expression
 
     def _evaluate(self, scope: Scope) -> LuaValue | Sequence[LuaValue]:
-        return adjust_to_one(self.exp.evaluate(scope))
+        return self.exp.evaluate_single(scope)
 
 
 @attrs.define(slots=True)
@@ -438,9 +438,8 @@ class VarName(Variable):
 @attrs.define(slots=True)
 class VarIndex(Variable):
     def _evaluate(self, scope: Scope) -> LuaValue:
-        table = self.base.evaluate(scope)
         return m_operations.index(
-            a=table,
+            a=self.base.evaluate_single(scope),
             b=self.index.evaluate_single(scope)
         )
 
@@ -547,7 +546,7 @@ class FuncDef(Expression):
 @attrs.define(slots=True)
 class FuncCallRegular(Expression, Statement):
     def _evaluate(self, scope: Scope) -> list[LuaValue]:
-        function = self.name.evaluate(scope)
+        function = self.name.evaluate_single(scope)
         args = [arg.evaluate(scope) for arg in self.args]
         try:
             r = m_operations.call(function, args, scope, modify_tb=False)
@@ -562,9 +561,11 @@ class FuncCallRegular(Expression, Statement):
 
     def _execute(self, scope: Scope) -> None | list[LuaValue]:
         r = self.evaluate(scope)
-        if r:
-            return r
-        return None
+        if isinstance(r, Sequence):
+            if r:
+                return r
+            return []
+        return [r]
 
     name: Expression
     args: Sequence[Expression]
@@ -575,7 +576,7 @@ class FuncCallMethod(Expression, Statement):
     def _evaluate(self, scope: Scope) -> Sequence[LuaValue]:
         # A call v:name(args) is syntactic sugar for v.name(v,args),
         # except that v is evaluated only once.
-        v = self.object.evaluate(scope)
+        v = self.object.evaluate_single(scope)
         function = m_operations.index(
             a=v,
             b=str_to_lua_string(self.method.name.text)
@@ -593,10 +594,12 @@ class FuncCallMethod(Expression, Statement):
         return r
 
     def _execute(self, scope: Scope) -> None | list[LuaValue]:
-        try:
-            self.evaluate(scope)
-        except ReturnException as re:
-            return re.values
+        r = self.evaluate(scope)
+        if isinstance(r, Sequence):
+            if r:
+                return r
+            return []
+        return [r]
 
     object: Expression
     method: Name
@@ -626,8 +629,9 @@ class UnaryOperation(Expression):
     exp: Expression
 
     def _evaluate(self, scope: Scope) -> LuaValue:
-        v = self.exp.evaluate(scope)
-        return unary_operator_functions[self.op](v)
+        return unary_operator_functions[self.op](
+            self.exp.evaluate_single(scope)
+        )
 
 
 class BinaryOperator(enum.Enum):
@@ -743,14 +747,14 @@ class Assignment(Statement):
                 var_name = str_to_lua_string(variable.name.name.text)
                 scope.put_nonlocal_ls(var_name, value)
             elif isinstance(variable, VarIndex):
-                table = variable.base.evaluate(scope)
+                table = variable.base.evaluate_single(scope)
                 if not isinstance(table, LuaIndexableABC):
                     raise LuaError(
                         f"attempt to index {type_of_lv(table)} value"
                     )
                 m_operations.new_index(
                     a=table,
-                    b=variable.index.evaluate(scope),
+                    b=variable.index.evaluate_single(scope),
                     c=value,
                 )
             else:
@@ -796,7 +800,7 @@ class While(Statement):
     def _execute(self, scope: Scope) -> None:
         new_vm = scope.push(file=self.file, line=self.line)
         try:
-            while coerce_to_bool(self.condition.evaluate(scope)).true:
+            while coerce_to_bool(self.condition.evaluate_single(scope)).true:
                 self.block.execute_without_inner_scope(new_vm)
         except BreakException:
             pass
@@ -812,7 +816,7 @@ class Repeat(Statement):
         try:
             while True:
                 self.block.execute_without_inner_scope(new_vm)
-                if coerce_to_bool(self.condition.evaluate(new_vm)).true:
+                if coerce_to_bool(self.condition.evaluate_single(new_vm)).true:
                     break
         except BreakException:
             pass
@@ -825,7 +829,7 @@ class Repeat(Statement):
 class If(Statement):
     def _execute(self, scope: Scope) -> None:
         for cnd, blk in self.blocks:
-            if coerce_to_bool(cnd.evaluate(scope)).true:
+            if coerce_to_bool(cnd.evaluate_single(scope)).true:
                 blk.execute(scope)
                 return
         if self.else_block:
@@ -857,16 +861,16 @@ class For(Statement):
         # The loop starts by evaluating once the three control expressions.
         # Their values are called respectively
         # the initial value,
-        initial_value = adjust_to_one(self.start.evaluate(scope))
+        initial_value = self.start.evaluate_single(scope)
         if not isinstance(initial_value, LuaNumber):
             raise LuaError("the initial value must be a number")
         # the limit,
-        limit = adjust_to_one(self.stop.evaluate(scope))
+        limit = self.stop.evaluate_single(scope)
         if not isinstance(limit, LuaNumber):
             raise LuaError("the limit value must be a number")
         # and the step. If the step is absent, it defaults to 1.
         if self.step:
-            step = adjust_to_one(self.step.evaluate(scope))
+            step = self.step.evaluate_single(scope)
             if not isinstance(step, LuaNumber):
                 raise LuaError("the step value must be a number")
         else:
@@ -1005,7 +1009,7 @@ class FunctionStatement(Statement):
     body: FuncBody
 
     def _execute(self, scope: Scope) -> list[LuaFunction]:
-        function = self.body.evaluate(scope)
+        function = self.body.evaluate_single(scope)
         if self.name.method:
             function.param_names.insert(0, LuaString(b"self"))
         if len(self.name.names) == 1:
@@ -1044,7 +1048,7 @@ class LocalFunctionStatement(Statement):
         # when the body of the function contains references to f.)
         name = self.name.as_lua_string()
         scope.put_local_ls(name, m_values.Variable(m_values.LuaNil))
-        function = self.body.evaluate(scope)
+        function = self.body.evaluate_single(scope)
         function.name = name
         scope.put_local_ls(name, m_values.Variable(function))
         return [function]
@@ -1063,8 +1067,10 @@ class LocalAssignment(Statement):
 
     def _execute(self, scope: Scope) -> list[LuaValue]:
         if self.exprs:
-            exp_vals = [exp.evaluate(scope) for exp in self.exprs]
-            exp_vals = adjust(exp_vals, len(self.names))
+            exp_vals = adjust(
+                [exp.evaluate(scope) for exp in self.exprs],
+                len(self.names)
+            )
         else:
             exp_vals = [m_values.LuaNil] * len(self.names)
         used_closed = False

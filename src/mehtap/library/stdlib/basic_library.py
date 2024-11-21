@@ -615,15 +615,15 @@ def basic_tonumber(scope: Scope, e, base=None, /) -> PyLuaRet:
                             exp=transformer.transform(
                                 numeral_parser.parse(e_str[1:])
                             ),
-                        ).evaluate(scope)
+                        ).evaluate_single(scope)
                     ]
 
                 if e_str[0] == "+":
                     e_str = e_str[1:]
                 return [
-                    transformer.transform(numeral_parser.parse(e_str)).evaluate(
-                        scope
-                    )
+                    transformer.transform(
+                        numeral_parser.parse(e_str)
+                    ).evaluate_single(scope)
                 ]
             except Exception:
                 return [FAIL]

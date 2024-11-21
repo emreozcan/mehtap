@@ -746,7 +746,7 @@ def adjust(multires: Multires, needed: int) -> Sequence[LuaValue]:
     # When the list of expressions ends with a multires expression,
     # all results from that expression
     # enter the list of values before the adjustment.
-    multires = [x for x in multires]
+    multires = [x for x in multires]  # Create a shallow copy of multires.
     if multires and isinstance(multires[-1], Sequence):
         multires.extend(multires.pop())
 
