@@ -73,7 +73,7 @@ pip install mehtap
     </details>
 
     <details>
-    <summary>Input and Output Facilities (17/18)</summary>
+    <summary>Input and Output Facilities (18/18)</summary>
 
     - [x] io.close()
     - [x] io.flush()
@@ -81,7 +81,7 @@ pip install mehtap
     - [x] io.lines()
     - [x] io.open()
     - [x] io.output()
-    - [ ] io.popen()
+    - [x] io.popen()
     - [x] io.read()
     - [x] io.tmpfile()
     - [x] io.type()
