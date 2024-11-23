@@ -96,18 +96,18 @@ pip install mehtap
     </details>
 
     <details>
-    <summary>Operating System Facilities (8/11)</summary>
+    <summary>Operating System Facilities (11/11)</summary>
 
     - [x] os.clock()
-    - [ ] os.date()
-    - [ ] os.difftime()
+    - [x] os.date()
+    - [x] os.difftime()
     - [x] os.execute()
     - [x] os.exit()
     - [x] os.getenv()
     - [x] os.remove()
     - [x] os.rename()
     - [x] os.setlocale()
-    - [ ] os.time()
+    - [x] os.time()
     - [x] os.tmpname()
     </details>
 

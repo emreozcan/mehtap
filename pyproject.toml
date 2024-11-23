@@ -41,6 +41,7 @@ coverage = "^7.6.4"
 mypy = "^1.13.0"
 pytest = "^8.3.3"
 pytest-cov = "^6.0.0"
+freezegun = "^1.5.1"
 
 [tool.poetry.group.docs]
 optional = true

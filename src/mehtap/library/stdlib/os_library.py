@@ -8,8 +8,10 @@ import tempfile
 import time as py_time
 import datetime
 
+import attrs
+
 from mehtap.control_structures import LuaError
-from mehtap.operations import str_to_lua_string
+from mehtap.operations import str_to_lua_string, index, coerce_to_bool
 from mehtap.py2lua import lua_function, PyLuaWrapRet, py2lua, PyLuaRet
 from mehtap.library.provider_abc import LibraryProvider
 from mehtap.values import (
@@ -20,15 +22,17 @@ from mehtap.values import (
     LuaBool,
     LuaValue,
     LuaFunction,
+    type_of_lv,
 )
 
 FAIL = LuaNil
 
 
-def _py_wday_to_lua_wday(x: int) -> int:
-    if x == 7:
+def _wday_py2lua(x: int) -> int:
+    """transform (monday=0, sunday=6) to (sunday=1, saturday=7)"""
+    if x == 6:
         return 1
-    return x + 1
+    return x + 2
 
 
 def _get_day_number_of_year(date: datetime.date) -> int:
@@ -58,6 +62,138 @@ def _get_category_from_luastr(luastr: LuaString) -> int:
     return _str_to_lc_category_map[string]
 
 
+SYMBOL_YEAR = LuaString(b"year")
+SYMBOL_MONTH = LuaString(b"month")
+SYMBOL_DAY = LuaString(b"day")
+SYMBOL_HOUR = LuaString(b"hour")
+SYMBOL_MIN = LuaString(b"min")
+SYMBOL_SEC = LuaString(b"sec")
+SYMBOL_ISDST = LuaString(b"isdst")
+ZERO_TD = datetime.timedelta(0)
+
+
+@attrs.define(slots=True)
+class TimeTuple:
+    year: int
+    month: int
+    """range: 1,12"""
+    day: int
+    """range: 1,31"""
+    hour: int | None = None
+    """range: 0-23"""
+    min: int | None = None
+    """range: 0-59"""
+    sec: int | None = None
+    """range: 0-61 (Due to leap seconds)"""
+    isdst: bool | None = None
+    """daylight saving flag, a boolean"""
+
+    def to_table(self) -> LuaTable:
+        table_data = {
+            SYMBOL_YEAR: LuaNumber(self.year),
+            SYMBOL_MONTH: LuaNumber(self.month),
+            SYMBOL_DAY: LuaNumber(self.day),
+        }
+        if self.hour is not None:
+            table_data[SYMBOL_HOUR] = LuaNumber(self.hour)
+        if self.min is not None:
+            table_data[SYMBOL_MIN] = LuaNumber(self.min)
+        if self.sec is not None:
+            table_data[SYMBOL_SEC] = LuaNumber(self.sec)
+        if self.isdst is not None:
+            table_data[SYMBOL_ISDST] = LuaBool(self.isdst)
+        return LuaTable(map=table_data)
+
+    @classmethod
+    def from_table(cls, table: LuaTable) -> TimeTuple:
+        year_value = index(table, SYMBOL_YEAR)
+        if year_value is LuaNil:
+            raise LuaError("table must have field 'year'")
+        if not isinstance(year_value, LuaNumber):
+            raise LuaError("table field 'year' must be a number")
+        year_int = year_value.value
+
+        month_value = index(table, SYMBOL_MONTH)
+        if month_value is LuaNil:
+            raise LuaError("table must have field 'month'")
+        if not isinstance(month_value, LuaNumber):
+            raise LuaError("table field 'month' must be a number")
+        month_int = month_value.value
+
+        day_value = index(table, SYMBOL_DAY)
+        if day_value is LuaNil:
+            raise LuaError("table must have field 'day'")
+        if not isinstance(day_value, LuaNumber):
+            raise LuaError("table field 'day' must be a number")
+        day_int = day_value.value
+
+        hour_value = index(table, SYMBOL_HOUR)
+        if hour_value is not LuaNil:
+            if not isinstance(hour_value, LuaNumber):
+                raise LuaError("table field 'hour' must be a number")
+            hour_int = hour_value.value
+        else:
+            hour_int = None
+        min_value = index(table, SYMBOL_MIN)
+        if min_value is not LuaNil:
+            if not isinstance(min_value, LuaNumber):
+                raise LuaError("table field 'min' must be a number")
+            min_int = min_value.value
+        else:
+            min_int = None
+
+        sec_value = index(table, SYMBOL_SEC)
+        if sec_value is not LuaNil:
+            if not isinstance(sec_value, LuaNumber):
+                raise LuaError("table field 'sec' must be a number")
+            sec_int = sec_value.value
+        else:
+            sec_int = None
+
+        isdst_value = index(table, SYMBOL_ISDST)
+        if isdst_value is not LuaNil:
+            isdst_bool = coerce_to_bool(isdst_value).true
+        else:
+            isdst_bool = None
+
+        return cls(
+            year=year_int,
+            month=month_int,
+            day=day_int,
+            hour=hour_int,
+            min=min_int,
+            sec=sec_int,
+            isdst=isdst_bool,
+        )
+
+    def to_datetime(self) -> datetime.datetime:
+        return datetime.datetime(
+            year=self.year,
+            month=self.month,
+            day=self.day,
+            hour=self.hour,
+            minute=self.min,
+            second=self.sec,
+            tzinfo=None,
+        )
+
+    @classmethod
+    def from_datetime(cls, dt: datetime.datetime) -> TimeTuple:
+        if dt.tzinfo is not None:
+            is_dst = bool(dt.tzinfo.dst(dt))
+        else:
+            is_dst = None
+        return cls(
+            year=dt.year,
+            month=dt.month,
+            day=dt.day,
+            hour=dt.hour,
+            min=dt.minute,
+            sec=dt.second,
+            isdst=is_dst,
+        )
+
+
 @lua_function(name="clock")
 def lf_os_clock() -> PyLuaRet:
     return os_clock()
@@ -70,12 +206,65 @@ def os_clock() -> PyLuaRet:
 
 
 @lua_function(name="date")
-def lf_os_date(format=None, time=None, /) -> PyLuaRet:
+def lf_os_date(format=LuaNil, time=LuaNil, /) -> PyLuaRet:
     return os_date(format, time)
 
 
-def os_date(format=None, time=None, /) -> PyLuaRet:
-    raise NotImplementedError()
+SYMBOL_WDAY = LuaString(b"wday")
+SYMBOL_YDAY = LuaString(b"yday")
+
+
+def os_date(format=LuaNil, time=LuaNil, /) -> PyLuaRet:
+    # Returns a string or a table containing date and time, formatted according
+    # to the given string format.
+    # If the time argument is present, this is the time to be formatted (see the
+    # os.time function for a description of this value).
+    # Otherwise, date formats the current time.
+    if time is LuaNil:
+        time_dt = datetime.datetime.now().astimezone()
+    else:
+        if not isinstance(time, LuaNumber):
+            time_type = type_of_lv(time)
+            raise LuaError(
+                f"bad argument #2 to 'date' (expected number, got {time_type})"
+            )
+        time_dt = datetime.datetime.fromtimestamp(time.value).astimezone()
+    # If format starts with '!', then the date is formatted in Coordinated
+    # Universal Time.
+    if format is LuaNil:
+        # If format is absent, it defaults to "%c", which gives a human-readable
+        # date and time representation using the current locale.
+        format_str = "%c"
+    elif not isinstance(format, LuaString):
+        type_of_format = type_of_lv(format)
+        raise LuaError(
+            f"bad argument #1 to 'date' (expected string, got {type_of_format})"
+        )
+    else:
+        format_str = format.content.decode("utf-8")
+    if format_str and format_str[0] == "!":
+        offset = time_dt.utcoffset()
+        if offset:
+            time_dt -= offset
+        format_str = format_str[1:]
+    # After this optional character, if format is the string
+    # "*t", then date returns a table with the following fields:
+    # year, month (1–12), day (1–31),
+    # hour (0–23), min (0–59), sec (0–61, due to leap seconds),
+    # wday (weekday, 1–7, Sunday is 1), yday (day of the year, 1–366),
+    # and isdst (daylight saving flag, a boolean).
+    # This last field may be absent if the information is not available.
+    timetuple = time_dt.timetuple()
+    if format_str == "*t":
+        table = TimeTuple.from_datetime(time_dt).to_table()
+        table.rawput(SYMBOL_WDAY, LuaNumber(_wday_py2lua(timetuple.tm_wday)))
+        table.rawput(SYMBOL_YDAY, LuaNumber(timetuple.tm_yday))
+        return [table]
+    # If format is not "*t", then date returns the date as a string, formatted
+    # according to the same rules as the ISO C function strftime.
+    return [LuaString(py_time.strftime(format_str, timetuple).encode("utf-8"))]
+    # On non-POSIX systems, this function may be not thread safe because of its
+    # reliance on C function gmtime and C function localtime.
 
 
 @lua_function(name="difftime")
@@ -84,7 +273,19 @@ def lf_os_difftime(t2, t1, /) -> PyLuaRet:
 
 
 def os_difftime(t2, t1, /) -> PyLuaRet:
-    raise NotImplementedError()
+    if not isinstance(t2, LuaNumber):
+        t2_type = type_of_lv(t2)
+        raise LuaError(
+            f"bad argument #1 (t2) to 'difftime' "
+            f"(number expected, got {t2_type})"
+        )
+    if not isinstance(t1, LuaNumber):
+        t1_type = type_of_lv(t1)
+        raise LuaError(
+            f"bad argument #2 (t1) to 'difftime' "
+            f"(number expected, got {t1_type})"
+        )
+    return [LuaNumber(t2.value - t1.value)]
 
 
 @lua_function(name="execute")
@@ -258,12 +459,34 @@ def os_setlocale(locale, category=None, /) -> PyLuaRet:
 
 
 @lua_function(name="time")
-def lf_os_time(table=None, /) -> PyLuaRet:
+def lf_os_time(table=LuaNil, /) -> PyLuaRet:
     return os_time(table)
 
 
-def os_time(table=None, /) -> PyLuaRet:
-    raise NotImplementedError()
+def os_time(table=LuaNil, /) -> PyLuaRet:
+    # Returns the current time when called without arguments, or a time
+    # representing the local date and time specified by the given table.
+    #
+    # When the function is called, the values in these fields do not need to be
+    # inside their valid ranges.
+    # For instance, if sec is -10, it means 10 seconds before the time specified
+    # by the other fields; if hour is 1000, it means 1000 hours after the time
+    # specified by the other fields.
+    #
+    # The returned value is a number, whose meaning depends on your system. In
+    # POSIX, Windows, and some other systems, this number counts the number of
+    # seconds since some given start time (the "epoch"). In other systems, the
+    # meaning is not specified, and the number returned by time can be used only
+    # as an argument to os.date and os.difftime.
+    #
+    # When called with a table, os.time also normalizes all the fields
+    # documented in the os.date function, so that they represent the same time
+    # as before the call but with values inside their valid ranges.
+    if table is LuaNil:
+        time_tuple = TimeTuple.from_datetime(datetime.datetime.now())
+    else:
+        time_tuple = TimeTuple.from_table(table)
+    return [LuaNumber(time_tuple.to_datetime().timestamp())]
 
 
 @lua_function(name="tmpname")
