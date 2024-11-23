@@ -1,6 +1,7 @@
 import datetime
 
 from freezegun import freeze_time
+import pytest
 
 from mehtap.library.stdlib.os_library import os_date
 from mehtap.values import LuaString, LuaNumber, LuaNil, LuaTable, LuaBool
@@ -49,6 +50,7 @@ def test_date_with_time_argument_in_utc_offset():
     assert retval.content == b"Sun Sep 13 12:26:40 2020"
 
 
+@pytest.mark.xfail(reason="freezegun can't entirely replicate tz_offset")
 def test_date_with_time_argument_in_local_offset():
     with freeze_time("2023-11-23 22:03:45", tz_offset=1):
         retval, = os_date(LuaString(b"%c"), LuaNumber(1600000000))
@@ -91,6 +93,7 @@ def test_date_with_table_output_and_time_argument_in_utc_given_offset():
     }
 
 
+@pytest.mark.xfail(reason="freezegun can't entirely replicate tz_offset")
 def test_date_with_table_output_and_time_argument_in_local_given_offset():
     with freeze_time("2023-11-23 21:03:45", tz_offset=1):
         retval, = os_date(LuaString(b"*t"), LuaNumber(1600000000))

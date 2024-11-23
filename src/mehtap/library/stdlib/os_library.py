@@ -252,6 +252,8 @@ def os_date(format=LuaNil, time=LuaNil, /) -> PyLuaRet:
         # Universal Time.
         # (strftime already converts to UTC if the time is not in UTC)
         format_str = format_str[1:]
+    else:
+        time_dt = time_dt.astimezone()
     # After this optional character, if format is the string
     # "*t", then date returns a table with the following fields:
     # year, month (1–12), day (1–31),
