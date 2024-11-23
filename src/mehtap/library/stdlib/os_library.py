@@ -5,8 +5,8 @@ import os
 import subprocess
 import sys
 import tempfile
-import time as py_time
 import datetime
+from time import process_time
 
 import attrs
 
@@ -45,6 +45,10 @@ def _oserror_to_errtuple(e: OSError) -> list[LuaValue]:
         LuaString(e.strerror.encode("utf-8")),
         LuaNumber(e.errno),
     ]
+
+
+def _utcnow() -> datetime.datetime:
+    return datetime.datetime.now(datetime.timezone.utc)
 
 
 _str_to_lc_category_map = {
@@ -174,7 +178,7 @@ class TimeTuple:
             hour=self.hour,
             minute=self.min,
             second=self.sec,
-            tzinfo=None,
+            tzinfo=datetime.timezone.utc,
         )
 
     @classmethod
@@ -202,7 +206,7 @@ def lf_os_clock() -> PyLuaRet:
 def os_clock() -> PyLuaRet:
     # Returns an approximation of the amount in seconds of CPU time used by
     # the program, as returned by the underlying ISO C function clock.
-    return [LuaNumber(py_time.process_time())]
+    return [LuaNumber(process_time())]
 
 
 @lua_function(name="date")
@@ -221,16 +225,17 @@ def os_date(format=LuaNil, time=LuaNil, /) -> PyLuaRet:
     # os.time function for a description of this value).
     # Otherwise, date formats the current time.
     if time is LuaNil:
-        time_dt = datetime.datetime.now().astimezone()
+        time_dt = _utcnow()
     else:
         if not isinstance(time, LuaNumber):
             time_type = type_of_lv(time)
             raise LuaError(
                 f"bad argument #2 to 'date' (expected number, got {time_type})"
             )
-        time_dt = datetime.datetime.fromtimestamp(time.value).astimezone()
-    # If format starts with '!', then the date is formatted in Coordinated
-    # Universal Time.
+        time_dt = datetime.datetime.fromtimestamp(
+            time.value,
+            datetime.timezone.utc
+        )
     if format is LuaNil:
         # If format is absent, it defaults to "%c", which gives a human-readable
         # date and time representation using the current locale.
@@ -243,9 +248,9 @@ def os_date(format=LuaNil, time=LuaNil, /) -> PyLuaRet:
     else:
         format_str = format.content.decode("utf-8")
     if format_str and format_str[0] == "!":
-        offset = time_dt.utcoffset()
-        if offset:
-            time_dt -= offset
+        # If format starts with '!', then the date is formatted in Coordinated
+        # Universal Time.
+        # (strftime already converts to UTC if the time is not in UTC)
         format_str = format_str[1:]
     # After this optional character, if format is the string
     # "*t", then date returns a table with the following fields:
@@ -254,15 +259,15 @@ def os_date(format=LuaNil, time=LuaNil, /) -> PyLuaRet:
     # wday (weekday, 1–7, Sunday is 1), yday (day of the year, 1–366),
     # and isdst (daylight saving flag, a boolean).
     # This last field may be absent if the information is not available.
-    timetuple = time_dt.timetuple()
     if format_str == "*t":
+        timetuple = time_dt.timetuple()
         table = TimeTuple.from_datetime(time_dt).to_table()
         table.rawput(SYMBOL_WDAY, LuaNumber(_wday_py2lua(timetuple.tm_wday)))
         table.rawput(SYMBOL_YDAY, LuaNumber(timetuple.tm_yday))
         return [table]
     # If format is not "*t", then date returns the date as a string, formatted
     # according to the same rules as the ISO C function strftime.
-    return [LuaString(py_time.strftime(format_str, timetuple).encode("utf-8"))]
+    return [LuaString(time_dt.strftime(format_str).encode("utf-8"))]
     # On non-POSIX systems, this function may be not thread safe because of its
     # reliance on C function gmtime and C function localtime.
 
@@ -483,10 +488,8 @@ def os_time(table=LuaNil, /) -> PyLuaRet:
     # documented in the os.date function, so that they represent the same time
     # as before the call but with values inside their valid ranges.
     if table is LuaNil:
-        time_tuple = TimeTuple.from_datetime(datetime.datetime.now())
-    else:
-        time_tuple = TimeTuple.from_table(table)
-    return [LuaNumber(time_tuple.to_datetime().timestamp())]
+        return [LuaNumber(datetime.datetime.now().timestamp())]
+    return [LuaNumber(TimeTuple.from_table(table).to_datetime().timestamp())]
 
 
 @lua_function(name="tmpname")
