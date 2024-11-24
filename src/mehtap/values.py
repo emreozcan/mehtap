@@ -317,15 +317,12 @@ class LuaFunction(LuaObject, LuaCallableABC):
         if self.signature is not None:
             return self.signature
         if self.min_req is not None:
-            r_val = f"({self._py_param_str(0)})"
-        else:
-            param_names = [str(name) for name in self.param_names]
-            if self.variadic:
-                param_names.append("...")
-            param_list = ", ".join(param_names)
-            r_val = f"({param_list})"
-        self.signature = r_val
-        return r_val
+            return f"({self._py_param_str(0)})"
+        param_names = [str(name) for name in self.param_names]
+        if self.variadic:
+            param_names.append("...")
+        param_list = ", ".join(param_names)
+        return f"({param_list})"
 
     def __str__(self):
         native = "native " if callable(self.block) else ""
