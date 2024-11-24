@@ -289,6 +289,11 @@ class LuaFunction(LuaObject, LuaCallableABC):
     Only applicable for functions implemented in Python.
     Only used for pretty-displaying the function.
     """
+    signature: str | None = None
+    """The signature of the function.
+
+    Only used for pretty-displaying the function.
+    """
 
     def _py_param_str(self, index):
         if not self.param_names or index == len(self.param_names):
@@ -309,13 +314,18 @@ class LuaFunction(LuaObject, LuaCallableABC):
             return f"[, {my_name}{next_name}]"
 
     def _stringify_params(self):
+        if self.signature is not None:
+            return self.signature
         if self.min_req is not None:
-            return f"({self._py_param_str(0)})"
-        param_names = [str(name) for name in self.param_names]
-        if self.variadic:
-            param_names.append("...")
-        param_list = ", ".join(param_names)
-        return f"({param_list})"
+            r_val = f"({self._py_param_str(0)})"
+        else:
+            param_names = [str(name) for name in self.param_names]
+            if self.variadic:
+                param_names.append("...")
+            param_list = ", ".join(param_names)
+            r_val = f"({param_list})"
+        self.signature = r_val
+        return r_val
 
     def __str__(self):
         native = "native " if callable(self.block) else ""
@@ -530,7 +540,8 @@ class LuaTable(LuaObject, LuaIndexableABC):
                     raise LuaError("table index is NaN")
                 if key.value.is_integer():
                     key = LuaNumber(int(key.value), LuaNumberType.INTEGER)
-
+        if value is LuaNil and key not in self.map:
+            return
         self.map[key] = value
 
     def rawget(self, key: LuaValue):

@@ -169,6 +169,7 @@ def lua_function(
     table: LuaTable | None = None,
     *,
     name: str | None = None,
+    custom_signature: str | None = None,
     gets_scope: Literal[False] = False,
     wrap_values: Literal[False] = False,
     rename_args: list[str] | None = None,
@@ -181,6 +182,7 @@ def lua_function(
     table: LuaTable | None = None,
     *,
     name: str | None = None,
+    custom_signature: str | None = None,
     gets_scope: Literal[False] = False,
     wrap_values: Literal[False] = False,
     rename_args: list[str] | None = None,
@@ -193,6 +195,7 @@ def lua_function(
     table: LuaTable | None = None,
     *,
     name: str | None = None,
+    custom_signature: str | None = None,
     gets_scope: Literal[False] = False,
     wrap_values: Literal[True] = True,
     rename_args: list[str] | None = None,
@@ -205,6 +208,7 @@ def lua_function(
     table: LuaTable | None = None,
     *,
     name: str | None = None,
+    custom_signature: str | None = None,
     gets_scope: Literal[False] = False,
     wrap_values: Literal[True] = True,
     rename_args: list[str] | None = None,
@@ -217,6 +221,7 @@ def lua_function(
     table: LuaTable | None = None,
     *,
     name: str | None = None,
+    custom_signature: str | None = None,
     gets_scope: Literal[True] = True,
     wrap_values: Literal[False] = False,
     rename_args: list[str] | None = None,
@@ -229,6 +234,7 @@ def lua_function(
     table: LuaTable | None = None,
     *,
     name: str | None = None,
+    custom_signature: str | None = None,
     gets_scope: Literal[True] = True,
     wrap_values: Literal[False] = False,
     rename_args: list[str] | None = None,
@@ -241,6 +247,7 @@ def lua_function(
     table: LuaTable | None = None,
     *,
     name: str | None = None,
+    custom_signature: str | None = None,
     gets_scope: Literal[True] = True,
     wrap_values: Literal[True] = True,
     rename_args: list[str] | None = None,
@@ -253,6 +260,7 @@ def lua_function(
     table: LuaTable | None = None,
     *,
     name: str | None = None,
+    custom_signature: str | None = None,
     gets_scope: Literal[True] = True,
     wrap_values: Literal[True] = True,
     rename_args: list[str] | None = None,
@@ -264,6 +272,7 @@ def lua_function(
     table: LuaTable | None = None,
     *,
     name: str | None = None,
+    custom_signature: str | None = None,
     gets_scope: bool = False,
     wrap_values: bool = False,
     rename_args: list[str] | None = None,
@@ -274,6 +283,9 @@ def lua_function(
     :param table: If provided, the newly created :class:`LuaFunction` will be
                   put into the table with the proper name.
     :param name: Allows to rename the function.
+    :param custom_signature: Allows to provide a custom signature for the
+                             function.
+                             Only used in 'stringification'.
     :param gets_scope: Whether the function requires a :class:`Scope` as its
                        first argument.
     :param wrap_values: Whether the values should be converted to/from
@@ -321,6 +333,7 @@ def lua_function(
     return _lua_function(
         table=table,
         name=name,
+        custom_signature=custom_signature,
         rename_args=rename_args,
         gets_scope=gets_scope,
         wrap_values=wrap_values,
@@ -332,6 +345,7 @@ def _lua_function(
     *,
     table: LuaTable | None,
     name: str | None,
+    custom_signature: str | None = None,
     rename_args: list[str] | None,
     gets_scope: bool,
     wrap_values: bool,
@@ -416,6 +430,7 @@ def _lua_function(
             gets_scope=gets_scope,
             name=used_name,
             min_req=minimum_required,
+            signature=custom_signature,
         )
         if table is not None:
             table.rawput(py2lua(used_name), lf)

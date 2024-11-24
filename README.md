@@ -70,6 +70,17 @@ pip install mehtap     # straight pip.pypa.io
     </details>
 
     <details>
+    <summary>Table Manipulation (7/7)</summary>
+    - [x] table.concat()
+    - [x] table.insert()
+    - [x] table.move()
+    - [x] table.pack()
+    - [x] table.remove()
+    - [x] table.sort() &mdash; uses bubble sort...
+    - [x] table.unpack()
+    </details>
+
+    <details>
     <summary>Input and Output Facilities (18/18)</summary>
 
     - [x] io.close()
