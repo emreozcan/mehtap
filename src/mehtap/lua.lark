@@ -6,7 +6,9 @@ block: stat* [retstat]
      | varlist "=" explist -> stat_assignment
      | functioncall
      | label
+     | CONTINUE -> stat_continue
      | BREAK -> stat_break
+     | BREAK digits -> stat_break_fancy
      | GOTO NAME -> stat_goto
      | DO block END -> stat_do
      | WHILE exp DO block END -> stat_while
@@ -17,6 +19,7 @@ block: stat* [retstat]
      | FUNCTION funcname funcbody -> stat_function
      | LOCAL FUNCTION NAME funcbody -> stat_localfunction
      | LOCAL attnamelist ["=" explist] -> stat_localassignment
+     | WITH namelist "=" explist DO block END -> stat_with
 
 stat_if: "if" exp "then" block elseif* [else] "end"
 elseif: "elseif" exp "then" block
@@ -49,7 +52,10 @@ explist: explist_entry ("," explist_entry)*
     | literalstring
     | "..." -> exp_vararg
     | "function" funcbody -> exp_functiondef
+    | "|" [parlist] "|" exp -> exp_lambda
+    | "(" [parlist] ")" "=>" exp -> exp_lambda
     | tableconstructor
+    | compr
     | exp "or" exp -> exp_logical_or
     | exp "and" exp -> exp_logical_and
     | exp cmp_op exp -> exp_cmp
@@ -71,6 +77,7 @@ functioncall: prefixexp args -> functioncall_regular
             | prefixexp ":" NAME args -> functioncall_method
 args: "(" [explist] ")" -> args_list
     | tableconstructor -> args_value
+    | compr -> args_value
     | literalstring -> args_value
 
 funcbody: "(" [parlist] ")" block END
@@ -85,7 +92,12 @@ field: "[" exp "]" "=" exp -> field_with_key
      | exp -> field_counter_key
 fieldsep: "," | ";"
 
-!cmp_op: "<" | "<=" | ">" | ">=" | "==" | "~="
+compr: "{" exp FOR NAME "=" exp "," exp ["," exp] "}"                 -> list_compr_numeric
+     | "{" exp FOR namelist IN explist "}"                            -> list_compr_generic
+     | "{" "[" exp "]" "=" exp FOR NAME "=" exp "," exp ["," exp] "}" -> dict_compr_numeric
+     | "{" "[" exp "]" "=" exp FOR namelist IN explist "}"            -> dict_compr_generic
+
+!cmp_op: "<" | "<=" | ">" | ">=" | "==" | "~=" | "!=" | "<>"
 !shift_op: ">>" | "<<"
 !sumop: "+" | "-"
 !productop: "*" | "/" | "//" | "%"
@@ -103,6 +115,7 @@ numeral_dec: digits ["." digits] [("e" | "E") [sign] digits]
 
 AND: "and"
 BREAK: "break"
+CONTINUE: "continue"
 DO: "do"
 ELSE: "else"
 ELSEIF: "elseif"
@@ -123,6 +136,7 @@ THEN: "then"
 TRUE: "true"
 UNTIL: "until"
 WHILE: "while"
+WITH: "with"
 
 %import common.WS
 %ignore WS

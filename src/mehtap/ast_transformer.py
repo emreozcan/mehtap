@@ -350,8 +350,16 @@ class LuaTransformer(lark.Transformer):
         return nodes.EmptyStatement()
 
     @staticmethod
+    def stat_break_fancy(BREAK, digits: nodes.Terminal):
+        return nodes.Break(int(digits.text))
+
+    @staticmethod
     def stat_break(BREAK):
         return nodes.Break()
+
+    @staticmethod
+    def stat_continue(CONTINUE):
+        return nodes.Continue()
 
     @staticmethod
     def stat_goto(GOTO, name: nodes.Name):
@@ -395,6 +403,23 @@ class LuaTransformer(lark.Transformer):
     @staticmethod
     def exp_functiondef(funcbody: nodes.FuncBody) -> nodes.FuncDef:
         return nodes.FuncDef(body=funcbody)
+
+    @staticmethod
+    def exp_lambda(parlist, exp: nodes.Expression) -> nodes.FuncBody:
+        block = nodes.Block(
+            statements=tuple(),
+            return_statement=nodes.ReturnStatement(values=(exp,)),
+        )
+        if parlist is None:
+            return nodes.FuncBody(
+                params=tuple(),
+                body=block,
+            )
+        return nodes.FuncBody(
+            params=parlist.names,
+            body=block,
+            vararg=parlist.vararg,
+        )
 
     @staticmethod
     def funcname(*names) -> nodes.FuncName:
@@ -441,6 +466,74 @@ class LuaTransformer(lark.Transformer):
             stop=stop,
             step=step,
             block=block,
+        )
+
+    @staticmethod
+    def list_compr_numeric(
+        exp: nodes.Expression,
+        FOR,
+        name: nodes.Name,
+        start,
+        stop,
+        step,
+    ):
+        return nodes.NumericComprehension(
+            key_exp=None,
+            value_exp=exp,
+            name=name,
+            start=start,
+            stop=stop,
+            step=step,
+        )
+
+    @staticmethod
+    def dict_compr_numeric(
+        key_exp: nodes.Expression,
+        value_exp: nodes.Expression,
+        FOR,
+        name: nodes.Name,
+        start,
+        stop,
+        step,
+    ):
+        return nodes.NumericComprehension(
+            key_exp=key_exp,
+            value_exp=value_exp,
+            name=name,
+            start=start,
+            stop=stop,
+            step=step,
+        )
+
+    @staticmethod
+    def list_compr_generic(
+        exp: nodes.Expression,
+        FOR,
+        namelist,
+        IN,
+        explist,
+    ):
+        return nodes.GenericComprehension(
+            key_exp=None,
+            value_exp=exp,
+            names=namelist,
+            exprs=explist,
+        )
+
+    @staticmethod
+    def dict_compr_generic(
+        key_exp: nodes.Expression,
+        value_exp: nodes.Expression,
+        FOR,
+        namelist,
+        IN,
+        explist,
+    ):
+        return nodes.GenericComprehension(
+            key_exp=key_exp,
+            value_exp=value_exp,
+            names=namelist,
+            exprs=explist,
         )
 
     @staticmethod
@@ -499,6 +592,21 @@ class LuaTransformer(lark.Transformer):
             object=base,
             method=method,
             args=args,
+        )
+
+    @staticmethod
+    def stat_with(
+        WITH,
+        namelist,
+        explist,
+        DO,
+        block,
+        END
+    ):
+        return nodes.ContextManagerEntry(
+            explist=explist,
+            namelist=namelist,
+            block=block
         )
 
     @staticmethod

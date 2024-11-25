@@ -5,13 +5,14 @@ import io
 import string
 from abc import ABC, abstractmethod
 from collections.abc import Sequence, Iterable, Callable
+from itertools import zip_longest
 from typing import TYPE_CHECKING, NoReturn
 
 import attrs
 
 import mehtap.values as m_values
 from mehtap.control_structures import BreakException, GotoException, \
-    ReturnException, LuaError
+    ReturnException, LuaError, ContinueException
 from mehtap.values import (
     LuaNumber,
     LuaValue,
@@ -606,6 +607,51 @@ class FuncCallMethod(Expression, Statement):
     args: Sequence[Expression]
 
 
+SYMBOL__ENTER = LuaString(b"__enter")
+SYMBOL__EXIT = LuaString(b"__exit")
+
+
+@attrs.define(slots=True)
+class ContextManagerEntry(Statement):
+    explist: Sequence[Expression]
+    namelist: Sequence[Name]
+    block: Block
+
+    def _execute(self, scope: Scope) -> Sequence[LuaValue] | None:
+        managers = [exp.evaluate(scope) for exp in self.explist]
+        completed_exits = False
+        try:
+            inner_scope = scope.push(file=self.file, line=self.line)
+            for manager, name in zip_longest(managers, self.namelist):
+                res = m_operations.call(
+                    manager.get_metavalue(SYMBOL__ENTER),
+                    [],
+                    scope
+                )
+                if name is not None:
+                    inner_scope.put_local_ls(
+                        name.as_lua_string(),
+                        m_values.Variable(adjust_to_one(res))
+                    )
+            return self.block.execute_without_inner_scope(inner_scope)
+        except LuaError as le:
+            for manager in managers:
+                m_operations.call(
+                    manager.get_metavalue(SYMBOL__EXIT),
+                    [le.message],
+                    scope
+                )
+            completed_exits = True
+        finally:
+            if not completed_exits:
+                for manager in managers:
+                    m_operations.call(
+                        manager.get_metavalue(SYMBOL__EXIT),
+                        [m_values.LuaNil],
+                        scope
+                    )
+
+
 class UnaryOperator(enum.Enum):
     NEG = "-"
     NOT = "not"
@@ -643,6 +689,8 @@ class BinaryOperator(enum.Enum):
     GE = ">="
     EQ = "=="
     NE = "~="
+    NE_C = "!="
+    NE_SQL = "<>"
     BIT_OR = "|"
     BIT_XOR = "~"
     BIT_AND = "&"
@@ -667,6 +715,8 @@ binary_operator_functions: dict[
     BinaryOperator.GE: m_operations.rel_ge,
     BinaryOperator.EQ: m_operations.rel_eq,
     BinaryOperator.NE: m_operations.rel_ne,
+    BinaryOperator.NE_C: m_operations.rel_ne,
+    BinaryOperator.NE_SQL: m_operations.rel_ne,
     BinaryOperator.BIT_OR: m_operations.bitwise_or,
     BinaryOperator.BIT_XOR: m_operations.bitwise_xor,
     BinaryOperator.BIT_AND: m_operations.bitwise_and,
@@ -775,8 +825,10 @@ class Label(Statement):
 
 @attrs.define(slots=True)
 class Break(Statement):
+    level: int = 1
+
     def _execute(self, scope: Scope) -> None:
-        raise BreakException()
+        raise BreakException(level=self.level)
 
 
 @attrs.define(slots=True)
@@ -785,6 +837,12 @@ class Goto(Statement):
         raise GotoException(self.name)
 
     name: Name
+
+
+@attrs.define(slots=True)
+class Continue(Statement):
+    def _execute(self, scope: Scope) -> None:
+        raise ContinueException()
 
 
 @attrs.define(slots=True)
@@ -801,9 +859,13 @@ class While(Statement):
         new_vm = scope.push(file=self.file, line=self.line)
         try:
             while coerce_to_bool(self.condition.evaluate_single(scope)).true:
-                self.block.execute_without_inner_scope(new_vm)
-        except BreakException:
-            pass
+                try:
+                    self.block.execute_without_inner_scope(new_vm)
+                except ContinueException:
+                    pass
+        except BreakException as be:
+            if be.level != 1:
+                raise BreakException(be.level - 1)
 
     condition: Expression
     block: Block
@@ -815,11 +877,15 @@ class Repeat(Statement):
         new_vm = scope.push(file=self.file, line=self.line)
         try:
             while True:
-                self.block.execute_without_inner_scope(new_vm)
+                try:
+                    self.block.execute_without_inner_scope(new_vm)
+                except ContinueException:
+                    pass
                 if coerce_to_bool(self.condition.evaluate_single(new_vm)).true:
                     break
-        except BreakException:
-            pass
+        except BreakException as be:
+            if be.level != 1:
+                raise BreakException(be.level - 1)
 
     block: Block
     condition: Expression
@@ -840,6 +906,120 @@ class If(Statement):
 
 
 @attrs.define(slots=True)
+class NumericComprehension(Expression):
+    key_exp: Expression | None
+    value_exp: Expression
+    name: Name
+    start: Expression
+    stop: Expression
+    step: Expression | None
+
+    def _evaluate(self, scope: Scope) -> LuaValue:
+        control_varname = self.name.as_lua_string()
+        initial_value = adjust_to_one(self.start.evaluate(scope))
+        if not isinstance(initial_value, LuaNumber):
+            raise LuaError("the initial value must be a number")
+        limit = adjust_to_one(self.stop.evaluate(scope))
+        if not isinstance(limit, LuaNumber):
+            raise LuaError("the limit value must be a number")
+        if self.step:
+            step = adjust_to_one(self.step.evaluate(scope))
+            if not isinstance(step, LuaNumber):
+                raise LuaError("the step value must be a number")
+        else:
+            step = LuaNumber(1, LuaNumberType.INTEGER)
+        is_integer_loop = (
+            initial_value.type == LuaNumberType.INTEGER
+            and step.type == LuaNumberType.INTEGER
+        )
+        if not is_integer_loop:
+            initial_value = m_operations.coerce_int_to_float(initial_value)
+            limit = m_operations.coerce_int_to_float(limit)
+            step = m_operations.coerce_int_to_float(step)
+        if step.value == 0:
+            raise LuaError("step must not be zero")
+        is_step_negative = step.value < 0
+        condition_func = (
+            m_operations.rel_ge if is_step_negative else m_operations.rel_le
+        )
+        control_val = initial_value
+        inner_scope = scope.push(file=self.file, line=self.line)
+        table = LuaTable()
+        counter = 1
+        while condition_func(control_val, limit).true:
+            inner_scope.put_local_ls(
+                control_varname, m_values.Variable(control_val)
+            )
+            value = self.value_exp.evaluate_single(inner_scope)
+            if self.key_exp is None:
+                table.rawput(LuaNumber(counter), value)
+                counter += 1
+            else:
+                key = self.key_exp.evaluate_single(inner_scope)
+                table.rawput(key, value)
+            overflow, control_val = m_operations.overflow_arith_add(
+                control_val, step
+            )
+            if overflow and is_integer_loop:
+                break
+        return table
+
+
+@attrs.define(slots=True)
+class GenericComprehension(Expression):
+    key_exp: Expression | None
+    value_exp: Expression
+    names: Sequence[Name]
+    exprs: Sequence[Expression]
+
+    def _evaluate(self, scope: Scope) -> LuaValue:
+        inner_scope = scope.push(file=self.file, line=self.line)
+        name_count = len(self.names)
+        names = [name.as_lua_string() for name in self.names]
+        for name in names:
+            inner_scope.put_local_ls(name, m_values.Variable(m_values.LuaNil))
+        control_variable_name = names[0]
+        exp_vals = adjust([exp.evaluate(scope) for exp in self.exprs], 4)
+        iterator_function = exp_vals[0]
+        state = exp_vals[1]
+        initial_value = exp_vals[2]
+        inner_scope.put_local_ls(
+            control_variable_name, m_values.Variable(initial_value)
+        )
+        closing_value = exp_vals[3]
+
+        nil = m_values.LuaNil
+        table = LuaTable()
+        counter = 1
+        while True:
+            results = adjust(
+                m_operations.call(
+                    iterator_function,
+                    [state, inner_scope.get_ls(control_variable_name)],
+                    scope,
+                ),
+                name_count,
+            )
+            for name, value in zip(names, results):
+                inner_scope.put_local_ls(name, m_values.Variable(value))
+            if results[0] is nil:
+                break
+            value = self.value_exp.evaluate_single(inner_scope)
+            if self.key_exp is None:
+                table.rawput(LuaNumber(counter), value)
+                counter += 1
+            else:
+                key = self.key_exp.evaluate_single(inner_scope)
+                table.rawput(key, value)
+        if closing_value is not nil:
+            # The closing value behaves like a to-be-closed variable,
+            # which can be used to release resources when the loop ends.
+            # Otherwise, it does not interfere with the loop.
+            raise NotImplementedError()
+        return table
+
+
+@attrs.define(slots=True)
 class For(Statement):
     name: Name
     start: Expression
@@ -850,8 +1030,9 @@ class For(Statement):
     def _execute(self, scope: Scope) -> None:
         try:
             self._execute_internal(scope)
-        except BreakException:
-            pass
+        except BreakException as be:
+            if be.level != 1:
+                raise BreakException(be.level - 1)
 
     def _execute_internal(self, scope: Scope) -> None:
         # This for loop is the "numerical" for loop explained in 3.3.5.
@@ -917,7 +1098,10 @@ class For(Statement):
             inner_scope.put_local_ls(
                 control_varname, m_values.Variable(control_val)
             )
-            self.block.execute_without_inner_scope(inner_scope)
+            try:
+                self.block.execute_without_inner_scope(inner_scope)
+            except ContinueException:
+                pass
             overflow, control_val = m_operations.overflow_arith_add(
                 control_val, step
             )
@@ -934,8 +1118,9 @@ class ForIn(Statement):
     def _execute(self, scope: Scope) -> None:
         try:
             self._execute_internal(scope)
-        except BreakException:
-            pass
+        except BreakException as be:
+            if be.level != 1:
+                raise BreakException(be.level - 1)
 
     def _execute_internal(self, outer_scope: Scope) -> None:
         # The generic for statement works over functions, called iterators.
@@ -988,7 +1173,10 @@ class ForIn(Statement):
                 break
             # Otherwise, the body is executed and the loop goes to the next
             # iteration.
-            self.block.execute_without_inner_scope(body_scope)
+            try:
+                self.block.execute_without_inner_scope(body_scope)
+            except ContinueException:
+                pass
             continue
         if closing_value is not nil:
             # The closing value behaves like a to-be-closed variable,
