@@ -25,6 +25,7 @@ from mehtap.values import (
     LuaIndexableABC,
     LuaFunction,
     type_of_lv,
+    LuaBool,
 )
 
 FAIL = LuaNil
@@ -33,6 +34,7 @@ FAIL = LuaNil
 @attrs.define(slots=True, eq=False, repr=False)
 class LuaFile(LuaUserdata, LuaIndexableABC):
     io: BinaryIO
+    popen: subprocess.Popen | None = None
 
     def rawput(self, key: LuaValue, value: LuaValue, *, raw: bool = True) -> None:
         raise LuaError("attempt to set index on a file value")
@@ -89,7 +91,14 @@ class LuaFile(LuaUserdata, LuaIndexableABC):
 @lua_function(name="close")
 def _lf_file_method_close(self: LuaFile, /) -> PyLuaRet:
     self.io.close()
-    return None
+    if self.popen is None:
+        return None
+    retcode = self.popen.wait()
+    return [
+        LuaBool(True) if retcode == 0 else FAIL,
+        ("exit" if retcode >= 0 else "signal").encode("ascii"),
+        LuaNumber(abs(retcode)),
+    ]
 
 
 @lua_function(name="flush")
@@ -495,10 +504,11 @@ def io_popen(prog, mode=None, /):
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=False,
+        shell=True,
     )
     if mode_str == "r":
-        return [LuaFile(popen.stdout)]
-    return [LuaFile(popen.stdin)]
+        return [LuaFile(popen.stdout, popen=popen)]
+    return [LuaFile(popen.stdin, popen=popen)]
 
 
 @lua_function(name="read", gets_scope=True)
