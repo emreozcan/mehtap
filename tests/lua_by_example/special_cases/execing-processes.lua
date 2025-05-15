@@ -3,7 +3,7 @@ if success then
     print('successfully created directory')
 end
 
-local handle = io.popen("date --date='@2147483647' --iso-8601=seconds")
+local handle = io.popen("date --date='@2147483647' --iso-8601=seconds --utc")
 if handle == nil then
     return
 end
