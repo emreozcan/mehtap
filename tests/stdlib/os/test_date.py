@@ -6,7 +6,7 @@ import pytest
 from mehtap.library.stdlib.os_library import os_date
 from mehtap.values import LuaString, LuaNumber, LuaNil, LuaTable, LuaBool
 
-
+@pytest.mark.xfail(reason="freezegun doesn't replace .astimezone()")
 def test_date_with_no_arguments_utc():
     with freeze_time("2023-11-23 22:03:45", tz_offset=0):
         retval, = os_date()
@@ -16,6 +16,7 @@ def test_date_with_no_arguments_utc():
     assert retval_str == now_strftime == "Thu Nov 23 22:03:45 2023"
 
 
+@pytest.mark.xfail(reason="freezegun doesn't replace .astimezone()")
 def test_date_with_no_arguments_offset():
     with freeze_time("2023-11-23 22:03:45", tz_offset=1):
         retval, = os_date()
@@ -26,6 +27,7 @@ def test_date_with_no_arguments_offset():
     assert retval_str == "Thu Nov 23 23:03:45 2023"
 
 
+@pytest.mark.xfail(reason="freezegun doesn't replace .astimezone()")
 def test_date_with_format_argument_utc():
     format_str = "%Y-%m-%d %H:%M:%S"
     with freeze_time("2023-11-23 22:03:45", tz_offset=0):
@@ -36,6 +38,7 @@ def test_date_with_format_argument_utc():
     assert retval_str == now_strftime == "2023-11-23 22:03:45"
 
 
+@pytest.mark.xfail(reason="freezegun doesn't replace .astimezone()")
 def test_date_with_time_argument_utc():
     with freeze_time("2023-11-23 22:03:45", tz_offset=0):
         retval, = os_date(LuaNil, LuaNumber(1600000000))
