@@ -84,22 +84,29 @@ class Scope:
         return r
 
     def exec_file(self, file_path: AnyPath) -> list[LuaValue]:
-        with open(file_path, "r", encoding="utf-8") as f:
+        return_value = []
+        try:
+            f = open(file_path, "r", encoding="utf-8")
+        except FileNotFoundError as e:
+            raise LuaError(str(e))
+        try:
             if f.read(1) == "#":
                 f.readline()
             f.seek(0, SEEK_SET)
             filename_str = basename(file_path)
             try:
-                r = self.exec(f.read(), filename=filename_str)
-            except Exception as e:
-                raise LuaError(
-                    LuaString(str(e).encode("utf-8")),
-                    caused_by=e,
-                )
+                return_value = self.exec(f.read(), filename=filename_str)
             except LuaError as le:
                 le.push_tb("main chunk", file=filename_str, line=0)
                 raise le
-            return r
+        except Exception as e:
+            raise LuaError(
+                LuaString(str(e).encode("utf-8")),
+                caused_by=e,
+            )
+        finally:
+            f.close()
+            return return_value
 
     def __repr__(self):
         cls_name = self.__class__.__name__
