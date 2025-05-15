@@ -120,7 +120,7 @@ Sole object of the ``LuaNilType`` class.
 del LuaNilType
 
 
-@attrs.define(slots=True, eq=False)
+@attrs.define(slots=True, eq=False, repr=False)
 class LuaBool(LuaValue):
     """Class representing values of the *boolean* basic type in Lua."""
 
@@ -129,6 +129,9 @@ class LuaBool(LuaValue):
 
     def __str__(self) -> str:
         return "true" if self.true else "false"
+
+    def __repr__(self):
+        return f"LuaBool({self.true})"
 
     def __hash__(self):
         return hash(self.true)
@@ -151,7 +154,7 @@ SIGN_BIT = 1 << 63
 ALL_SET = 2**64 - 1
 
 
-@attrs.define(slots=True, init=False, eq=False)
+@attrs.define(slots=True, init=False, eq=False, repr=False)
 class LuaNumber(LuaValue):
     """Class representing values of the *number* basic type in Lua.
 
@@ -187,11 +190,14 @@ class LuaNumber(LuaValue):
     def __str__(self) -> str:
         return str(self.value)
 
+    def __repr__(self):
+        return f"LuaNumber({self.value!r})"
+
     def __hash__(self):
         return hash(self.value)
 
 
-@attrs.define(slots=True, eq=False, frozen=True)
+@attrs.define(slots=True, eq=False, frozen=True, repr=False)
 class LuaString(LuaValue):
     """Class representing values of the *string* basic type in Lua."""
 
@@ -200,6 +206,9 @@ class LuaString(LuaValue):
 
     def __str__(self) -> str:
         return self.content.decode("utf-8")
+
+    def __repr__(self):
+        return f"LuaString({self.content!r})"
 
     def __hash__(self):
         return hash(self.content)
@@ -246,7 +255,7 @@ class LuaCallableABC(ABC):
         ...
 
 
-@attrs.define(slots=True, eq=False)
+@attrs.define(slots=True, eq=False, repr=False)
 class LuaFunction(LuaObject, LuaCallableABC):
     """Class representing values of the *function* basic type in Lua."""
 
@@ -334,6 +343,9 @@ class LuaFunction(LuaObject, LuaCallableABC):
             f"{native}function {self.name}{self._stringify_params()}: "
             f"{hex(id(self))}"
         )
+
+    def __repr__(self):
+        return f"<LuaFunction {self!s}>"
 
     def rawcall(
         self,
