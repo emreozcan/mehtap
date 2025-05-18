@@ -12,7 +12,7 @@ from mehtap.operations import str_to_lua_string
 from mehtap.vm import VirtualMachine
 from mehtap.values import LuaValue, LuaTable, LuaNumber, LuaString
 
-COPYRIGHT_TEXT = f"mehtap {__version__} Copyright (c) 2024 Emre Özcan"
+COPYRIGHT_TEXT = f"mehtap {__version__} Copyright (c) 2025 Emre Özcan"
 
 
 def main():
