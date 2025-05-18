@@ -156,7 +156,7 @@ I want to hereby thank the following people for their
 
 ---
 
-Copyright (c) 2024 Emre Özcan
+Copyright (c) 2024-2025 Emre Özcan
 
 ```{toctree}
 :maxdepth: 2
