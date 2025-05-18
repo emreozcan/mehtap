@@ -99,7 +99,7 @@ class LuaTransformer(lark.Transformer):
         return nodes.VarIndex(base=base, index=index)
 
     @staticmethod
-    def exp_vararg() -> nodes.VarArgExpr:
+    def exp_vararg(ELLIPSIS) -> nodes.VarArgExpr:
         return nodes.VarArgExpr()
 
     @staticmethod
@@ -132,6 +132,7 @@ class LuaTransformer(lark.Transformer):
     def numeral_dec(
         digits: nodes.Terminal,
         fract_digits: nodes.Terminal | None,
+        E: nodes.Terminal | None,
         e_sign: nodes.Terminal | None,
         e_digits: nodes.Terminal | None,
     ) -> nodes.NumeralDec:
@@ -144,8 +145,11 @@ class LuaTransformer(lark.Transformer):
 
     @staticmethod
     def numeral_hex(
+        ZERO,
+        X,
         digits: nodes.Terminal,
         fract_digits: nodes.Terminal | None,
+        P: nodes.Terminal | None,
         p_sign: nodes.Terminal | None,
         p_digits: nodes.Terminal | None,
     ) -> nodes.NumeralHex:
@@ -299,7 +303,7 @@ class LuaTransformer(lark.Transformer):
         )
 
     @staticmethod
-    def exp_concat(left: nodes.Expression, right: nodes.Expression):
+    def exp_concat(left: nodes.Expression, DOUBLEDOT, right: nodes.Expression):
         return nodes.BinaryOperation(
             lhs=left,
             op=BinaryOperator.CONCAT,
@@ -358,7 +362,7 @@ class LuaTransformer(lark.Transformer):
         return nodes.Goto(name=name)
 
     @staticmethod
-    def label(name: nodes.Name):
+    def label(DOUBLECOLON_1, name: nodes.Name, DOUBLECOLON_2):
         return nodes.Label(name=name)
 
     @staticmethod
@@ -371,14 +375,15 @@ class LuaTransformer(lark.Transformer):
             vararg=False,
         )
 
-    def parlist_vararg(self, namelist=None) -> nodes.Parlist:
-        if namelist is None:
-            return nodes.Parlist(
-                names=tuple(),
-                vararg=True,
-            )
+    def parlist_vararg(self, namelist, ELLIPSIS) -> nodes.Parlist:
         return nodes.Parlist(
             names=namelist,
+            vararg=True,
+        )
+
+    def parlist_vararg_only(self, ELLIPSIS) -> nodes.Parlist:
+        return nodes.Parlist(
+            names=tuple(),
             vararg=True,
         )
 

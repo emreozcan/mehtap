@@ -1,3 +1,5 @@
+?repl_input: chunk | exp
+
 chunk: block
 
 block: stat* [retstat]
@@ -28,7 +30,8 @@ attrib: ["<" NAME ">"]
 
 retstat: RETURN [explist] [";"]
 
-label: "::" NAME "::"
+label: DOUBLECOLON NAME DOUBLECOLON
+DOUBLECOLON: "::"
 
 funcname: NAME ("." NAME)* [":" NAME]
 
@@ -46,8 +49,8 @@ explist: explist_entry ("," explist_entry)*
     | FALSE -> exp_false
     | TRUE -> exp_true
     | numeral
-    | literalstring
-    | "..." -> exp_vararg
+    | LITERALSTRING -> literalstring
+    | ELLIPSIS -> exp_vararg
     | "function" funcbody -> exp_functiondef
     | tableconstructor
     | exp "or" exp -> exp_logical_or
@@ -57,7 +60,7 @@ explist: explist_entry ("," explist_entry)*
     | exp "~" exp -> exp_bit_xor
     | exp "&" exp -> exp_bit_and
     | exp shift_op exp -> exp_bit_shift
-    | exp ".." exp -> exp_concat
+    | exp DOUBLEDOT exp -> exp_concat
     | exp sumop exp -> exp_sum
     | exp productop exp -> exp_product
     | unop exp -> exp_unop
@@ -71,12 +74,13 @@ functioncall: prefixexp args -> functioncall_regular
             | prefixexp ":" NAME args -> functioncall_method
 args: "(" [explist] ")" -> args_list
     | tableconstructor -> args_value
-    | literalstring -> args_value
+    | LITERALSTRING -> args_value
 
 funcbody: "(" [parlist] ")" block END
 parlist: namelist
-       | namelist "," "..." -> parlist_vararg
-       | "..." -> parlist_vararg
+       | namelist "," ELLIPSIS -> parlist_vararg
+       | ELLIPSIS -> parlist_vararg_only
+ELLIPSIS: "..."
 
 tableconstructor: "{" [fieldlist] "}"
 fieldlist: field (fieldsep field)* [fieldsep]
@@ -86,20 +90,34 @@ field: "[" exp "]" "=" exp -> field_with_key
 fieldsep: "," | ";"
 
 !cmp_op: "<" | "<=" | ">" | ">=" | "==" | "~="
-!shift_op: ">>" | "<<"
+LT: "<"
+LE: "<="
+GT: ">"
+GE: ">="
+EQ: "=="
+NE: "~="
+!shift_op: SR | SL
+SR: ">>"
+SL: "<<"
 !sumop: "+" | "-"
-!productop: "*" | "/" | "//" | "%"
+!productop: "*" | "/" | DOUBLESLASH | "%"
+DOUBLESLASH: "//"
 !unop: "-" | "not" | "#" | "~"
 
 NAME.-1: /(?!and$|break$|do$|else$|elseif$|end$|false$|for$|function$|goto$|if$|in$|local$|nil$|not$|or$|repeat$|return$|then$|true$|until$|while$)[a-zA-Z_][a-zA-Z_0-9]*/
-literalstring: /"([^"\\]|\\.)*"|'([^'\\]|\\.)*'|(\[(=*)\[(.|\n)*?\]\4\])/
+LITERALSTRING: /"([^"\\]|\\.)*"|'([^'\\]|\\.)*'|(\[(=*)\[(.|\n)*?\]\4\])/
 ?numeral: numeral_hex | numeral_dec
 
 !sign: "+" | "-"
-numeral_hex: "0" ("x" | "X") hexdigits ["." hexdigits] [("p" | "P") [sign] hexdigits]
-numeral_dec: digits ["." digits] [("e" | "E") [sign] digits]
-?hexdigits: /[0-9a-fA-F]+/
-?digits: /[0-9]+/
+numeral_hex: ZERO X HEXDIGITS ["." HEXDIGITS] [P [sign] HEXDIGITS]
+ZERO: "0"
+X: "x" | "X"
+P: "p" | "P"
+numeral_dec: DIGITS ["." DIGITS] [E [sign] DIGITS]
+E: "e" | "E"
+HEXDIGITS: /[0-9a-fA-F]+/
+DIGITS: /[0-9]+/
+DOUBLEDOT: ".."
 
 AND: "and"
 BREAK: "break"

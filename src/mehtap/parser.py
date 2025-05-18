@@ -29,3 +29,12 @@ numeral_parser = lark.Lark(
     propagate_positions=True,
     debug=True,
 )
+
+repl_parser = lark.Lark(
+    lua_grammar,
+    start="repl_input",
+    parser="earley",
+    propagate_positions=True,
+    debug=True,
+)
+
