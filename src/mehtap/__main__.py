@@ -2,13 +2,21 @@ import argparse
 import os
 import sys
 import traceback
+from collections.abc import Iterable
 
 import lark.exceptions
+from prompt_toolkit import PromptSession
+from prompt_toolkit.application import get_app
+from prompt_toolkit.document import Document
+from prompt_toolkit.key_binding import KeyBindings, KeyPressEvent
+from prompt_toolkit.validation import Validator, ValidationError, \
+    ThreadedValidator
 
 from mehtap import __version__ as __version__
 from mehtap.control_structures import LuaError
 from mehtap.library.stdlib.basic_library import basic_print
 from mehtap.operations import str_to_lua_string
+from mehtap.parser import repl_parser
 from mehtap.vm import VirtualMachine
 from mehtap.values import LuaValue, LuaTable, LuaNumber, LuaString
 
@@ -114,7 +122,7 @@ def _main():
                     else:
                         vm.exec_file(os.environ[env_var])
                 except LuaError as le:
-                    handle_luaerror(le, vm)
+                    print_lua_error(le, vm)
                     sys.exit(1)
                 break
 
@@ -144,7 +152,7 @@ def _main():
             else:
                 vm.exec(sys.stdin.read())
     except LuaError as le:
-        handle_luaerror(le, vm)
+        print_lua_error(le, vm)
         sys.exit(1)
 
     no_execution = not args.script and not args.execute_string
@@ -153,50 +161,118 @@ def _main():
         enter_interactive(vm)
 
 
-def enter_interactive(vm: VirtualMachine) -> None:
-    collected_line = ""
-    p1 = os.environ.get("_PROMPT", "> ")
-    p2 = os.environ.get("_PROMPT2", ">> ")
-    while True:
-        prompt = p1 if not collected_line else p2
+class MehtapValidator(Validator):
+    def validate(self, document: Document) -> None:
         try:
-            line = input(prompt)
-            collected_line += line
-        except KeyboardInterrupt as ki:
-            if collected_line:
-                collected_line = ""
-                print()
-                continue
+            repl_parser.parse(document.text)
+        except lark.exceptions.UnexpectedEOF as e:
+            raise ValidationError(
+                e.column,
+                f"unexpected EOF: expected {get_expected_terminals(e.expected)}",
+            )
+        except lark.exceptions.UnexpectedCharacters as e:
+            raise ValidationError(
+                e.column,
+                f"unexpected character {e.char} at column {e.column}",
+            )
+        except lark.exceptions.UnexpectedToken as e:
+            raise ValidationError(
+                e.column,
+                f"unexpected {e.token}: expected {get_expected_terminals(e.expected)}",
+            )
+
+
+terminal_patterns = {
+    d.name: d.pattern.value
+    for d in repl_parser.terminals
+    if d.pattern.type == "str"
+}
+
+
+def get_expected_terminals(tokens: Iterable[str]) -> str:
+    seen_tokens = []
+    results = []
+    for token in tokens:
+        if token in seen_tokens: continue
+        seen_tokens.append(token)
+        if token in terminal_patterns:
+            results.append(f'"{terminal_patterns[token]}"')
+        else:
+            results.append(token)
+    return ", ".join(results)
+
+def get_continuation_prompt(width, _line_number, is_soft_wrap):
+    if not is_soft_wrap:
+        return "." * (width - 1) + " "
+    return " " * (width - 1) + " "
+
+
+class MehtapPromptSession(PromptSession):
+    def _create_prompt_bindings(self) -> KeyBindings:
+        kb = super()._create_prompt_bindings()
+        kb.remove("enter")
+
+        @kb.add("enter")
+        def _accept_input(event: KeyPressEvent) -> None:
+            self.default_buffer.validate_and_handle()
+
+        @kb.add("tab")
+        def _add_tab(event: KeyPressEvent) -> None:
+            self.default_buffer.insert_text("  ")
+
+        @kb.add("escape", "enter")
+        def _add_newline(event: KeyPressEvent) -> None:
+            self.default_buffer.insert_text("\n")
+
+        @kb.add("c-c")
+        def _clear_line(event: KeyPressEvent) -> None:
+            if self.default_buffer.text:
+                self.default_buffer.reset()
             else:
-                raise ki
-        except EOFError:
-            break
-        r: list[LuaValue] | None = None
+                get_app().exit(exception=KeyboardInterrupt)
+
+        return kb
+
+
+def enter_interactive(vm: VirtualMachine) -> None:
+    session = MehtapPromptSession()
+    validator = ThreadedValidator(MehtapValidator())
+    line = ""
+    p1 = os.environ.get("_PROMPT", "> ")
+    # p2 = os.environ.get("_PROMPT2", ">> ")
+    while True:
+        line += session.prompt(
+            message=p1,
+            prompt_continuation=get_continuation_prompt,
+            validator=validator,
+            mouse_support=True,
+            multiline=True,
+        )
+        return_value: list[LuaValue] | None = None
         try:
-            r = vm.exec(collected_line)
-        except lark.exceptions.UnexpectedInput as e:
             try:
-                r = vm.eval(collected_line)
-            except lark.exceptions.UnexpectedInput:
-                continue
-            except LuaError as lua_error:
-                handle_luaerror(lua_error, vm)
+                return_value = vm.exec(line)
+            except lark.exceptions.UnexpectedInput as e:
+                try:
+                    return_value = vm.eval(line)
+                except lark.exceptions.UnexpectedInput:
+                    continue
         except LuaError as lua_error:
-            handle_luaerror(lua_error, vm)
-        if r is not None:
-            d = display_object(r)
+            print_lua_error(lua_error, vm)
+        if return_value is not None:
+            d = print_object(return_value)
             if d is not None:
                 print(d)
-        collected_line = ""
+        line = ""
 
 
-def print_lark_error_shower(collected_line, e, prompt):
+def print_lark_error(collected_line, e, prompt):
     print(" " * len(prompt) + collected_line.splitlines()[e.line - 1])
     print(f"{' ' * len(prompt)}{' ' * (e.column - 1)}^")
     print(f"error: unexpected input, " f"line {e.line}, column {e.column}")
 
 
-def handle_luaerror(lua_error: LuaError, vm: VirtualMachine | None):
+def print_lua_error(lua_error: LuaError, vm: VirtualMachine | None):
     if (
         not isinstance(lua_error.message, LuaString)
         and lua_error.message.has_metavalue(LuaString(b"__tostring"))
@@ -225,7 +301,7 @@ def handle_luaerror(lua_error: LuaError, vm: VirtualMachine | None):
         print(traceback.format_exc(), file=sys.stderr)
 
 
-def display_object(val: list[LuaValue]) -> str | None:
+def print_object(val: list[LuaValue]) -> str | None:
     if not val:
         return None
     return ", ".join([str(v) for v in val])
