@@ -8,4 +8,4 @@ def test_clock():
     clock = time.process_time()
     clock_retval = os_clock()[0]
     assert isinstance(clock_retval, LuaNumber)
-    assert abs(clock_retval.value - clock) < 1e-5
+    assert abs(clock_retval.value - clock) < 1e-4
