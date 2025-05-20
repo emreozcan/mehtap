@@ -4,15 +4,6 @@ from mehtap.py2lua import lua_function
 from mehtap.values import LuaString, LuaTable, LuaFunction
 
 
-def test_preserve_table_sanity_check():
-    with pytest.raises(ValueError) as excinfo:
-        @lua_function(table=None, preserve=True)
-        def x():
-            pass
-    assert excinfo.type is ValueError
-    assert "What's your point?" in str(excinfo.value)
-
-
 def test_invalid_arg_after_variadic():
     with pytest.raises(ValueError) as excinfo:
         @lua_function()
@@ -75,16 +66,3 @@ def test_unknown_name():
     assert f.name
     assert "native" in f.name
     assert "function" in f.name
-
-
-def test_preserve():
-    t = LuaTable()
-
-    @lua_function(table=t, preserve=True, wrap_values=True)
-    def f():
-        return None
-
-    assert not isinstance(f, LuaFunction)
-    assert callable(f)
-    t_f = t.rawget(LuaString(b"f"))
-    assert isinstance(t_f, LuaFunction)

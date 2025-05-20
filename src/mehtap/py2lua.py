@@ -166,135 +166,69 @@ if TYPE_CHECKING:
 
 @overload
 def lua_function(
-    table: LuaTable | None = None,
     *,
     name: str | None = None,
-    custom_signature: str | None = None,
     gets_scope: Literal[False] = False,
     wrap_values: Literal[False] = False,
     rename_args: list[str] | None = None,
-    preserve: Literal[False] = False,
 ) -> Callable[[LuaCallback], LuaFunction]: ...
 
 
 @overload
 def lua_function(
-    table: LuaTable | None = None,
     *,
     name: str | None = None,
-    custom_signature: str | None = None,
-    gets_scope: Literal[False] = False,
-    wrap_values: Literal[False] = False,
-    rename_args: list[str] | None = None,
-    preserve: Literal[True] = True,
-) -> Callable[[LuaCallback], LuaCallback]: ...
-
-
-@overload
-def lua_function(
-    table: LuaTable | None = None,
-    *,
-    name: str | None = None,
-    custom_signature: str | None = None,
     gets_scope: Literal[False] = False,
     wrap_values: Literal[True] = True,
     rename_args: list[str] | None = None,
-    preserve: Literal[False] = False,
 ) -> Callable[[PyCallback], LuaFunction]: ...
 
 
-@overload
-def lua_function(
-    table: LuaTable | None = None,
-    *,
-    name: str | None = None,
-    custom_signature: str | None = None,
-    gets_scope: Literal[False] = False,
-    wrap_values: Literal[True] = True,
-    rename_args: list[str] | None = None,
-    preserve: Literal[True] = True,
-) -> Callable[[PyCallback], PyCallback]: ...
-
 
 @overload
 def lua_function(
-    table: LuaTable | None = None,
     *,
     name: str | None = None,
-    custom_signature: str | None = None,
     gets_scope: Literal[True] = True,
     wrap_values: Literal[False] = False,
     rename_args: list[str] | None = None,
-    preserve: Literal[False] = False,
 ) -> Callable[[LuaScopeCallback], LuaFunction]: ...
 
 
 @overload
 def lua_function(
-    table: LuaTable | None = None,
     *,
     name: str | None = None,
-    custom_signature: str | None = None,
-    gets_scope: Literal[True] = True,
-    wrap_values: Literal[False] = False,
-    rename_args: list[str] | None = None,
-    preserve: Literal[True] = True,
-) -> Callable[[LuaScopeCallback], LuaScopeCallback]: ...
-
-
-@overload
-def lua_function(
-    table: LuaTable | None = None,
-    *,
-    name: str | None = None,
-    custom_signature: str | None = None,
     gets_scope: Literal[True] = True,
     wrap_values: Literal[True] = True,
     rename_args: list[str] | None = None,
-    preserve: Literal[False] = False,
 ) -> Callable[[PyScopeCallback], LuaFunction]: ...
 
 
 @overload
-def lua_function(
-    table: LuaTable | None = None,
-    *,
-    name: str | None = None,
-    custom_signature: str | None = None,
-    gets_scope: Literal[True] = True,
-    wrap_values: Literal[True] = True,
-    rename_args: list[str] | None = None,
-    preserve: Literal[True] = True,
-) -> Callable[[PyScopeCallback], PyScopeCallback]: ...
+def lua_function(function: Callable) -> LuaFunction: ...
 
 
 def lua_function(
-    table: LuaTable | None = None,
+    function: Callable | None = None,
+    /,
     *,
     name: str | None = None,
-    custom_signature: str | None = None,
     gets_scope: bool = False,
     wrap_values: bool = False,
     rename_args: list[str] | None = None,
-    preserve: bool | None = False,
-):
+) -> Callable[Callable, LuaFunction]:
     """Convert a Python callable to a :class:`LuaFunction` instance.
 
-    :param table: If provided, the newly created :class:`LuaFunction` will be
-                  put into the table with the proper name.
+    :param function: The function to convert.
+                     Allows decorator usage without parentheses.
     :param name: Allows to rename the function.
-    :param custom_signature: Allows to provide a custom signature for the
-                             function.
-                             Only used in 'stringification'.
     :param gets_scope: Whether the function requires a :class:`Scope` as its
                        first argument.
     :param wrap_values: Whether the values should be converted to/from
                         Lua/Python
                         when passing them to/from the function.
     :param rename_args: Allows to rename the arguments of the function.
-    :param preserve: If set to True, the original function will be returned
-                     instead of the :class:`LuaFunction` instance.
-                     The table will still get the LuaFunction instance.
     :return: A decorator that turns Python functions to :class:`LuaFunction`
              instances.
 
@@ -330,34 +264,24 @@ def lua_function(
 
     If *preserve* is set to True, *table* must not be left empty.
     """
+    if function is not None:
+        return _lua_function()(function)
     return _lua_function(
-        table=table,
         name=name,
-        custom_signature=custom_signature,
         rename_args=rename_args,
         gets_scope=gets_scope,
         wrap_values=wrap_values,
-        preserve=preserve if preserve is not None else False,
     )
 
 
 def _lua_function(
     *,
-    table: LuaTable | None,
-    name: str | None,
-    custom_signature: str | None = None,
-    rename_args: list[str] | None,
-    gets_scope: bool,
-    wrap_values: bool,
-    preserve: bool,
+    name: str | None = None,
+    rename_args: list[str] | None = None,
+    gets_scope: bool = False,
+    wrap_values: bool = False,
 ):
     from mehtap.control_structures import ReturnException
-
-    if preserve and not table:
-        raise ValueError(
-            "So, the decorator will preserve the object and will not put the"
-            " LuaFunction instance in the table... What's your point?"
-        )
 
     def decorator(func: Callable):
         f_signature = signature(func)
@@ -422,7 +346,7 @@ def _lua_function(
         if not used_name:
             used_name = "<native function>"
 
-        lf = LuaFunction(
+        return LuaFunction(
             param_names=lua_param_names,
             variadic=f_variadic,
             parent_scope=None,
@@ -430,13 +354,6 @@ def _lua_function(
             gets_scope=gets_scope,
             name=used_name,
             min_req=minimum_required,
-            signature=custom_signature,
         )
-        if table is not None:
-            table.rawput(py2lua(used_name), lf)
-
-        if preserve:
-            return func
-        return lf
 
     return decorator

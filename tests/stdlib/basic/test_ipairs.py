@@ -16,9 +16,10 @@ def test_ipairs():
 
     tracker = CallTracker()
 
-    @lua_function(vm.globals, name="f")
+    @lua_function
     def f(*a):
         tracker(*a)
+    vm.put_nonlocal_ls(LuaString(b"f"), Variable(f))
 
     table = LuaTable(
         {

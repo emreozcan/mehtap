@@ -25,9 +25,10 @@ def test_pcall_true():
     symbol = LuaTable()
     vm.put_nonlocal_ls(LuaString(b"symbol"), Variable(symbol))
 
-    @lua_function(vm.globals)
+    @lua_function
     def succeed(t, /) -> PyLuaRet:
         return [t]
+    vm.put_nonlocal_ls(LuaString(b"succeed"), Variable(succeed))
 
     results = vm.exec("return pcall(succeed, symbol)")
 

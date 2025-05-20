@@ -53,10 +53,11 @@ def table_concat(list, sep, i, j, /) -> PyLuaRet:
     return [cur_str]
 
 
-@lua_function(name="insert", custom_signature="(list, [pos,] value)")
+@lua_function(name="insert")
 def lf_table_insert(list, arg1=LuaNil, arg2=LuaNil, /):
     return table_insert(list, arg1, arg2)
 
+lf_table_insert.signature = "(list, [pos,] value)"
 
 def table_insert(list, arg1, arg2) -> PyLuaRet:
     len_list = length(list)

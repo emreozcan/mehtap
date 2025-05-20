@@ -11,10 +11,11 @@ def test_xpcall_false():
 
     handled_symbol = LuaTable()
 
-    @lua_function(vm.globals)
+    @lua_function
     def handler(s, /) -> PyLuaRet:
         assert s is initial_symbol
         return [handled_symbol]
+    vm.put_nonlocal_ls(LuaString(b"handler"), Variable(handler))
 
     results = vm.exec("return xpcall(error, handler, symbol)")
 
@@ -25,19 +26,21 @@ def test_xpcall_false():
 def test_xpcall_true():
     vm = VirtualMachine()
 
-    @lua_function(vm.globals)
+    @lua_function
     def succeed(t, /) -> PyLuaRet:
         return [t]
+    vm.put_nonlocal_ls(LuaString(b"succeed"), Variable(succeed))
 
     initial_symbol = LuaTable()
     vm.put_nonlocal_ls(LuaString(b"symbol"), Variable(initial_symbol))
 
     handled_symbol = LuaTable()
 
-    @lua_function(vm.globals)
+    @lua_function
     def handler(s, /) -> PyLuaRet:
         assert s is initial_symbol
         return [handled_symbol]
+    vm.put_nonlocal_ls(LuaString(b"handler"), Variable(handler))
 
     results = vm.exec("return xpcall(succeed, handler, symbol)")
 
