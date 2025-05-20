@@ -265,7 +265,12 @@ def lua_function(
     If *preserve* is set to True, *table* must not be left empty.
     """
     if function is not None:
-        return _lua_function()(function)
+        return _lua_function(
+            name=name,
+            rename_args=rename_args,
+            gets_scope=gets_scope,
+            wrap_values=wrap_values,
+        )(function)
     return _lua_function(
         name=name,
         rename_args=rename_args,
