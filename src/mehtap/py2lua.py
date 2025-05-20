@@ -274,6 +274,30 @@ def lua_function(
     )
 
 
+def _wrap_values(func: Callable, wrap_values: bool) -> Callable:
+    """Wraps the function to convert its arguments and return values."""
+    from mehtap.control_structures import ReturnException
+
+    if not wrap_values:
+        def new_function(*args: LuaValue, **kwargs: LuaValue) -> None:
+            raise ReturnException(func(*args, **kwargs))
+
+        return new_function
+
+    def new_function(*args: LuaValue, **kwargs: LuaValue) -> None:
+        from mehtap.lua2py import lua2py
+
+        return_values = func(
+            *(lua2py(v) for v in args),
+            **{k: lua2py(v) for k, v in kwargs.items()}
+        )
+        if isinstance(return_values, (list, tuple)):
+            raise ReturnException([py2lua(v) for v in return_values])
+        raise ReturnException([py2lua(return_values)])
+
+    return new_function
+
+
 def _lua_function(
     *,
     name: str | None = None,
@@ -311,20 +335,7 @@ def _lua_function(
                 )
             callable_argnames.append(param.name)
 
-        if wrap_values:
-
-            def new_function(*args: LuaValue) -> None:
-                from mehtap.lua2py import lua2py
-
-                return_values = func(*(lua2py(v) for v in args))
-                if isinstance(return_values, (list, tuple)):
-                    raise ReturnException([py2lua(v) for v in return_values])
-                raise ReturnException([py2lua(return_values)])
-
-        else:
-
-            def new_function(*args: LuaValue) -> None:
-                raise ReturnException(func(*args))
+        new_function = _wrap_values(func, wrap_values)
 
         if rename_args is None:
             lua_param_names = [str_to_lua_string(x) for x in callable_argnames]
