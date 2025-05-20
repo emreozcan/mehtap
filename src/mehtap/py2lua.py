@@ -50,7 +50,7 @@ class SupportsLua(Protocol[LV]):
 
 
 # This uses Union[A, B] instead of A | B because it is shorter in this case.
-PyLuaNative = Union[None, bool, int, float, str, Mapping, Iterable, Callable]
+PyLuaNative = Union[None, bool, int, float, str, bytes, Mapping, Iterable, Callable]
 """Types that :func:`py2lua` knows how to convert natively."""
 Py2LuaAccepts = PyLuaNative | SupportsLua[LV]
 """Types that :func:`py2lua` knows how to convert."""
