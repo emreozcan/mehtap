@@ -214,7 +214,13 @@ class MehtapPromptSession(PromptSession):
 
         @kb.add("enter")
         def _accept_input(event: KeyPressEvent) -> None:
-            self.default_buffer.validate_and_handle()
+            if "\n" not in self.default_buffer.text or (
+                self.default_buffer.cursor_position == len(self.default_buffer.text)
+                and self.default_buffer.text[-1] == "\n"
+            ):
+                self.default_buffer.validate_and_handle()
+                return
+            self.default_buffer.insert_text("\n")
 
         @kb.add("tab")
         def _add_tab(event: KeyPressEvent) -> None:
@@ -222,6 +228,9 @@ class MehtapPromptSession(PromptSession):
 
         @kb.add("escape", "enter")
         def _add_newline(event: KeyPressEvent) -> None:
+            if "\n" in self.default_buffer.text:
+                self.default_buffer.validate_and_handle()
+                return
             self.default_buffer.insert_text("\n")
 
         @kb.add("c-c")
