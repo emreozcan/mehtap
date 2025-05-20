@@ -320,14 +320,12 @@ class LuaFunction(LuaObject, LuaCallableABC):
             return ""
         my_name = self.param_names[index]
         next_name = self._py_param_str(index + 1)
-        if index < self.min_req:
-            if index == 0:
-                return f"{my_name}{next_name}"
-            return f", {my_name}{next_name}"
+        joined = f"{my_name}{next_name}"
+        if index != 0:
+            joined = ", " + joined
         if index >= self.min_req:
-            if index == 0:
-                return f"[{my_name}{next_name}]"
-            return f"[, {my_name}{next_name}]"
+            joined = f"[{joined}]"
+        return joined
 
     def _stringify_params(self):
         if self.signature is not None:
