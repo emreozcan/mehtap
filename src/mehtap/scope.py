@@ -16,7 +16,7 @@ from mehtap.values import LuaString, Variable, LuaValue
 
 if TYPE_CHECKING:
     from mehtap.vm import VirtualMachine
-
+    from mehtap.py2lua import Py2LuaAccepts
 
 AnyPath = TypeVar("AnyPath", int, str, bytes, PathLike[str], PathLike[bytes])
 
@@ -55,6 +55,26 @@ class ExecutionContext(ABC):
     @abstractmethod
     def put_nonlocal_ls(self, key: LuaString, value: LuaValue) -> None:
         ...
+
+    def put_nonlocal(self, name: str, value: Py2LuaAccepts | Variable | LuaValue) -> None:
+        """Put a value in the current scope."""
+        if isinstance(value, Variable):
+            self.put_nonlocal_ls(LuaString(name.encode("utf-8")), value.value)
+        elif isinstance(value, LuaValue):
+            self.put_nonlocal_ls(LuaString(name.encode("utf-8")), value)
+        else:
+            from mehtap.py2lua import py2lua
+            self.put_nonlocal_ls(LuaString(name.encode("utf-8")), py2lua(value))
+
+    def put_local(self, name: str, value: Py2LuaAccepts | Variable | LuaValue) -> None:
+        """Put a value in the current scope."""
+        if isinstance(value, Variable):
+            self.put_local_ls(LuaString(name.encode("utf-8")), value)
+        elif isinstance(value, LuaValue):
+            self.put_local_ls(LuaString(name.encode("utf-8")), Variable(value))
+        else:
+            from mehtap.py2lua import py2lua
+            self.put_local_ls(LuaString(name.encode("utf-8")), Variable(py2lua(value)))
 
 @attrs.define(slots=True, repr=False)
 class Scope(ExecutionContext):

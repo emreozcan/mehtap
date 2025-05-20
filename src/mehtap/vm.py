@@ -63,10 +63,11 @@ class VirtualMachine(ExecutionContext):
     def put_local_ls(self, key: LuaString, variable: Variable):
         self.root_scope.put_local_ls(key, variable)
 
-    def put_nonlocal_ls(self, key: LuaString, variable: Variable):
-        assert not variable.constant
-        assert not variable.to_be_closed  # TODO.
-        self.globals.rawput(key, variable.value)
+    def put_nonlocal_ls(self, key: LuaString, value: LuaValue | Variable):
+        if isinstance(value, Variable):
+            # TODO. Remove this. (Only used in tests)
+            value = value.value
+        self.globals.rawput(key, value)
 
     def get_warning(self, *messages: str | bytes | LuaString):
         if self.emitting_warnings:
