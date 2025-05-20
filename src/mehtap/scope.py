@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from abc import ABC, abstractmethod
 from io import SEEK_SET
 from os import PathLike
 from os.path import basename
@@ -20,8 +21,43 @@ if TYPE_CHECKING:
 AnyPath = TypeVar("AnyPath", int, str, bytes, PathLike[str], PathLike[bytes])
 
 
+class ExecutionContext(ABC):
+    @abstractmethod
+    def eval(self, expr: str) -> list[LuaValue]:
+        ...
+
+    @abstractmethod
+    def exec(
+        self, chunk: str, *, filename: str | None = None
+    ) -> list[LuaValue]:
+        ...
+
+    @abstractmethod
+    def exec_file(self, file_path: AnyPath) -> list[LuaValue]:
+        ...
+
+    @abstractmethod
+    def get_varargs(self) -> list[LuaValue] | None:
+        ...
+
+    @abstractmethod
+    def has_ls(self, key: LuaString) -> bool:
+        ...
+
+    @abstractmethod
+    def get_ls(self, key: LuaString) -> LuaValue:
+        ...
+
+    @abstractmethod
+    def put_local_ls(self, key: LuaString, variable: Variable) -> None:
+        ...
+
+    @abstractmethod
+    def put_nonlocal_ls(self, key: LuaString, value: LuaValue) -> None:
+        ...
+
 @attrs.define(slots=True, repr=False)
-class Scope:
+class Scope(ExecutionContext):
     vm: VirtualMachine
     parent: Scope | None
     locals: dict[LuaString, Variable] = attrs.field(factory=dict)

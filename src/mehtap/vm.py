@@ -6,7 +6,7 @@ from typing import BinaryIO
 import attrs
 
 from mehtap.global_table import create_global_table
-from mehtap.scope import Scope, AnyPath
+from mehtap.scope import Scope, AnyPath, ExecutionContext
 from mehtap.values import (
     LuaTable,
     LuaString,
@@ -16,7 +16,7 @@ from mehtap.values import (
 
 
 @attrs.define(slots=True, repr=False, init=False)
-class VirtualMachine:
+class VirtualMachine(ExecutionContext):
     globals: LuaTable
     root_scope: Scope
     emitting_warnings: bool
@@ -41,11 +41,16 @@ class VirtualMachine:
     def eval(self, expr: str):
         return self.root_scope.eval(expr)
 
-    def exec(self, chunk: str) -> list[LuaValue]:
-        return self.root_scope.exec(chunk)
+    def exec(
+        self, chunk: str, *, filename: str | None = None
+    ) -> list[LuaValue]:
+        return self.root_scope.exec(chunk, filename=filename)
 
     def exec_file(self, file_path: AnyPath) -> list[LuaValue]:
         return self.root_scope.exec_file(file_path)
+
+    def get_varargs(self) -> list[LuaValue] | None:
+        return self.root_scope.get_varargs()
 
     def has_ls(self, key: LuaString):
         return self.root_scope.has_ls(key) or self.globals.has(key)
