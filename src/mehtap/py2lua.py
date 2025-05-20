@@ -56,6 +56,49 @@ Py2LuaAccepts = PyLuaNative | SupportsLua[LV]
 """Types that :func:`py2lua` knows how to convert."""
 
 
+def table_function(
+    func: Callable,
+    *,
+    name: str | None = None,
+) -> LuaFunction:
+    from mehtap.control_structures import ReturnException
+
+    used_name = name if name is not None else func.__name__
+    if not used_name:
+        used_name = "<native function>"
+
+    def new_function(arguments: LuaTable) -> None:
+        if not isinstance(arguments, LuaTable):
+            raise TypeError("function must be called with a table")
+
+        from mehtap.lua2py import _lua2py
+
+        memos = {}
+        args = []
+        kwargs = {}
+        for k,v in arguments.map.items():
+            if not isinstance(k, LuaString):
+                continue
+            kwargs[_lua2py(k, memos)] = _lua2py(v, memos)
+        i = 1
+        while True:
+            if i not in arguments.map:
+                break
+            args.append(_lua2py(arguments.map[i], memos))
+            i += 1
+
+        raise ReturnException([py2lua(func(*args, **kwargs))])
+
+    return LuaFunction(
+        param_names=[LuaString(b"arguments")],
+        variadic=False,
+        parent_scope=None,
+        block=new_function,
+        gets_scope=False,
+        name=used_name,
+        min_req=1,
+    )
+
 @overload
 def py2lua(value: None) -> LuaNilType: ...
 
