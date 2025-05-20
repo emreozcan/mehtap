@@ -8,7 +8,7 @@ def test_recursive():
     t.rawput(LuaString(b"t"), t)
 
     d = lua2py(t)
-    assert d[b"t"] is d
+    assert d["t"] is d
 
 
 def test_nil():
@@ -30,7 +30,7 @@ def test_number():
 
 
 def test_string():
-    assert lua2py(LuaString(b"hello")) == b"hello"
+    assert lua2py(LuaString(b"hello")) == "hello"
 
 
 def test_table():
@@ -38,7 +38,7 @@ def test_table():
     t.rawput(LuaString(b"hello"), LuaString(b"world"))
 
     d = lua2py(t)
-    assert d == {b"hello": b"world"}
+    assert d == {"hello": "world"}
 
 
 def test_table_metamethod():
@@ -53,7 +53,7 @@ def test_table_metamethod():
     mt.rawput(LuaString(b"__py"), py_function)
 
     d = lua2py(t)
-    assert d == b"hello"
+    assert d == "hello"
 
 
 def test_function():

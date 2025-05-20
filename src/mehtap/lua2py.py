@@ -33,7 +33,7 @@ def lua2py(value: LuaNumber) -> int | float: ...
 
 
 @overload
-def lua2py(value: LuaString) -> bytes: ...
+def lua2py(value: LuaString) -> str: ...
 
 
 @overload
@@ -81,7 +81,7 @@ def _lua2py(lua_val, memos):
     if isinstance(lua_val, LuaNumber):
         return lua_val.value
     if isinstance(lua_val, LuaString):
-        return lua_val.content
+        return lua_val.content.decode("utf-8")
     if isinstance(lua_val, LuaTable):
         mt = lua_val.get_metatable()
         if mt is not LuaNil:
