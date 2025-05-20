@@ -196,6 +196,13 @@ class LuaNumber(LuaValue):
     def __hash__(self):
         return hash(self.value)
 
+    def __eq__(self, other):
+        if isinstance(other, (int, float)):
+            return self.value == other
+        if isinstance(other, self.__class__.__bases__):
+            return self.value == other.value
+        return NotImplemented
+
 
 @attrs.define(slots=True, eq=False, frozen=True, repr=False)
 class LuaString(LuaValue):
