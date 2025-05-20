@@ -181,7 +181,7 @@ def _py2lua(py_val, memos):
             m.rawput(LuaNumber(i), _py2lua(v, memos))
         return m
     if callable(py_val):
-        return lua_function(wrap_values=True)(py_val)
+        return table_function(py_val)
     raise TypeError(f"can't convert {py_val!r} to LuaValue")
 
 
