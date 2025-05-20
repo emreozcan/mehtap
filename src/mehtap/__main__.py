@@ -275,12 +275,6 @@ def enter_interactive(vm: VirtualMachine) -> None:
         line = ""
 
 
-def print_lark_error(collected_line, e, prompt):
-    print(" " * len(prompt) + collected_line.splitlines()[e.line - 1])
-    print(f"{' ' * len(prompt)}{' ' * (e.column - 1)}^")
-    print(f"error: unexpected input, " f"line {e.line}, column {e.column}")
-
-
 def print_lua_error(lua_error: LuaError, vm: VirtualMachine | None):
     if (
         not isinstance(lua_error.message, LuaString)
