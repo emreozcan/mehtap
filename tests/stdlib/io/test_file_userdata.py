@@ -4,7 +4,7 @@ import pytest
 
 from mehtap.control_structures import LuaError
 from mehtap.library.stdlib.io_library import LuaFile
-from mehtap.values import LuaString
+from mehtap.values import LuaString, Variable
 from mehtap.vm import VirtualMachine
 
 
@@ -12,7 +12,7 @@ def test_set():
     vm = VirtualMachine()
     vm.put_nonlocal_ls(
         LuaString(b"fh"),
-        LuaFile(BytesIO()),
+        Variable(LuaFile(BytesIO())),
     )
     with pytest.raises(LuaError) as excinfo:
         vm.exec("fh.hello = 'there'")
@@ -25,7 +25,7 @@ def test_get():
     vm = VirtualMachine()
     vm.put_nonlocal_ls(
         LuaString(b"fh"),
-        LuaFile(BytesIO()),
+        Variable(LuaFile(BytesIO())),
     )
     with pytest.raises(LuaError) as excinfo:
         vm.exec("print(fh.hello)")

@@ -4,7 +4,7 @@ import pytest
 
 from mehtap.control_structures import LuaError
 from mehtap.library.stdlib.io_library import LuaFile
-from mehtap.values import LuaString
+from mehtap.values import LuaString, Variable
 from mehtap.vm import VirtualMachine
 
 
@@ -44,7 +44,7 @@ def test_seek_invalid_whence(tmp_path):
     test_file_path = tmp_path / "test.txt"
     test_file_path.touch()
     file_handle = LuaFile(test_file_path.open("rb"))
-    vm.put_nonlocal_ls(LuaString(b"fh"), file_handle)
+    vm.put_nonlocal_ls(LuaString(b"fh"), Variable(file_handle))
     with pytest.raises(LuaError) as excinfo:
         vm.exec("fh:seek('blablabla', -8)")
     assert isinstance(excinfo.value, LuaError)

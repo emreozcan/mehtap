@@ -58,17 +58,10 @@ class VirtualMachine:
     def put_local_ls(self, key: LuaString, variable: Variable):
         self.root_scope.put_local_ls(key, variable)
 
-    def put_nonlocal_ls(self, key: LuaString, variable: Variable | LuaValue):
-        if isinstance(variable, Variable):
-            assert not variable.constant
-            assert not variable.to_be_closed
-            self.globals.rawput(key, variable.value)
-            return
-        elif isinstance(variable, LuaValue):
-            self.globals.rawput(key, variable)
-            return
-        else:
-            raise TypeError(f"invalid key type {type(variable)}")
+    def put_nonlocal_ls(self, key: LuaString, variable: Variable):
+        assert not variable.constant
+        assert not variable.to_be_closed  # TODO.
+        self.globals.rawput(key, variable.value)
 
     def get_warning(self, *messages: str | bytes | LuaString):
         if self.emitting_warnings:

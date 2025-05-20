@@ -3,7 +3,7 @@ from collections.abc import Sequence
 from io import BytesIO
 
 from mehtap.library.stdlib.io_library import LuaFile
-from mehtap.values import LuaString
+from mehtap.values import LuaString, Variable
 from mehtap.vm import VirtualMachine
 
 
@@ -22,7 +22,7 @@ def test_input_filehandle(tmp_path):
     test_file_path = tmp_path / "test.txt"
     test_file_path.touch()
     test_file = open(test_file_path, "rb")
-    vm.put_nonlocal_ls(LuaString(b"handle"), LuaFile(test_file))
+    vm.put_nonlocal_ls(LuaString(b"handle"), Variable(LuaFile(test_file)))
     vm.exec(f"io.input(handle)")
     assert vm.default_input is test_file
 

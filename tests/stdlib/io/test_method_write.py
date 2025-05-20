@@ -1,5 +1,5 @@
 from mehtap.library.stdlib.io_library import LuaFile
-from mehtap.values import LuaString
+from mehtap.values import LuaString, Variable
 from mehtap.vm import VirtualMachine
 
 
@@ -8,7 +8,7 @@ def test_method_write(tmp_path):
     test_file_path = tmp_path / "test.txt"
     test_file_path.write_bytes(b"abc\n")
     lua_file = LuaFile(open(test_file_path, "wb"))
-    vm.put_nonlocal_ls(LuaString(b"fh"), lua_file)
+    vm.put_nonlocal_ls(LuaString(b"fh"), Variable(lua_file))
     vm.exec("fh:write('def')")
     lua_file.io.flush()
     assert test_file_path.read_bytes() == b"def"

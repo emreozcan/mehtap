@@ -1,6 +1,6 @@
 from mehtap.operations import str_to_lua_string
 from mehtap.py2lua import py2lua
-from mehtap.values import LuaTable, LuaFunction
+from mehtap.values import LuaTable, LuaFunction, Variable
 from mehtap.vm import VirtualMachine
 
 
@@ -9,11 +9,11 @@ def test_nested_variable_read():
 
     vm.put_nonlocal_ls(
         str_to_lua_string("a"),
-        py2lua({
+        Variable(py2lua({
             "b": {
                 "c": lambda: "foo"
             }
-        })
+        }))
     )
 
     a, = vm.eval("a")
