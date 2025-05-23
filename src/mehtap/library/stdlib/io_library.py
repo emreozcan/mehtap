@@ -123,7 +123,7 @@ def _file_method_lines(scope: Scope, self: LuaFile, /, *formats) -> PyLuaRet:
         formats = (LuaString(b"l"),)
 
     # Returns an iterator function that,
-    @lua_function()
+    @lua_function
     def iterator_function() -> PyLuaRet:
         # each time it is called, reads the file
         # according to the given formats.
@@ -372,7 +372,7 @@ def io_lines(
     # function that works like file:lines(···) over the opened file.
     # When the iterator function fails to read any value, it automatically
     # closes the file.
-    @lua_function()
+    @lua_function
     def iterator_function() -> PyLuaRet:
         f = _file_method_read(scope, file_handle, *formats)
         if to_close and (

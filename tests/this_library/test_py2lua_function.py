@@ -6,7 +6,7 @@ from mehtap.values import LuaString, LuaTable, LuaFunction
 
 def test_invalid_arg_after_variadic():
     with pytest.raises(ValueError) as excinfo:
-        @lua_function()
+        @lua_function
         def x(*a, sentinel_value_123456):
             pass
 
@@ -16,7 +16,7 @@ def test_invalid_arg_after_variadic():
 
 def test_invalid_arg_not_pos_only():
     with pytest.raises(ValueError) as excinfo:
-        @lua_function()
+        @lua_function
         def x(a, b, /, sentinel_value_123456):
             pass
 

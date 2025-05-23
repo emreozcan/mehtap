@@ -3,7 +3,7 @@ from mehtap.values import LuaTable, LuaString, Variable, LuaNumber, LuaBool
 from mehtap.vm import VirtualMachine
 
 
-@lua_function()
+@lua_function
 def fail():
     assert False
 

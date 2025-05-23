@@ -8,7 +8,7 @@ def test_tostring_mt_tostring():
 
     called = [False]
 
-    @lua_function()
+    @lua_function
     def callback(o: LuaValue, /):
         called[0] = True
         return LuaString(b"yay :D")

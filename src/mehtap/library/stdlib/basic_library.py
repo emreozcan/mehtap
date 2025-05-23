@@ -159,7 +159,7 @@ def lf_ipairs(t: LuaTable, /) -> PyLuaRet:
     return basic_ipairs(t)
 
 
-@lua_function()
+@lua_function
 def _ipairs_iterator_function(state, control_variable: LuaNumber, /) \
         -> PyLuaRet:
     index = control_variable.value + 1

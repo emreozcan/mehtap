@@ -46,7 +46,7 @@ def test_table_metamethod():
     mt = LuaTable()
     t.set_metatable(mt)
 
-    @lua_function()
+    @lua_function
     def py_function(self, /) -> PyLuaRet:
         return LuaString(b"hello")
 
