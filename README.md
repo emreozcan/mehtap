@@ -6,8 +6,9 @@ Lua 5.4 programming language implementation in Pure Python
 [![Latest version on PyPI](https://img.shields.io/pypi/v/mehtap)](https://pypi.org/project/mehtap/)
 [![Supported Python versions](https://img.shields.io/pypi/pyversions/mehtap)](https://pypi.org/project/mehtap/)
 
-[![Codacy Grade Badge](https://app.codacy.com/project/badge/Grade/c8799d9203354667a97ba39aca2c75f2)](https://app.codacy.com/gh/emreozcan/mehtap/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
-[![Codacy Coverage Badge](https://app.codacy.com/project/badge/Coverage/c8799d9203354667a97ba39aca2c75f2)](https://app.codacy.com/gh/emreozcan/mehtap/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_coverage)
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/0cea33250e8c451f91bcebaade95f640)](https://app.codacy.com/gh/emreozcan/mehtap/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
+[![Codacy Badge](https://app.codacy.com/project/badge/Coverage/0cea33250e8c451f91bcebaade95f640)](https://app.codacy.com/gh/emreozcan/mehtap/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_coverage)
+[![codecov](https://codecov.io/github/emreozcan/mehtap/graph/badge.svg?token=YQIPE16643)](https://codecov.io/github/emreozcan/mehtap)
 [![checks/master](https://img.shields.io/github/check-runs/emreozcan/mehtap/master?logo=github&label=checks%2Fmaster)](https://github.com/emreozcan/mehtap/actions/workflows/test.yml)
 [![docs](https://readthedocs.org/projects/mehtap/badge/?version=latest&style=flat)](https://mehtap.readthedocs.io/en/latest/)
 
