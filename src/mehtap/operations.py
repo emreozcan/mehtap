@@ -106,7 +106,9 @@ def rel_lt(a: LuaValue, b: LuaValue) -> LuaBool:
     # Otherwise, if both arguments are strings,
     # then their values are compared according to the current locale.
     if isinstance(a, LuaString) and isinstance(b, LuaString):
-        return LuaBool(strcoll(a.content, b.content) < 0)
+        return LuaBool(strcoll(
+            a.content.decode("utf-8"),
+            b.content.decode("utf-8")) < 0)
     # Otherwise, Lua tries to call the __lt or the __le metamethod (see §2.4).
     mm_res = check_metamethod_binary(a, b, SYMBOL__LT)
     if mm_res is not None:
