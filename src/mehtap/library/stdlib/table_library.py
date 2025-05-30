@@ -1,10 +1,12 @@
+from functools import cmp_to_key
+
 from mehtap.control_structures import LuaError
 from mehtap.library.provider_abc import LibraryProvider
 from mehtap.operations import length, rel_gt, index, concat, new_index, \
     arith_add, call
 from mehtap.py2lua import PyLuaRet, lua_function
 from mehtap.values import LuaString, LuaFunction, LuaTable, LuaNumber, \
-    type_of_lv, LuaValue, LuaNil, LuaBool
+    type_of_lv, LuaValue, LuaNil, LuaBool, LuaIndexableABC
 
 
 @lua_function(name="concat")
@@ -167,7 +169,7 @@ def lf_table_sort(list, comp=LuaNil, /) -> PyLuaRet:
     return table_sort(list, comp)
 
 
-def table_sort(list, comp=LuaNil) -> PyLuaRet:
+def table_sort(list: LuaIndexableABC, comp=LuaNil) -> PyLuaRet:
     # Sorts the list elements in a given order, in-place,
     # from list[1] to list[#list].
     # If comp is given, then it must be a function that receives two list
@@ -186,20 +188,23 @@ def table_sort(list, comp=LuaNil) -> PyLuaRet:
         def comparator(a, b) -> bool:
             return call(comp, [a, b], None) == [LuaBool(True)]
     list_length = length(list).value
-    # TODO: This is bubble sort. I don't need much to say.
-    while True:
-        swapped = False
-        for idx in range(1, list_length):
-            if comparator(
-                index(list, LuaNumber(idx + 1)),
-                index(list, LuaNumber(idx))
-            ):
-                tmp = index(list, LuaNumber(idx + 1))
-                new_index(list, LuaNumber(idx + 1), index(list, LuaNumber(idx)))
-                new_index(list, LuaNumber(idx), tmp)
-                swapped = True
-        if not swapped:
-            break
+    # Extract elements from list[1] to list[#list]
+    elements = [index(list, LuaNumber(idx)) for idx in range(1, list_length + 1)]
+    # Use a stable sort (Python's sorted is stable)
+    def cmp(a, b):
+        # comparator(a, b) should return True if a > b (i.e., a should come after b)
+        # so for sorting in ascending order, we reverse the logic
+        if comparator(a, b):
+            return 1
+        elif comparator(b, a):
+            return -1
+        else:
+            return 0
+    sorted_elements = sorted(elements, key=cmp_to_key(cmp))
+    # Write back sorted elements to list[1] to list[#list]
+    for idx, value in enumerate(sorted_elements, start=1):
+        new_index(list, LuaNumber(idx), value)
+    return []
 
 
 @lua_function(name="unpack")
