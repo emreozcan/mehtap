@@ -76,6 +76,10 @@ def table_insert(list, arg1, arg2) -> PyLuaRet:
     if not isinstance(pos, LuaNumber):
         raise LuaError(f"bad argument #2 to 'insert' "
                        f"(number expected, got {type_of_lv(pos)})")
+    if pos.value > len_list.value + 1:
+        raise LuaError(f"bad argument #2 to 'insert' "
+                       f"(position out of bounds, got {pos.value} to a list"
+                       f" of length {len_list.value})")
     for idx in range(len_list.value + 1, pos.value, -1):
         # shifting up the elements
         #   list[pos], list[pos+1], ···, list[#list].
