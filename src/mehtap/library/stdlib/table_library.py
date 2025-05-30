@@ -54,14 +54,18 @@ def table_concat(list, sep, i, j, /) -> PyLuaRet:
 
 
 @lua_function(name="insert")
-def lf_table_insert(list, arg1=LuaNil, arg2=LuaNil, /):
+def lf_table_insert(list, /, *args):
+    if len(args) < 1 or len(args) > 2:
+        raise LuaError(f"wrong number of arguments to 'insert'")
+    arg1 = args[0]
+    arg2 = args[1] if len(args) == 2 else None
     return table_insert(list, arg1, arg2)
 
 lf_table_insert.signature = "(list, [pos,] value)"
 
 def table_insert(list, arg1, arg2) -> PyLuaRet:
     len_list = length(list)
-    if arg2 is LuaNil:
+    if arg2 is None:
         # The default value for pos is #list+1,
         # so that a call table.insert(t,x) # inserts x at the end of the list t.
         pos = arith_add(len_list, LuaNumber(1))
