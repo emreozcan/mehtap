@@ -201,10 +201,19 @@ def get_expected_terminals(tokens: Iterable[str]) -> str:
             results.append(token)
     return ", ".join(results)
 
-def get_continuation_prompt(width, _line_number, is_soft_wrap):
-    if not is_soft_wrap:
-        return "." * (width - 1) + " "
-    return " " * (width - 1) + " "
+def get_continuation_prompt(width, line_number, is_soft_wrap):
+    """
+    Create a continuation prompt for the REPL.
+    For example, if the width is 3, the line number is 2,
+    it will return a string like:
+    " 2."
+    """
+    if is_soft_wrap:
+        return " " * width
+    ln = str(line_number + 1)
+    if len(ln) < width:
+        ln = " " * (width - len(ln)) + ln
+    return ln + ". " if width > 0 else ""
 
 
 class MehtapPromptSession(PromptSession):
