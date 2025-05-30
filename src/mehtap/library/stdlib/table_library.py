@@ -28,10 +28,10 @@ def table_concat(list, sep, i, j, /) -> PyLuaRet:
     if rel_gt(i, j).true:
         return [LuaString(b"")]
     if not isinstance(i, LuaNumber):
-        raise LuaError(f"bad argument #2 to 'concat' "
+        raise LuaError(f"bad argument #3 to 'concat' "
                        f"(number expected, got {type_of_lv(i)})")
     if not isinstance(j, LuaNumber):
-        raise LuaError(f"bad argument #3 to 'concat' "
+        raise LuaError(f"bad argument #4 to 'concat' "
                        f"(number expected, got {type_of_lv(j)})")
     # Given a list where all elements are strings or numbers,
     # returns the string
