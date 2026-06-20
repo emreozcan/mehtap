@@ -1,3 +1,1 @@
-We do not have require().
-Also, this test will need the json library as well.
-Maybe include it in the tests directory too?
+We do not have require() or the json library in the test runner.
