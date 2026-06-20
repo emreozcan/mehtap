@@ -390,6 +390,8 @@ def os_remove(filename, /) -> PyLuaRet:
         except OSError as e:
             if os.name == "posix" and e.errno == 21:
                 os.rmdir(filename.content)
+            elif os.name == "posix" and e.errno == 1 and os.path.isdir(filename.content):
+                os.rmdir(filename.content)
             else:
                 raise e
     except OSError as e:
