@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, UTC
 
 from freezegun import freeze_time
 
@@ -7,14 +7,14 @@ from mehtap.py2lua import py2lua
 
 
 def test_time_now():
-    with freeze_time(datetime.utcfromtimestamp(1600000000), tz_offset=0):
+    with freeze_time(datetime.fromtimestamp(1600000000, UTC), tz_offset=0):
         lua_time, = os_time()
         real_time = datetime.now().timestamp()
     assert lua_time.value == real_time == 1600000000
 
 
 def test_time_offset():
-    with freeze_time(datetime.utcfromtimestamp(1600000000), tz_offset=1):
+    with freeze_time(datetime.fromtimestamp(1600000000, UTC), tz_offset=1):
         lua_time, = os_time()
         real_time = datetime.now().timestamp()
     assert lua_time.value == real_time == 1600000000
