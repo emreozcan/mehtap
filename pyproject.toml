@@ -29,7 +29,7 @@ documentation = "https://mehtap.readthedocs.io/en/latest/"
 mehtap = "mehtap.__main__:main"
 
 [tool.poetry.dependencies]
-python = ">=3.11"
+python = ">=3.11.5"
 lark = "^1.3.1"
 attrs = "^26.1.0"
 prompt-toolkit = "^3.0.53"
@@ -56,6 +56,7 @@ sphinx-autobuild = "^2025.8.25"
 sphinx-copybutton = "^0.5.2"
 sphinx-inline-tabs = "^2025.12.21.14"
 sphinx-tippy = "^0.4.3"
+soupsieve = "^4.0.1"
 dunamai = "^1.26.5"
 
 [tool.poetry-dynamic-versioning]
