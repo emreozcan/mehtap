@@ -1,4 +1,4 @@
-from _pytest.python_api import raises
+from pytest import raises
 
 from mehtap.control_structures import LuaError
 from mehtap.values import LuaNumber

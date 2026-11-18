@@ -20,7 +20,7 @@ Please pin your dependencies using a specific commit hash.
 
 ## Installation
 
-mehtap is supported on Python 3.10+.
+mehtap is supported on Python 3.11+.
 First, make sure you have a Python environment set up.
 
 ```bash
@@ -154,4 +154,4 @@ I want to hereby thank the following people for their
 
 ---
 
-Copyright (c) 2024-2025 Emre Özcan
+Copyright (c) 2024-2026 Emre Özcan
